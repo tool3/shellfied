@@ -8,10 +8,8 @@ const fs = require('fs').promises;
 const app = express();
 const port = process.env.PORT || 3000;
 app.use(cors());
-app.use('/', express.static(path.join(__dirname, 'greeting')))
 
-app.post('/shellify', bodyParser.json(), async (req, res) => {
-
+app.post('/json', bodyParser.json(), async (req, res) => {
     if (!req.body) return res.json({ error: 'must set body' }).status(400);
     if (!req.body.data) return res.json({ error: 'must provide data' }).status(400);
 
