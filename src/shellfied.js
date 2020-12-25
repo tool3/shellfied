@@ -33,7 +33,7 @@ app.post('/json', bodyParser.json(), async (req, res) => {
 });
 
 
-app.post('/text', bodyParser.text(), async (req, res) => {
+app.post('/text', bodyParser.text({type: "*/*"}), async (req, res) => {
     if (!req.body) return res.json({ error: 'must set body' }).status(400);
     const { body } = req;
 
