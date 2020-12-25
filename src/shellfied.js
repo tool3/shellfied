@@ -23,7 +23,6 @@ app.post('/json', bodyParser.json(), async (req, res) => {
     const config = { ...body, location, name: imgName, ext: extension };
 
     try {
-
         await shellfie(data, config);
         res.sendFile(imgPath);
         await fs.rm(imgPath)
