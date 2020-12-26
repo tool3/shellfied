@@ -42,7 +42,7 @@ app.post('/text', bodyParser.text({type: "*/*"}), async (req, res) => {
     const config = { ...body, location, name: imgName };
 
     try {
-        await shellfie(body, config);
+        await shellfie(body.trim(), config);
         res.sendFile(imgPath);
         await fs.rm(imgPath)
     } catch (error) {
