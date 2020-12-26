@@ -47,8 +47,8 @@ response:
 
 ### body
 #### `data`
-type: `string` || `string[]`
-description: json does not support any escape code so you will have to escape them all.
+***type***: `string` || `string[]`   
+***description***: json does not support any escape code so you will have to escape them all.   
 #### `style`
 type: `object`
 description: the style object can be used to optionally format the terminal output.
@@ -58,9 +58,9 @@ the available css properties are:
 - `fontFamily`: `string`
 
 #### `theme`
-type: `object`
-description: the theme object can be used to change color and background of the terminal.
-the available css properties are:
+***type***: `object`   
+***description***: the theme object can be used to change color and background of the terminal.   
+the available css properties are:   
 - `background`: `string`
 - `foreground`: `string`
 
