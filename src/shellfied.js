@@ -16,7 +16,7 @@ app.post('/json', bodyParser.json(), async (req, res) => {
     const { body } = req;
     const { name, data, ext } = body;
     const extension = ext || 'png';
-
+    
     const location = path.resolve(__dirname, '../');
     const imgName = name || generateId();
     const imgPath = `${location}/${imgName}.${extension}`;
