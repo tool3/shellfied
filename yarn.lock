@@ -648,10 +648,10 @@ setprototypeof@1.1.1:
   resolved "https://registry.yarnpkg.com/setprototypeof/-/setprototypeof-1.1.1.tgz#7e95acb24aa92f5885e0abef5ba131330d4ae683"
   integrity sha512-JvdAWfbXeIGaZ9cILp38HntZSFSo3mWg6xGcJJsd+d4aRMOqauag1C63dJfDw7OaMYwEbHMOxEZ1lqVRYP2OAw==
 
-shellfie@^1.0.4:
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/shellfie/-/shellfie-1.0.4.tgz#732638759139c0e05f8314afd11dd26dd5b03782"
-  integrity sha512-+uGx3GLkbz0ET87F6z75kSKEeLLTBZ9TMbeZUDfwTgFqoAGo1G21y36pqRh1IWNakeUeuzMDdbngJsMLiy1RYw==
+shellfie@^1.0.10:
+  version "1.0.10"
+  resolved "https://registry.yarnpkg.com/shellfie/-/shellfie-1.0.10.tgz#fc5e65d3c7bf46fc5060af4c09fbd6feb560d21e"
+  integrity sha512-cDUWC6t4C1afHC6cSKTjOJv9YgxWajbQkzpSdY6/JPmauVRL/FJINqR9/xImJoGHREx749kCwv2vcV/CWNJFiw==
   dependencies:
     chartscii "^1.2.3"
     puppeteer "^5.5.0"
