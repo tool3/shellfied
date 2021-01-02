@@ -62,7 +62,7 @@
         const req = document.getElementById('req');
         console.log(req.innerText)
         const body = req.innerText;
-        fetch('http://localhost:3000/json', { method: 'post', body, headers: { 'Content-Type': 'application/json'} }).then(res => {
+        fetch('http://shellfie.herokuapp.com/json', { method: 'post', body, headers: { 'Content-Type': 'application/json'} }).then(res => {
             res.blob().then(blob=>{
                 const img = document.createElement('img');
                 const url = URL.createObjectURL(blob);
