@@ -8,20 +8,19 @@ const fs = require('fs').promises;
 const app = express();
 const port = process.env.PORT || 3000;
 app.use(cors());
+app.use('/', express.static(path.join(__dirname, '../static')));
 
+const name = Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5);
 app.post('/json', bodyParser.json(), async (req, res) => {
     if (!req.body) return res.json({ error: 'must set body' }).status(400);
     if (!req.body.data) return res.json({ error: 'must provide data' }).status(400);
 
     const { body } = req;
-    const { name, data, ext } = body;
+    const { data, ext } = body;
     const extension = ext || 'png';
+    const imgPath = path.resolve(`./shellfies/${name}.png`);
+    const config = { ...body, name, ext: extension };
     
-    const location = path.resolve(__dirname, '../');
-    const imgName = name || generateId();
-    const imgPath = `${location}/${imgName}.${extension}`;
-    const config = { ...body, location, name: imgName, ext: extension };
-
     try {
         await shellfie(data, config);
         res.sendFile(imgPath);
@@ -35,14 +34,10 @@ app.post('/json', bodyParser.json(), async (req, res) => {
 app.post('/text', bodyParser.text({type: "*/*"}), async (req, res) => {
     if (!req.body) return res.json({ error: 'must set body' }).status(400);
     const { body } = req;
-
-    const location = path.resolve(__dirname, '../');
-    const imgName = generateId();
-    const imgPath = `${location}/${imgName}.png`;
-    const config = { ...body, location, name: imgName };
-
+    const config = { name, mode: 'raw' };
+    const imgPath = path.resolve(`./shellfies/${name}.png`);
     try {
-        await shellfie(body.trim(), config);
+        await shellfie(body, config);
         res.sendFile(imgPath);
         await fs.rm(imgPath)
     } catch (error) {
@@ -53,14 +48,3 @@ app.post('/text', bodyParser.text({type: "*/*"}), async (req, res) => {
 app.listen(port, () => {
     console.log(`\x1b[32mshellfied server running on \x1b[95m${port}\x1b[0m`);
 });
-
-function generateId() {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    const charactersLength = characters.length;
-    let result = '';
-
-    for (var i = 0; i < 7; i++) {
-        result += characters.charAt(Math.floor(Math.random() * charactersLength));
-    }
-    return result;
-}
