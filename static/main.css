@@ -5,7 +5,7 @@ body {
     width: 100vw;
 }
 h1 {
-    font-size: 8em;
+    font-size: 3em;
 }
 
 .themed {
@@ -19,6 +19,22 @@ h1 {
     align-items: center;
 }
 
+.para {
+    padding: 0 10px;
+    text-align: center;
+}
+
+.btn {
+    all: unset;
+    padding: 5px;
+    border-radius: 5px;
+    background: linear-gradient(to right, #12c2e9, #c471ed, #f64f59);
+    color: white;
+}
+
+.btn:hover {
+    cursor: pointer;
+}
 .body-wrap {
     font-family: 'Fira Code';
     height: 100%;
@@ -27,7 +43,7 @@ h1 {
     align-items: center;
     justify-content: space-between;    
     color: white;
-    background-color: #1e1e1e;
+    background-color: #22232B;
 }
   
 .sec {
