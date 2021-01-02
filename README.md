@@ -6,40 +6,6 @@ create beautiful terminal images from string input.
 
 # API
 
-## `/text`
-- method: `POST`
-- content-type: `text/plain` || `application/text`
-
-### body
-raw text output with ANSI codes, for example:   
-
-### example
-`yarn test --colors > example.txt`
-
-request:
-```text
-[2K[1G[1myarn run v1.22.5[22m
-[2K[1G[2m$ mocha --no-timeouts tests/ --colors[22m
-
-[0m[0m
-[0m  shellfie[0m
-  [32m  ✓[0m[90m should support array of string and output a png file[0m[31m (1246ms)[0m
-  [32m  ✓[0m[90m should support complex string[0m[31m (1079ms)[0m
-  [32m  ✓[0m[90m should support different font family[0m[31m (5415ms)[0m
-  [32m  ✓[0m[90m should support chartscii fancy example[0m[31m (1102ms)[0m
-  [32m  ✓[0m[90m should support string output[0m[31m (1080ms)[0m
-  [32m  ✓[0m[90m should support string output[0m[31m (1015ms)[0m
-  [32m  ✓[0m[90m should magically work with magic numbers[0m[31m (2086ms)[0m
-  [32m  ✓[0m[90m should work with lolcat[0m[31m (1028ms)[0m
-
-
-[92m [0m[32m 8 passing[0m[90m (14s)[0m
-
-[2K[1GDone in 15.40s.
-```
-
-response:
-![](https://github.com/tool3/shellfied/blob/master/test.png?raw=true)
 
 ## `/json`
 - method: `POST`
@@ -90,3 +56,38 @@ request:
 
 response:   
 ![](https://github.com/tool3/shellfied/blob/master/shellfie.png?raw=true)
+
+## `/text`
+- method: `POST`
+- content-type: `text/plain` || `application/text`
+
+### body
+raw text output with ANSI codes, for example:   
+
+### example
+`yarn test --colors > example.txt`
+
+request:
+```text
+[2K[1G[1myarn run v1.22.5[22m
+[2K[1G[2m$ mocha --no-timeouts tests/ --colors[22m
+
+[0m[0m
+[0m  shellfie[0m
+  [32m  ✓[0m[90m should support array of string and output a png file[0m[31m (1246ms)[0m
+  [32m  ✓[0m[90m should support complex string[0m[31m (1079ms)[0m
+  [32m  ✓[0m[90m should support different font family[0m[31m (5415ms)[0m
+  [32m  ✓[0m[90m should support chartscii fancy example[0m[31m (1102ms)[0m
+  [32m  ✓[0m[90m should support string output[0m[31m (1080ms)[0m
+  [32m  ✓[0m[90m should support string output[0m[31m (1015ms)[0m
+  [32m  ✓[0m[90m should magically work with magic numbers[0m[31m (2086ms)[0m
+  [32m  ✓[0m[90m should work with lolcat[0m[31m (1028ms)[0m
+
+
+[92m [0m[32m 8 passing[0m[90m (14s)[0m
+
+[2K[1GDone in 15.40s.
+```
+
+response:
+![](https://github.com/tool3/shellfied/blob/master/test.png?raw=true)
