@@ -15,7 +15,7 @@
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "preact": "^10.5.8",
-    "shellfie": "^1.1.2"
+    "shellfie": "latest"
   },
   "engines": {
     "node": "14.x"
