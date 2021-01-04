@@ -17,32 +17,33 @@
 <body>
     <div class="body-wrap">
         <div class="header"><h1 class="themed">Shellfie</h1><h1>🤳🏽</h1></div>
-        
         <a class="github-fork-ribbon" href="https://github.com/tool3/shellfied" data-ribbon="Fork me on GitHub" title="Fork me on GitHub">Fork me on GitHub</a>
         
-            <div class="sec">
-                <h2 class="title themed">shellfie as a service</h1>
-                <div class="para">use JSON to create beautiful terminal images using one POST</div>
-            </div>
+        <div class="sec">
+            <h2 class="title themed">shellfie as a service</h1>
+            <div class="para">use JSON to create beautiful terminal images using one POST</div>
+        </div>
 
-            <div class="sec">
-                <h2 class="title themed"><a href="https://github.com/tool3/shellfied#api">API docs</a></h1>
-            </div>
-            
-            <div class="sec">
-                <h2 class="title themed">Try It</h1>
-                <pre contenteditable id="req">
+        <div class="sec">
+            <h2 class="title themed"><a href="https://github.com/tool3/shellfied#api">API docs</a></h1>
+        </div>
+        
+        <div class="sec">
+            <h2 class="title themed">Try It</h1>
+            <pre contenteditable id="req">
 {
-    "data": [
-        "\\x1b[45mHELLO WORLD",
-        "\\x1b[3mSO COOL",
-        "\\x1b[105mWOW"
-    ]
+"data": [
+    "\\x1b[45mHELLO WORLD",
+    "\\x1b[3mSO COOL",
+    "\\x1b[105mWOW"
+]
 }
-                </pre>
-                <button class="btn" onclick="getImage()">Get my shellfie</button>
-            </div>
-            <div id="replace"></div>
+            </pre>
+            <button class="btn" onclick="getImage()">Get my shellfie</button>
+        </div>
+
+        <div class="loader"></div>
+        <div id="replace"></div>
         <footer class="footer">
             <div class="social">
                 <a class="linkedIn social_icon" href="https://linkedin.com/in/talhayut" noreferrer
@@ -51,17 +52,25 @@
                     target="_blank"></a>
                 <a class="npm social_icon" href="https://npmjs.com/~tool3" noreferrer target="_blank"></a>
             </div>
-
             <div class="footer-copyright">Tal Hayut &copy; 2021</div>
         </footer>
     </div>
 </body>
 <script>
-    async function getImage() {
-        document.querySelector('#replace').innerHTML = '';
+    function load() {
+        const loader = document.querySelector('.loader');
+        loader.style.display = 'block';
+    }
 
+    function unload() {
+        const loader = document.querySelector('.loader');
+        loader.style.display = 'none';
+    }
+
+    async function getImage() {
+        load();
+        document.querySelector('#replace').innerHTML = '';
         const req = document.getElementById('req');
-        console.log(req.innerText)
         const body = req.innerText;
         fetch('https://shellfie.herokuapp.com/json', { method: 'post', body, headers: { 'Content-Type': 'application/json'} }).then(res => {
             res.blob().then(blob=>{
@@ -70,7 +79,9 @@
                 img.src = url;
                 img.style.height = 'auto';
                 img.style.width = '100%';
+                img.style.display = 'block';
                 document.querySelector('#replace').appendChild(img);
+                unload();
             });
         });
     }
