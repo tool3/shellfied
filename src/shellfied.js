@@ -13,7 +13,6 @@ app.use('/', express.static(path.join(__dirname, '../static')));
 const name = Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5);
 app.post('/json', bodyParser.json(), async (req, res) => {
     if (!req.body) return res.json({ error: 'must set body' }).status(400);
-    console.log(req.body);
     if (!req.body.data) return res.json({ error: 'must provide data' }).status(400);
 
     const { body } = req;
