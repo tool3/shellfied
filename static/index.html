@@ -81,7 +81,7 @@
         load();
         const req = document.getElementById('req');
         const body = req.innerText;
-        const url = 'http://localhost:3000/json/';
+        const url = 'https://shellfie.herokuapp.com/json';
         fetch(url, { method: 'post', body, headers: { 'Content-Type': 'application/json'} }).then(res => {
             res.blob().then(blob=>{
                 const reader = new FileReader() ;
