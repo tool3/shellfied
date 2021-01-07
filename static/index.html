@@ -32,22 +32,28 @@
             <h2 class="title themed">Try It</h1>
             <pre contenteditable id="req">
 {
-  "data": [
-    "\\x1b[45mHELLO WORLD",
-    "\\x1b[36mSO COOL",
-    "\\x1b[105mWOW"
-  ],
-  "viewport": {
-     "width": 200,
-     "height": 200
-  }
+    "style": {
+        "fontSize": 15,
+        "fontWeight": "bold",
+        "fontFamily": "Fira Code"
+    },
+    "data": [
+        "\\x1b[105mSHELLFIE\\x1b[0m🤳",
+        "\\x1b[38;5;225mthe easiest way",
+        "\\x1b[38;5;213mto create beautiful",
+        "\\x1b[38;5;14mCLI screenshots 📸",
+        "\\x1b[38;5;199mprogrammatically 🚀"
+    ],
+    "viewport": {
+        "width": 400,
+        "height": 300
+    }
 }
             </pre>
             <button class="btn" onclick="getImage()">Get my shellfie</button>
         </div>
 
         <div class="loader"></div>
-        <div id="replace"></div>
         <footer class="footer">
             <div class="social">
                 <a class="linkedIn social_icon" href="https://linkedin.com/in/talhayut" noreferrer
@@ -73,19 +79,19 @@
 
     async function getImage() {
         load();
-        document.querySelector('#replace').innerHTML = '';
         const req = document.getElementById('req');
         const body = req.innerText;
-        fetch('https://shellfie.herokuapp.com/json', { method: 'post', body, headers: { 'Content-Type': 'application/json'} }).then(res => {
+        const url = 'http://localhost:3000/json/';
+        fetch(url, { method: 'post', body, headers: { 'Content-Type': 'application/json'} }).then(res => {
             res.blob().then(blob=>{
-                const img = document.createElement('img');
-                const url = URL.createObjectURL(blob);
-                img.src = url;
-                img.style.height = 'auto';
-                img.style.width = '100%';
-                img.style.display = 'block';
-                document.querySelector('#replace').appendChild(img);
-                unload();
+                const reader = new FileReader() ;
+                reader.onload = function() {
+                    const w = window.open("");
+                    w.document.write(`<img src="${this.result}" />`);
+                    w.document.close();
+                    // unload();
+                };
+                reader.readAsDataURL(blob);    
             });
         });
     }
