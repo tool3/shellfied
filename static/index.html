@@ -89,7 +89,7 @@
                     const w = window.open("");
                     w.document.write(`<img src="${this.result}" />`);
                     w.document.close();
-                    // unload();
+                    unload();
                 };
                 reader.readAsDataURL(blob);    
             });
