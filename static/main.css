@@ -8,8 +8,8 @@ h1 {
 
 .themed {
     background: linear-gradient(to right, #12c2e9, #c471ed, #f64f59);
-    -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text;
 }
 
 .header {
@@ -22,9 +22,16 @@ h1 {
     text-align: center;
 }
 
+.ready_link {
+    background: linear-gradient(to right, #12c2e9, #c471ed, #f64f59);
+    -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text;
+}
+
 .btn {
     all: unset;
     padding: 5px;
+    margin-bottom: 10px;
     border-radius: 5px;
     background: linear-gradient(to right, #12c2e9, #c471ed, #f64f59);
     color: white;
