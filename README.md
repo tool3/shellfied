@@ -6,6 +6,8 @@ create beautiful terminal images from string input.
 
 # API
 
+## base url
+`https://shellfie.herokuapp.com`
 
 ## `/json`
 - method: `POST`
