@@ -1,3 +1,5 @@
+import type { ExportFormat } from '@/types';
+
 /**
  * Downloads an SVG string as a file
  */
@@ -15,14 +17,21 @@ export function downloadSvg(svgContent: string, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
+interface RasterExportOptions {
+  scale?: number;
+  quality?: number;
+}
+
 /**
- * Converts SVG to PNG and downloads it
+ * Converts SVG to a raster image and downloads it
  */
-export async function downloadPng(
+export async function downloadRaster(
   svgContent: string,
   filename: string,
-  scale: number = 2
+  format: Exclude<ExportFormat, 'svg'>,
+  options: RasterExportOptions = {}
 ): Promise<void> {
+  const { scale = 2, quality = 1.0 } = options;
   const { width, height } = getSvgDimensions(svgContent);
 
   const canvas = document.createElement('canvas');
@@ -34,7 +43,6 @@ export async function downloadPng(
 
   ctx.scale(scale, scale);
 
-  // Create image from SVG
   const img = new Image();
   const svgBlob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
   const svgUrl = URL.createObjectURL(svgBlob);
@@ -44,26 +52,28 @@ export async function downloadPng(
       ctx.drawImage(img, 0, 0);
       URL.revokeObjectURL(svgUrl);
 
+      const mimeType = getMimeType(format);
+
       canvas.toBlob(
         (blob) => {
           if (!blob) {
-            reject(new Error('Failed to create PNG blob'));
+            reject(new Error(`Failed to create ${format.toUpperCase()} blob`));
             return;
           }
 
-          const pngUrl = URL.createObjectURL(blob);
+          const blobUrl = URL.createObjectURL(blob);
           const link = document.createElement('a');
-          link.href = pngUrl;
-          link.download = `${filename}.png`;
+          link.href = blobUrl;
+          link.download = `${filename}.${format}`;
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
 
-          URL.revokeObjectURL(pngUrl);
+          URL.revokeObjectURL(blobUrl);
           resolve();
         },
-        'image/png',
-        1.0
+        mimeType,
+        quality
       );
     };
 
@@ -77,6 +87,17 @@ export async function downloadPng(
 }
 
 /**
+ * Legacy function for backward compatibility
+ */
+export async function downloadPng(
+  svgContent: string,
+  filename: string,
+  scale: number = 2
+): Promise<void> {
+  return downloadRaster(svgContent, filename, 'png', { scale });
+}
+
+/**
  * Copies SVG content to clipboard
  */
 export async function copySvgToClipboard(svgContent: string): Promise<void> {
@@ -84,9 +105,9 @@ export async function copySvgToClipboard(svgContent: string): Promise<void> {
 }
 
 /**
- * Copies PNG to clipboard
+ * Copies image to clipboard as PNG
  */
-export async function copyPngToClipboard(
+export async function copyToClipboard(
   svgContent: string,
   scale: number = 2
 ): Promise<void> {
@@ -120,10 +141,26 @@ export async function copyPngToClipboard(
           return;
         }
 
-        await navigator.clipboard.write([
-          new ClipboardItem({ 'image/png': blob }),
-        ]);
-        resolve();
+        // Try the modern clipboard API first
+        if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
+          await navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': blob }),
+          ]);
+          resolve();
+        } else {
+          // Fallback: copy as data URL
+          const reader = new FileReader();
+          reader.onload = async () => {
+            try {
+              await navigator.clipboard.writeText(reader.result as string);
+              resolve();
+            } catch {
+              reject(new Error('Clipboard API not supported'));
+            }
+          };
+          reader.onerror = () => reject(new Error('Failed to read blob'));
+          reader.readAsDataURL(blob);
+        }
       } catch (err) {
         reject(err);
       }
@@ -136,6 +173,23 @@ export async function copyPngToClipboard(
 
     img.src = svgUrl;
   });
+}
+
+/**
+ * Legacy alias
+ */
+export const copyPngToClipboard = copyToClipboard;
+
+/**
+ * Gets MIME type for export format
+ */
+function getMimeType(format: Exclude<ExportFormat, 'svg'>): string {
+  const mimeTypes: Record<Exclude<ExportFormat, 'svg'>, string> = {
+    png: 'image/png',
+    webp: 'image/webp',
+    jpeg: 'image/jpeg',
+  };
+  return mimeTypes[format];
 }
 
 /**

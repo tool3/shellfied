@@ -28,7 +28,9 @@ export const useStore = create<AppStore>()(
         title: state.title,
         showControls: state.showControls,
         watermark: state.watermark,
+        exportFormat: state.exportFormat,
         exportScale: state.exportScale,
+        jpegQuality: state.jpegQuality,
         colorMode: state.colorMode,
       }),
     }

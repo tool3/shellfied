@@ -1,4 +1,4 @@
-import type { ShellfieSettings, ColorMode, ExportScale } from '@/types';
+import type { ShellfieSettings, ColorMode, ExportFormat, ExportScale } from '@/types';
 import { SAMPLE_CODES } from './sampleCode';
 
 export const DEFAULT_SETTINGS: ShellfieSettings = {
@@ -18,7 +18,11 @@ export const DEFAULT_LANGUAGE = 'bash';
 
 export const DEFAULT_COLOR_MODE: ColorMode = 'dark';
 
+export const DEFAULT_EXPORT_FORMAT: ExportFormat = 'svg';
+
 export const DEFAULT_EXPORT_SCALE: ExportScale = 2;
+
+export const DEFAULT_JPEG_QUALITY = 0.9;
 
 export const FONT_SIZE_MIN = 10;
 export const FONT_SIZE_MAX = 24;

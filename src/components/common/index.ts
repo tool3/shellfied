@@ -4,4 +4,5 @@ export { Toggle } from './Toggle';
 export { Slider } from './Slider';
 export { Input } from './Input';
 export { Icon } from './Icon';
+export { Logo } from './Logo';
 export type { IconName } from './Icon';

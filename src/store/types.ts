@@ -2,6 +2,7 @@ import type {
   TemplateType,
   TerminalThemeName,
   ColorMode,
+  ExportFormat,
   ExportScale,
   PaddingTuple,
 } from '@/types';
@@ -23,7 +24,9 @@ export interface SettingsState {
   title: string;
   showControls: boolean;
   watermark: string;
+  exportFormat: ExportFormat;
   exportScale: ExportScale;
+  jpegQuality: number;
 
   setTemplate: (template: TemplateType) => void;
   setTerminalTheme: (theme: TerminalThemeName) => void;
@@ -33,7 +36,9 @@ export interface SettingsState {
   setTitle: (title: string) => void;
   setShowControls: (show: boolean) => void;
   setWatermark: (watermark: string) => void;
+  setExportFormat: (format: ExportFormat) => void;
   setExportScale: (scale: ExportScale) => void;
+  setJpegQuality: (quality: number) => void;
   resetSettings: () => void;
 }
 

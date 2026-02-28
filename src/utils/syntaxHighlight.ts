@@ -99,7 +99,19 @@ function processToken(token: PrismToken): string {
   return content;
 }
 
+// Check if text contains ANSI escape sequences
+const ANSI_REGEX = /\x1b\[[0-9;]*m/;
+
+export function containsAnsi(text: string): boolean {
+  return ANSI_REGEX.test(text);
+}
+
 export function highlightWithAnsi(code: string, language: string): string {
+  // If the code already contains ANSI codes, preserve them as-is
+  if (containsAnsi(code)) {
+    return code;
+  }
+
   if (language === 'plain' || !code) {
     return code;
   }

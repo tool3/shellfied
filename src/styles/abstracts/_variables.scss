@@ -52,6 +52,12 @@ $transition-base: 200ms ease;
 $transition-slow: 300ms ease;
 $transition-slower: 500ms ease;
 
+// --- Brand Gradient (matches favicon.svg) ---
+// Change these values to update the gradient throughout the app
+$gradient-start: #77A1D3;  // Soft blue
+$gradient-end: #E684AE;    // Soft pink
+$gradient-angle: 135deg;
+
 // --- Breakpoints ---
 $breakpoint-sm: 640px;
 $breakpoint-md: 768px;
@@ -106,4 +112,11 @@ $z-toast: 600;
   --font-size-xl: #{$font-size-xl};
   --font-size-2xl: #{$font-size-2xl};
   --font-size-3xl: #{$font-size-3xl};
+
+  // Brand Gradient (single source - change here to update everywhere)
+  --gradient-start: #{$gradient-start};
+  --gradient-end: #{$gradient-end};
+  --gradient-angle: #{$gradient-angle};
+  --gradient-brand: linear-gradient(var(--gradient-angle), var(--gradient-start), var(--gradient-end));
+  --gradient-brand-hover: linear-gradient(var(--gradient-angle), color-mix(in srgb, var(--gradient-start) 85%, #000), color-mix(in srgb, var(--gradient-end) 85%, #000));
 }

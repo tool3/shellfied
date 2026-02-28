@@ -29,7 +29,7 @@ $breakpoints: (
 }
 
 // --- Focus Ring ---
-@mixin focus-ring($color: var(--color-border-focus)) {
+@mixin focus-ring($color: var(--gradient-end)) {
   outline: none;
   box-shadow: 0 0 0 2px var(--color-bg-primary), 0 0 0 4px $color;
 }
@@ -117,11 +117,12 @@ $breakpoints: (
   }
 
   &::-webkit-scrollbar-thumb {
-    background-color: var(--color-border-secondary);
+    background: linear-gradient(var(--gradient-angle), var(--gradient-start), var(--gradient-end));
     border-radius: 9999px;
+    opacity: 0.6;
 
     &:hover {
-      background-color: var(--color-text-tertiary);
+      background: linear-gradient(var(--gradient-angle), color-mix(in srgb, var(--gradient-start) 70%, #fff), color-mix(in srgb, var(--gradient-end) 70%, #fff));
     }
   }
 }
@@ -197,8 +198,8 @@ $breakpoints: (
 
   &:focus {
     outline: none;
-    border-color: var(--color-border-focus);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    border-color: var(--gradient-end);
+    box-shadow: 0 0 0 3px rgba(230, 132, 174, 0.15);
   }
 
   &:disabled {

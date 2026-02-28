@@ -12,14 +12,6 @@
   gap: var(--space-md);
 }
 
-.logo {
-  @include flex-center;
-  width: 40px;
-  height: 40px;
-  color: var(--color-brand-primary);
-  background-color: var(--color-accent-subtle);
-  border-radius: var(--radius-md);
-}
 
 .title {
   display: flex;

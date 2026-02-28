@@ -24,26 +24,49 @@
   width: 100%;
   height: 6px;
   appearance: none;
-  background: linear-gradient(
-    to right,
-    var(--color-brand-primary) 0%,
-    var(--color-brand-primary) var(--progress, 0%),
-    var(--color-bg-tertiary) var(--progress, 0%),
-    var(--color-bg-tertiary) 100%
-  );
+  background: var(--color-bg-tertiary);
   border-radius: var(--radius-full);
   cursor: pointer;
   transition: background var(--transition-fast);
+  position: relative;
+
+  // Gradient track overlay using pseudo-element approach via JS inline style
+  // The --progress variable controls how much of the gradient is shown
+
+  &::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(
+      to right,
+      var(--gradient-start) 0%,
+      var(--gradient-end) var(--progress, 0%),
+      var(--color-bg-tertiary) var(--progress, 0%),
+      var(--color-bg-tertiary) 100%
+    );
+  }
+
+  &::-moz-range-track {
+    height: 6px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(
+      to right,
+      var(--gradient-start) 0%,
+      var(--gradient-end) var(--progress, 0%),
+      var(--color-bg-tertiary) var(--progress, 0%),
+      var(--color-bg-tertiary) 100%
+    );
+  }
 
   &::-webkit-slider-thumb {
     appearance: none;
     width: 16px;
     height: 16px;
-    background-color: #fff;
-    border: 2px solid var(--color-brand-primary);
+    background: var(--gradient-brand);
+    border: 2px solid #fff;
     border-radius: 50%;
     cursor: pointer;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    margin-top: -5px;
     transition:
       transform var(--transition-fast),
       box-shadow var(--transition-fast);
@@ -56,11 +79,11 @@
   &::-moz-range-thumb {
     width: 16px;
     height: 16px;
-    background-color: #fff;
-    border: 2px solid var(--color-brand-primary);
+    background: var(--gradient-brand);
+    border: 2px solid #fff;
     border-radius: 50%;
     cursor: pointer;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
 
   &:focus-visible {
@@ -69,7 +92,7 @@
     &::-webkit-slider-thumb {
       box-shadow:
         0 0 0 2px var(--color-bg-primary),
-        0 0 0 4px var(--color-border-focus);
+        0 0 0 4px var(--gradient-end);
     }
   }
 

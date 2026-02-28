@@ -3,17 +3,18 @@ import { useStore } from '@/store';
 import { useShellfieSync } from './useShellfie';
 import {
   downloadSvg,
-  downloadPng,
+  downloadRaster,
   copySvgToClipboard,
-  copyPngToClipboard,
+  copyToClipboard,
 } from '@/services/exportService';
-
 type ExportStatus = 'idle' | 'exporting' | 'success' | 'error';
 
 export function useExport() {
   const [status, setStatus] = useState<ExportStatus>('idle');
   const [error, setError] = useState<string | null>(null);
+  const exportFormat = useStore((s) => s.exportFormat);
   const exportScale = useStore((s) => s.exportScale);
+  const jpegQuality = useStore((s) => s.jpegQuality);
   const { generate } = useShellfieSync();
 
   const resetStatus = useCallback(() => {
@@ -21,7 +22,7 @@ export function useExport() {
     setError(null);
   }, []);
 
-  const exportToSvg = useCallback(
+  const download = useCallback(
     async (filename: string = 'shellfie') => {
       setStatus('exporting');
       setError(null);
@@ -31,6 +32,59 @@ export function useExport() {
         if (!svg) {
           throw new Error('No content to export');
         }
+
+        if (exportFormat === 'svg') {
+          downloadSvg(svg, filename);
+        } else {
+          const quality = exportFormat === 'jpeg' ? jpegQuality : 1.0;
+          await downloadRaster(svg, filename, exportFormat, {
+            scale: exportScale,
+            quality,
+          });
+        }
+
+        setStatus('success');
+        setTimeout(resetStatus, 2000);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Export failed');
+        setStatus('error');
+      }
+    },
+    [generate, exportFormat, exportScale, jpegQuality, resetStatus]
+  );
+
+  const copyToClipboardFn = useCallback(async () => {
+    setStatus('exporting');
+    setError(null);
+
+    try {
+      const svg = generate();
+      if (!svg) {
+        throw new Error('No content to copy');
+      }
+
+      if (exportFormat === 'svg') {
+        await copySvgToClipboard(svg);
+      } else {
+        await copyToClipboard(svg, exportScale);
+      }
+
+      setStatus('success');
+      setTimeout(resetStatus, 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Copy failed');
+      setStatus('error');
+    }
+  }, [generate, exportFormat, exportScale, resetStatus]);
+
+  // Legacy exports for backward compatibility
+  const exportToSvg = useCallback(
+    async (filename: string = 'shellfie') => {
+      setStatus('exporting');
+      setError(null);
+      try {
+        const svg = generate();
+        if (!svg) throw new Error('No content to export');
         downloadSvg(svg, filename);
         setStatus('success');
         setTimeout(resetStatus, 2000);
@@ -46,13 +100,10 @@ export function useExport() {
     async (filename: string = 'shellfie') => {
       setStatus('exporting');
       setError(null);
-
       try {
         const svg = generate();
-        if (!svg) {
-          throw new Error('No content to export');
-        }
-        await downloadPng(svg, filename, exportScale);
+        if (!svg) throw new Error('No content to export');
+        await downloadRaster(svg, filename, 'png', { scale: exportScale });
         setStatus('success');
         setTimeout(resetStatus, 2000);
       } catch (err) {
@@ -63,47 +114,14 @@ export function useExport() {
     [generate, exportScale, resetStatus]
   );
 
-  const copyAsSvg = useCallback(async () => {
-    setStatus('exporting');
-    setError(null);
-
-    try {
-      const svg = generate();
-      if (!svg) {
-        throw new Error('No content to copy');
-      }
-      await copySvgToClipboard(svg);
-      setStatus('success');
-      setTimeout(resetStatus, 2000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Copy failed');
-      setStatus('error');
-    }
-  }, [generate, resetStatus]);
-
-  const copyAsPng = useCallback(async () => {
-    setStatus('exporting');
-    setError(null);
-
-    try {
-      const svg = generate();
-      if (!svg) {
-        throw new Error('No content to copy');
-      }
-      await copyPngToClipboard(svg, exportScale);
-      setStatus('success');
-      setTimeout(resetStatus, 2000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Copy failed');
-      setStatus('error');
-    }
-  }, [generate, exportScale, resetStatus]);
-
   return {
+    download,
+    copyToClipboard: copyToClipboardFn,
+    // Legacy
     exportToSvg,
     exportToPng,
-    copyAsSvg,
-    copyAsPng,
+    copyAsSvg: () => copySvgToClipboard(generate()),
+    copyAsPng: copyToClipboardFn,
     status,
     error,
     isExporting: status === 'exporting',

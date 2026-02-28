@@ -38,7 +38,7 @@ Changes not staged for commit:
 \x1b[30m███\x1b[31m███\x1b[32m███\x1b[33m███\x1b[34m███\x1b[35m███\x1b[36m███\x1b[37m███\x1b[0m
 \x1b[90m███\x1b[91m███\x1b[92m███\x1b[93m███\x1b[94m███\x1b[95m███\x1b[96m███\x1b[97m███\x1b[0m
 
-\x1b[1mBold\x1b[0m \x1b[2mDim\x1b[0m \x1b[3mItalic\x1b[0m \x1b[4mUnderline\x1b[0m \x1b[9mStrikethrough\x1b[0m
+\x1b[1mBold\x1b[0m \x1b[2mDim\x1b[0m \x1b[3mItalic\x1b[0m \x1b[4mUnderline\x1b[0m \x1b[9mStrikethrough\x1b[0m \x1b[7mInvert\x1b[0m
 
 \x1b[32m✓\x1b[0m Success  \x1b[33m⚠\x1b[0m Warning  \x1b[31m✗\x1b[0m Error  \x1b[34mℹ\x1b[0m Info`,
 

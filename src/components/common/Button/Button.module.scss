@@ -36,17 +36,18 @@
 // Variants
 .primary {
   color: var(--color-text-inverted);
-  background-color: var(--color-brand-primary);
-  border-color: var(--color-brand-primary);
+  background: var(--gradient-brand);
+  border-color: transparent;
 
   &:hover:not(:disabled) {
-    background-color: var(--color-brand-primary-hover);
-    border-color: var(--color-brand-primary-hover);
+    background: var(--gradient-brand-hover);
+    border-color: transparent;
   }
 
   &:active:not(:disabled) {
-    background-color: var(--color-brand-primary-active);
-    border-color: var(--color-brand-primary-active);
+    background: var(--gradient-brand-hover);
+    border-color: transparent;
+    filter: brightness(0.9);
   }
 }
 

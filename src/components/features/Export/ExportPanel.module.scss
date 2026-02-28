@@ -14,8 +14,10 @@
   color: var(--color-text-primary);
 }
 
-.scaleSelector {
-  margin-bottom: var(--space-xs);
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
 }
 
 .buttons {

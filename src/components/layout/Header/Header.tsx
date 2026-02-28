@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { useStore } from '@/store';
-import { Button, Icon } from '@/components/common';
+import { Button, Icon, Logo } from '@/components/common';
 import styles from './Header.module.scss';
 
 export const Header = memo(function Header() {
@@ -12,9 +12,7 @@ export const Header = memo(function Header() {
   return (
     <header className={styles.header}>
       <div className={styles.brand}>
-        <div className={styles.logo}>
-          <Icon name="terminal" size={24} />
-        </div>
+        <Logo size={32} />
         <div className={styles.title}>
           <h1>Shellfied</h1>
           <span className={styles.tagline}>Terminal screenshots, beautifully crafted</span>
@@ -30,7 +28,7 @@ export const Header = memo(function Header() {
           aria-label="View on GitHub"
         >
           <Icon name="github" size={20} />
-          <span className={styles.navLinkText}>GitHub</span>
+          <span className={styles.navLinkText} />
         </a>
 
         <div className={styles.divider} />

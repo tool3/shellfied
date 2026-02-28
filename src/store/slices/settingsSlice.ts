@@ -1,10 +1,17 @@
 import type { StateCreator } from 'zustand';
 import type { AppStore, SettingsState } from '../types';
-import { DEFAULT_SETTINGS, DEFAULT_EXPORT_SCALE } from '@/constants/defaults';
+import {
+  DEFAULT_SETTINGS,
+  DEFAULT_EXPORT_FORMAT,
+  DEFAULT_EXPORT_SCALE,
+  DEFAULT_JPEG_QUALITY,
+} from '@/constants/defaults';
 
 export const createSettingsSlice: StateCreator<AppStore, [], [], SettingsState> = (set) => ({
   ...DEFAULT_SETTINGS,
+  exportFormat: DEFAULT_EXPORT_FORMAT,
   exportScale: DEFAULT_EXPORT_SCALE,
+  jpegQuality: DEFAULT_JPEG_QUALITY,
 
   setTemplate: (template) => set({ template }),
   setTerminalTheme: (terminalTheme) => set({ terminalTheme }),
@@ -14,10 +21,14 @@ export const createSettingsSlice: StateCreator<AppStore, [], [], SettingsState> 
   setTitle: (title) => set({ title }),
   setShowControls: (showControls) => set({ showControls }),
   setWatermark: (watermark) => set({ watermark }),
+  setExportFormat: (exportFormat) => set({ exportFormat }),
   setExportScale: (exportScale) => set({ exportScale }),
+  setJpegQuality: (jpegQuality) => set({ jpegQuality }),
   resetSettings: () =>
     set({
       ...DEFAULT_SETTINGS,
+      exportFormat: DEFAULT_EXPORT_FORMAT,
       exportScale: DEFAULT_EXPORT_SCALE,
+      jpegQuality: DEFAULT_JPEG_QUALITY,
     }),
 });
