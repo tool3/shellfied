@@ -23,7 +23,7 @@ export const Header = memo(function Header() {
 
       <nav className={styles.nav}>
         <a
-          href="https://github.com/tool3/shellfie"
+          href="https://github.com/tool3/shellfied"
           target="_blank"
           rel="noopener noreferrer"
           className={styles.navLink}

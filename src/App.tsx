@@ -23,6 +23,16 @@ function App() {
         </div>
         <SettingsPanel />
       </main>
+      <footer className={styles.footer}>
+        <span>Powered by </span>
+        <a
+          href="https://github.com/tool3/shellfie"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          shellfie
+        </a>
+      </footer>
     </div>
   );
 }
