@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import shellfie from 'shellfie';
 import { useStore, useContent, useLanguage } from '@/store';
 import { TERMINAL_THEMES } from '@/constants/themes';
@@ -20,14 +20,9 @@ export function useShellfie() {
   const showControls = useStore((s) => s.showControls);
   const watermark = useStore((s) => s.watermark);
 
-  const [svg, setSvg] = useState<string>('');
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
+  const { svg, error } = useMemo(() => {
     if (!debouncedContent.trim()) {
-      setSvg('');
-      setError(null);
-      return;
+      return { svg: '', error: null };
     }
 
     try {
@@ -44,11 +39,12 @@ export function useShellfie() {
         controls: showControls,
         watermark: watermark || undefined,
       });
-      setSvg(result);
-      setError(null);
+      return { svg: result, error: null };
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate SVG');
-      setSvg('');
+      return {
+        svg: '',
+        error: err instanceof Error ? err.message : 'Failed to generate SVG',
+      };
     }
   }, [debouncedContent, language, template, terminalTheme, fontSize, lineHeight, padding, title, showControls, watermark]);
 
