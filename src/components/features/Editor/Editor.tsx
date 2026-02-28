@@ -1,4 +1,4 @@
-import { memo, useRef, useCallback } from 'react';
+import { memo, useRef, useCallback, useMemo } from 'react';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-bash';
 import 'prismjs/components/prism-javascript';
@@ -7,7 +7,7 @@ import 'prismjs/components/prism-python';
 import 'prismjs/components/prism-json';
 import { useStore } from '@/store';
 import { Button, Select } from '@/components/common';
-import { SAMPLE_CODE_OPTIONS, SAMPLE_CODES } from '@/constants/sampleCode';
+import { SAMPLE_CODE_OPTIONS, SAMPLE_CODES, type SampleCodeKey } from '@/constants/sampleCode';
 import styles from './Editor.module.scss';
 
 const LANGUAGE_OPTIONS = [
@@ -28,6 +28,12 @@ export const Editor = memo(function Editor() {
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const highlightRef = useRef<HTMLPreElement>(null);
+
+  // Find which demo matches current content (if any)
+  const currentDemo = useMemo(() => {
+    const match = Object.entries(SAMPLE_CODES).find(([, code]) => code === content);
+    return match ? (match[0] as SampleCodeKey) : '';
+  }, [content]);
 
   const handleSampleSelect = (sampleId: string) => {
     const sample = SAMPLE_CODES[sampleId as keyof typeof SAMPLE_CODES];
@@ -70,8 +76,9 @@ export const Editor = memo(function Editor() {
           />
           <Select
             options={SAMPLE_CODE_OPTIONS.map((s) => ({ value: s.id, label: s.label }))}
-            value=""
+            value={currentDemo}
             onChange={handleSampleSelect}
+            placeholder="Load Demo..."
             aria-label="Load sample code"
           />
         </div>
