@@ -27,6 +27,24 @@ export type JpegQuality = 0.6 | 0.8 | 0.9 | 1.0;
 
 export type PaddingTuple = [number, number, number, number];
 
+export interface HeaderConfig {
+  enabled: boolean;
+  backgroundColor: string;
+  height: number;
+  border: boolean;
+  borderColor: string;
+  borderWidth: number;
+}
+
+export interface FooterConfig {
+  enabled: boolean;
+  backgroundColor: string;
+  height: number;
+  border: boolean;
+  borderColor: string;
+  borderWidth: number;
+}
+
 export interface ShellfieSettings {
   template: TemplateType;
   terminalTheme: TerminalThemeName;
@@ -36,4 +54,9 @@ export interface ShellfieSettings {
   title: string;
   showControls: boolean;
   watermark: string;
+  watermarkPadding: PaddingTuple;
+  width: number | null;
+  fontFamily: string;
+  header: HeaderConfig;
+  footer: FooterConfig;
 }

@@ -1,5 +1,23 @@
-import type { ShellfieSettings, ColorMode, ExportFormat, ExportScale } from '@/types';
+import type { ShellfieSettings, ColorMode, ExportFormat, ExportScale, HeaderConfig, FooterConfig } from '@/types';
 import { SAMPLE_CODES } from './sampleCode';
+
+export const DEFAULT_HEADER: HeaderConfig = {
+  enabled: false,
+  backgroundColor: '',
+  height: 40,
+  border: false,
+  borderColor: '#333333',
+  borderWidth: 1,
+};
+
+export const DEFAULT_FOOTER: FooterConfig = {
+  enabled: false,
+  backgroundColor: '',
+  height: 40,
+  border: false,
+  borderColor: '#333333',
+  borderWidth: 1,
+};
 
 export const DEFAULT_SETTINGS: ShellfieSettings = {
   template: 'macos',
@@ -10,6 +28,11 @@ export const DEFAULT_SETTINGS: ShellfieSettings = {
   title: 'Terminal',
   showControls: true,
   watermark: '',
+  watermarkPadding: [8, 8, 8, 8],
+  width: null,
+  fontFamily: 'JetBrains Mono',
+  header: DEFAULT_HEADER,
+  footer: DEFAULT_FOOTER,
 };
 
 export const DEFAULT_CONTENT = SAMPLE_CODES.default;
@@ -32,3 +55,23 @@ export const LINE_HEIGHT_MAX = 2.0;
 
 export const PADDING_MIN = 0;
 export const PADDING_MAX = 64;
+
+export const WIDTH_MIN = 400;
+export const WIDTH_MAX = 1600;
+
+export const HEADER_HEIGHT_MIN = 20;
+export const HEADER_HEIGHT_MAX = 100;
+
+export const BORDER_WIDTH_MIN = 1;
+export const BORDER_WIDTH_MAX = 10;
+
+export const FONT_FAMILY_OPTIONS = [
+  { value: 'JetBrains Mono', label: 'JetBrains Mono' },
+  { value: 'Fira Code', label: 'Fira Code' },
+  { value: 'Source Code Pro', label: 'Source Code Pro' },
+  { value: 'Monaco', label: 'Monaco' },
+  { value: 'Consolas', label: 'Consolas' },
+  { value: 'Menlo', label: 'Menlo' },
+  { value: 'Ubuntu Mono', label: 'Ubuntu Mono' },
+  { value: 'Roboto Mono', label: 'Roboto Mono' },
+];

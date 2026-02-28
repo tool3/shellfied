@@ -28,6 +28,11 @@ export const useStore = create<AppStore>()(
         title: state.title,
         showControls: state.showControls,
         watermark: state.watermark,
+        watermarkPadding: state.watermarkPadding,
+        width: state.width,
+        fontFamily: state.fontFamily,
+        header: state.header,
+        footer: state.footer,
         exportFormat: state.exportFormat,
         exportScale: state.exportScale,
         jpegQuality: state.jpegQuality,
@@ -56,6 +61,11 @@ export const useShellfieOptions = () =>
       title: s.title,
       showControls: s.showControls,
       watermark: s.watermark,
+      watermarkPadding: s.watermarkPadding,
+      width: s.width,
+      fontFamily: s.fontFamily,
+      header: s.header,
+      footer: s.footer,
     }))
   );
 

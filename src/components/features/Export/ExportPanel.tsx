@@ -43,61 +43,65 @@ export const ExportPanel = memo(function ExportPanel() {
 
   return (
     <div className={styles.exportPanel}>
-      <h3 className={styles.title}>Export</h3>
-
-      <div className={styles.options}>
-        <Select
-          label="Format"
-          options={FORMAT_OPTIONS}
-          value={exportFormat}
-          onChange={handleFormatChange}
-          fullWidth
-        />
-
-        {isRasterFormat && (
-          <Select
-            label="Scale"
-            options={SCALE_OPTIONS}
-            value={String(exportScale)}
-            onChange={handleScaleChange}
-            fullWidth
-          />
-        )}
-
-        {isJpeg && (
-          <Slider
-            label="Quality"
-            value={jpegQuality}
-            onChange={setJpegQuality}
-            min={0.6}
-            max={1.0}
-            step={0.1}
-            formatValue={(v) => `${Math.round(v * 100)}%`}
-          />
-        )}
+      <div className={styles.header}>
+        <h3 className={styles.title}>Export</h3>
       </div>
 
-      <div className={styles.buttons}>
-        <Button
-          variant="primary"
-          icon={isDownloadSuccess ? 'check' : 'download'}
-          onClick={() => download()}
-          disabled={!hasContent || isExporting}
-          isLoading={isExporting}
-          fullWidth
-        >
-          Download
-        </Button>
+      <div className={styles.content}>
+        <div className={styles.options}>
+          <Select
+            label="Format"
+            options={FORMAT_OPTIONS}
+            value={exportFormat}
+            onChange={handleFormatChange}
+            fullWidth
+          />
 
-        <Button
-          variant="ghost"
-          icon={isCopySuccess ? 'check' : 'copy'}
-          onClick={() => copyToClipboard()}
-          disabled={!hasContent || isExporting}
-          fullWidth
-        >
-          {isCopySuccess ? 'Copied!' : 'Copy to Clipboard'}
-        </Button>
+          {isRasterFormat && (
+            <Select
+              label="Scale"
+              options={SCALE_OPTIONS}
+              value={String(exportScale)}
+              onChange={handleScaleChange}
+              fullWidth
+            />
+          )}
+
+          {isJpeg && (
+            <Slider
+              label="Quality"
+              value={jpegQuality}
+              onChange={setJpegQuality}
+              min={0.6}
+              max={1.0}
+              step={0.1}
+              formatValue={(v) => `${Math.round(v * 100)}%`}
+            />
+          )}
+        </div>
+
+        <div className={styles.buttons}>
+          <Button
+            variant="primary"
+            icon={isDownloadSuccess ? 'check' : 'download'}
+            onClick={() => download()}
+            disabled={!hasContent || isExporting}
+            isLoading={isExporting}
+            fullWidth
+          >
+            Download
+          </Button>
+
+          <Button
+            variant="ghost"
+            icon={isCopySuccess ? 'check' : 'copy'}
+            onClick={() => copyToClipboard()}
+            disabled={!hasContent || isExporting}
+            fullWidth
+          >
+            {isCopySuccess ? 'Copied!' : 'Copy to Clipboard'}
+          </Button>
+        </div>
       </div>
     </div>
   );

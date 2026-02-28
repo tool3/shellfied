@@ -23,18 +23,21 @@
   min-height: 0;
   padding: var(--space-md);
   gap: var(--space-md);
-  overflow: hidden;
+  overflow: auto;
+  @include custom-scrollbar;
 
   @include breakpoint('lg') {
     flex-direction: row;
     padding: var(--space-lg);
     gap: var(--space-lg);
+    overflow: hidden;
   }
 }
 
 .editorPane {
-  flex: 1;
-  min-height: 0;
+  flex: 0 0 auto;
+  min-height: 300px;
+  max-height: 50vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -42,16 +45,23 @@
   @include breakpoint('lg') {
     flex: 0 0 40%;
     max-width: 40%;
+    min-height: 0;
+    max-height: none;
   }
 }
 
 .previewPane {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
+  flex: 0 0 auto;
+  min-height: 400px;
   gap: var(--space-md);
   overflow: hidden;
+
+  @include breakpoint('lg') {
+    flex: 1;
+    min-height: 0;
+  }
 }
 
 .exportPane {

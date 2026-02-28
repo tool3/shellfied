@@ -1,23 +1,11 @@
 import { memo, useRef, useCallback, useMemo } from 'react';
 import Prism from 'prismjs';
-import 'prismjs/components/prism-bash';
-import 'prismjs/components/prism-javascript';
-import 'prismjs/components/prism-typescript';
-import 'prismjs/components/prism-python';
-import 'prismjs/components/prism-json';
 import { useStore } from '@/store';
 import { Button, Select } from '@/components/common';
 import { SAMPLE_CODE_OPTIONS, SAMPLE_CODES, type SampleCodeKey } from '@/constants/sampleCode';
+import { LANGUAGE_OPTIONS } from '@/constants/languages';
+import '@/utils/syntaxHighlight'; // Imports all Prism languages
 import styles from './Editor.module.scss';
-
-const LANGUAGE_OPTIONS = [
-  { value: 'bash', label: 'Shell / Bash' },
-  { value: 'javascript', label: 'JavaScript' },
-  { value: 'typescript', label: 'TypeScript' },
-  { value: 'python', label: 'Python' },
-  { value: 'json', label: 'JSON' },
-  { value: 'plain', label: 'Plain Text' },
-];
 
 export const Editor = memo(function Editor() {
   const content = useStore((s) => s.content);

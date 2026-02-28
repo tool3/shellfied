@@ -5,6 +5,8 @@ import type {
   ExportFormat,
   ExportScale,
   PaddingTuple,
+  HeaderConfig,
+  FooterConfig,
 } from '@/types';
 
 export interface EditorState {
@@ -24,6 +26,11 @@ export interface SettingsState {
   title: string;
   showControls: boolean;
   watermark: string;
+  watermarkPadding: PaddingTuple;
+  width: number | null;
+  fontFamily: string;
+  header: HeaderConfig;
+  footer: FooterConfig;
   exportFormat: ExportFormat;
   exportScale: ExportScale;
   jpegQuality: number;
@@ -36,6 +43,11 @@ export interface SettingsState {
   setTitle: (title: string) => void;
   setShowControls: (show: boolean) => void;
   setWatermark: (watermark: string) => void;
+  setWatermarkPadding: (padding: PaddingTuple) => void;
+  setWidth: (width: number | null) => void;
+  setFontFamily: (fontFamily: string) => void;
+  setHeader: (header: Partial<HeaderConfig>) => void;
+  setFooter: (footer: Partial<FooterConfig>) => void;
   setExportFormat: (format: ExportFormat) => void;
   setExportScale: (scale: ExportScale) => void;
   setJpegQuality: (quality: number) => void;

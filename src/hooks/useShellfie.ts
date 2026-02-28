@@ -4,6 +4,30 @@ import { useStore, useContent, useLanguage } from '@/store';
 import { TERMINAL_THEMES } from '@/constants/themes';
 import { useDebounce } from './useDebounce';
 import { highlightWithAnsi } from '@/utils/syntaxHighlight';
+import type { HeaderConfig, FooterConfig } from '@/types';
+
+// Build header/footer options for shellfie
+function buildHeaderOptions(header: HeaderConfig) {
+  if (!header.enabled) return undefined;
+  return {
+    backgroundColor: header.backgroundColor || undefined,
+    height: header.height,
+    border: header.border,
+    borderColor: header.borderColor || undefined,
+    borderWidth: header.borderWidth,
+  };
+}
+
+function buildFooterOptions(footer: FooterConfig) {
+  if (!footer.enabled) return undefined;
+  return {
+    backgroundColor: footer.backgroundColor || undefined,
+    height: footer.height,
+    border: footer.border,
+    borderColor: footer.borderColor || undefined,
+    borderWidth: footer.borderWidth,
+  };
+}
 
 export function useShellfie() {
   const content = useContent();
@@ -19,6 +43,11 @@ export function useShellfie() {
   const title = useStore((s) => s.title);
   const showControls = useStore((s) => s.showControls);
   const watermark = useStore((s) => s.watermark);
+  const watermarkPadding = useStore((s) => s.watermarkPadding);
+  const width = useStore((s) => s.width);
+  const fontFamily = useStore((s) => s.fontFamily);
+  const header = useStore((s) => s.header);
+  const footer = useStore((s) => s.footer);
 
   const { svg, error } = useMemo(() => {
     if (!debouncedContent.trim()) {
@@ -38,6 +67,11 @@ export function useShellfie() {
         padding,
         controls: showControls,
         watermark: watermark || undefined,
+        watermarkPadding: watermark ? watermarkPadding : undefined,
+        width: width || undefined,
+        fontFamily: fontFamily || undefined,
+        header: buildHeaderOptions(header),
+        footer: buildFooterOptions(footer),
       });
       return { svg: result, error: null };
     } catch (err) {
@@ -46,7 +80,7 @@ export function useShellfie() {
         error: err instanceof Error ? err.message : 'Failed to generate SVG',
       };
     }
-  }, [debouncedContent, language, template, terminalTheme, fontSize, lineHeight, padding, title, showControls, watermark]);
+  }, [debouncedContent, language, template, terminalTheme, fontSize, lineHeight, padding, title, showControls, watermark, watermarkPadding, width, fontFamily, header, footer]);
 
   return { svg, error, hasContent: Boolean(debouncedContent.trim()) };
 }
@@ -62,6 +96,11 @@ export function useShellfieSync() {
   const title = useStore((s) => s.title);
   const showControls = useStore((s) => s.showControls);
   const watermark = useStore((s) => s.watermark);
+  const watermarkPadding = useStore((s) => s.watermarkPadding);
+  const width = useStore((s) => s.width);
+  const fontFamily = useStore((s) => s.fontFamily);
+  const header = useStore((s) => s.header);
+  const footer = useStore((s) => s.footer);
 
   const generate = () => {
     if (!content.trim()) return '';
@@ -79,6 +118,11 @@ export function useShellfieSync() {
         padding,
         controls: showControls,
         watermark: watermark || undefined,
+        watermarkPadding: watermark ? watermarkPadding : undefined,
+        width: width || undefined,
+        fontFamily: fontFamily || undefined,
+        header: buildHeaderOptions(header),
+        footer: buildFooterOptions(footer),
       });
     } catch {
       return '';
