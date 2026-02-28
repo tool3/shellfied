@@ -30,6 +30,8 @@ export const SettingsPanel = memo(function SettingsPanel() {
   const setShowControls = useStore((s) => s.setShowControls);
   const watermark = useStore((s) => s.watermark);
   const setWatermark = useStore((s) => s.setWatermark);
+  const watermarkPadding = useStore((s) => s.watermarkPadding);
+  const setWatermarkPadding = useStore((s) => s.setWatermarkPadding);
   const fontSize = useStore((s) => s.fontSize);
   const setFontSize = useStore((s) => s.setFontSize);
   const lineHeight = useStore((s) => s.lineHeight);
@@ -48,6 +50,12 @@ export const SettingsPanel = memo(function SettingsPanel() {
     const newPadding = [...padding] as PaddingTuple;
     newPadding[index] = value;
     setPadding(newPadding);
+  };
+
+  const handleWatermarkPaddingChange = (index: number, value: number) => {
+    const newPadding = [...watermarkPadding] as PaddingTuple;
+    newPadding[index] = value;
+    setWatermarkPadding(newPadding);
   };
 
   if (!isSettingsPanelOpen) return null;
@@ -113,6 +121,42 @@ export const SettingsPanel = memo(function SettingsPanel() {
                 placeholder="Optional watermark text"
                 fullWidth
               />
+              {watermark && (
+                <div className={styles.paddingGrid}>
+                  <Input
+                    label="Top"
+                    type="number"
+                    value={watermarkPadding[0]}
+                    onChange={(e) => handleWatermarkPaddingChange(0, Number(e.target.value))}
+                    min={PADDING_MIN}
+                    max={PADDING_MAX}
+                  />
+                  <Input
+                    label="Right"
+                    type="number"
+                    value={watermarkPadding[1]}
+                    onChange={(e) => handleWatermarkPaddingChange(1, Number(e.target.value))}
+                    min={PADDING_MIN}
+                    max={PADDING_MAX}
+                  />
+                  <Input
+                    label="Bottom"
+                    type="number"
+                    value={watermarkPadding[2]}
+                    onChange={(e) => handleWatermarkPaddingChange(2, Number(e.target.value))}
+                    min={PADDING_MIN}
+                    max={PADDING_MAX}
+                  />
+                  <Input
+                    label="Left"
+                    type="number"
+                    value={watermarkPadding[3]}
+                    onChange={(e) => handleWatermarkPaddingChange(3, Number(e.target.value))}
+                    min={PADDING_MIN}
+                    max={PADDING_MAX}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </section>
