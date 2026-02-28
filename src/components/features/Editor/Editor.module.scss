@@ -1,0 +1,169 @@
+.editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.toolbar {
+  @include flex-between;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background-color: var(--color-bg-elevated);
+  border-bottom: 1px solid var(--color-border-primary);
+  flex-shrink: 0;
+}
+
+.toolbarLeft {
+  @include flex-start;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.toolbarRight {
+  @include flex-start;
+  gap: var(--space-sm);
+}
+
+.inputWrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.lineNumbers {
+  @include custom-scrollbar;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-md) var(--space-sm);
+  padding-right: var(--space-md);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  color: var(--color-text-tertiary);
+  background-color: var(--color-bg-tertiary);
+  border-right: 1px solid var(--color-border-primary);
+  text-align: right;
+  user-select: none;
+  overflow-y: auto;
+  min-width: 48px;
+  flex-shrink: 0;
+
+  span {
+    display: block;
+  }
+}
+
+.codeContainer {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.highlight,
+.textarea {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: var(--space-md);
+  margin: 0;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  white-space: pre;
+  overflow-wrap: normal;
+  overflow: auto;
+  border: none;
+}
+
+.highlight {
+  @include custom-scrollbar;
+  pointer-events: none;
+  color: var(--color-text-primary);
+  background-color: transparent;
+
+  // Prism.js syntax highlighting colors
+  :global {
+    .token.comment,
+    .token.prolog,
+    .token.doctype,
+    .token.cdata {
+      color: var(--color-text-tertiary);
+    }
+
+    .token.punctuation {
+      color: var(--color-text-secondary);
+    }
+
+    .token.property,
+    .token.tag,
+    .token.boolean,
+    .token.number,
+    .token.constant,
+    .token.symbol,
+    .token.deleted {
+      color: #f97583;
+    }
+
+    .token.selector,
+    .token.attr-name,
+    .token.string,
+    .token.char,
+    .token.builtin,
+    .token.inserted {
+      color: #a5d6ff;
+    }
+
+    .token.operator,
+    .token.entity,
+    .token.url,
+    .language-css .token.string,
+    .style .token.string {
+      color: #79c0ff;
+    }
+
+    .token.atrule,
+    .token.attr-value,
+    .token.keyword {
+      color: #ff7b72;
+    }
+
+    .token.function,
+    .token.class-name {
+      color: #d2a8ff;
+    }
+
+    .token.regex,
+    .token.important,
+    .token.variable {
+      color: #ffa657;
+    }
+  }
+}
+
+.textarea {
+  @include custom-scrollbar;
+  color: transparent;
+  background-color: transparent;
+  caret-color: var(--color-text-primary);
+  outline: none;
+  resize: none;
+  z-index: 1;
+
+  &::placeholder {
+    color: var(--color-text-tertiary);
+  }
+
+  &::selection {
+    background-color: var(--color-accent-subtle);
+  }
+}

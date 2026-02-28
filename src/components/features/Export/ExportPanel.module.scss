@@ -1,0 +1,25 @@
+.exportPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+}
+
+.title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.scaleSelector {
+  margin-bottom: var(--space-xs);
+}
+
+.buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}

@@ -1,0 +1,103 @@
+// --- Headings ---
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-text-primary);
+}
+
+h1 {
+  font-size: var(--font-size-3xl);
+}
+
+h2 {
+  font-size: var(--font-size-2xl);
+}
+
+h3 {
+  font-size: var(--font-size-xl);
+}
+
+h4 {
+  font-size: var(--font-size-lg);
+}
+
+h5 {
+  font-size: var(--font-size-base);
+}
+
+h6 {
+  font-size: var(--font-size-sm);
+}
+
+// --- Body Text ---
+p {
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+small {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+}
+
+// --- Code ---
+code,
+pre,
+kbd,
+samp {
+  font-family: var(--font-family-mono);
+}
+
+code {
+  padding: 0.125em 0.375em;
+  font-size: 0.875em;
+  background-color: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+pre {
+  overflow-x: auto;
+  padding: var(--space-md);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+
+  code {
+    padding: 0;
+    background: none;
+    border-radius: 0;
+  }
+}
+
+// --- Links ---
+a {
+  color: var(--color-brand-primary);
+  transition: color var(--transition-fast);
+
+  &:hover {
+    color: var(--color-brand-primary-hover);
+  }
+}
+
+// --- Strong & Emphasis ---
+strong,
+b {
+  font-weight: 600;
+}
+
+em,
+i {
+  font-style: italic;
+}
+
+// --- Labels ---
+label {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}

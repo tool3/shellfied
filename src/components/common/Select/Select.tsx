@@ -1,0 +1,50 @@
+import { forwardRef, type SelectHTMLAttributes } from 'react';
+import { Icon } from '../Icon';
+import styles from './Select.module.scss';
+
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'onChange'> {
+  options: SelectOption[];
+  value: string;
+  onChange: (value: string) => void;
+  label?: string;
+  fullWidth?: boolean;
+}
+
+export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select(
+  { options, value, onChange, label, fullWidth = false, className = '', id, ...props },
+  ref
+) {
+  const selectId = id || `select-${Math.random().toString(36).slice(2, 9)}`;
+
+  return (
+    <div className={`${styles.wrapper} ${fullWidth ? styles.fullWidth : ''} ${className}`}>
+      {label && (
+        <label htmlFor={selectId} className={styles.label}>
+          {label}
+        </label>
+      )}
+      <div className={styles.selectContainer}>
+        <select
+          ref={ref}
+          id={selectId}
+          className={styles.select}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          {...props}
+        >
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <Icon name="chevronDown" size={16} className={styles.chevron} />
+      </div>
+    </div>
+  );
+});

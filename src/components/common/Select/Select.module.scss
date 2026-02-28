@@ -1,0 +1,35 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+
+  &.fullWidth {
+    width: 100%;
+  }
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.selectContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.select {
+  @include input-base;
+  appearance: none;
+  padding-right: var(--space-xl);
+  cursor: pointer;
+}
+
+.chevron {
+  position: absolute;
+  right: var(--space-sm);
+  color: var(--color-text-tertiary);
+  pointer-events: none;
+}
