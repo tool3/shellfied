@@ -27,7 +27,7 @@ export const ExportPanel = memo(function ExportPanel() {
   const jpegQuality = useStore((s) => s.jpegQuality);
   const setJpegQuality = useStore((s) => s.setJpegQuality);
 
-  const { download, copyToClipboard, isExporting, isSuccess } = useExport();
+  const { download, copyToClipboard, isExporting, isDownloadSuccess, isCopySuccess } = useExport();
 
   const hasContent = Boolean(content.trim());
   const isRasterFormat = exportFormat !== 'svg';
@@ -80,7 +80,7 @@ export const ExportPanel = memo(function ExportPanel() {
       <div className={styles.buttons}>
         <Button
           variant="primary"
-          icon={isSuccess ? 'check' : 'download'}
+          icon={isDownloadSuccess ? 'check' : 'download'}
           onClick={() => download()}
           disabled={!hasContent || isExporting}
           isLoading={isExporting}
@@ -91,12 +91,12 @@ export const ExportPanel = memo(function ExportPanel() {
 
         <Button
           variant="ghost"
-          icon="copy"
+          icon={isCopySuccess ? 'check' : 'copy'}
           onClick={() => copyToClipboard()}
           disabled={!hasContent || isExporting}
           fullWidth
         >
-          Copy to Clipboard
+          {isCopySuccess ? 'Copied!' : 'Copy to Clipboard'}
         </Button>
       </div>
     </div>

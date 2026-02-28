@@ -7,10 +7,13 @@ import {
   copySvgToClipboard,
   copyToClipboard,
 } from '@/services/exportService';
+
 type ExportStatus = 'idle' | 'exporting' | 'success' | 'error';
+type LastAction = 'download' | 'copy' | null;
 
 export function useExport() {
   const [status, setStatus] = useState<ExportStatus>('idle');
+  const [lastAction, setLastAction] = useState<LastAction>(null);
   const [error, setError] = useState<string | null>(null);
   const exportFormat = useStore((s) => s.exportFormat);
   const exportScale = useStore((s) => s.exportScale);
@@ -19,12 +22,14 @@ export function useExport() {
 
   const resetStatus = useCallback(() => {
     setStatus('idle');
+    setLastAction(null);
     setError(null);
   }, []);
 
   const download = useCallback(
     async (filename: string = 'shellfie') => {
       setStatus('exporting');
+      setLastAction('download');
       setError(null);
 
       try {
@@ -55,6 +60,7 @@ export function useExport() {
 
   const copyToClipboardFn = useCallback(async () => {
     setStatus('exporting');
+    setLastAction('copy');
     setError(null);
 
     try {
@@ -126,6 +132,8 @@ export function useExport() {
     error,
     isExporting: status === 'exporting',
     isSuccess: status === 'success',
+    isDownloadSuccess: status === 'success' && lastAction === 'download',
+    isCopySuccess: status === 'success' && lastAction === 'copy',
     isError: status === 'error',
   };
 }

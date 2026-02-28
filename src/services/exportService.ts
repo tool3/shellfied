@@ -98,10 +98,23 @@ export async function downloadPng(
 }
 
 /**
- * Copies SVG content to clipboard
+ * Copies SVG content to clipboard as text
  */
 export async function copySvgToClipboard(svgContent: string): Promise<void> {
-  await navigator.clipboard.writeText(svgContent);
+  try {
+    await navigator.clipboard.writeText(svgContent);
+  } catch {
+    // Fallback for older browsers or permission issues
+    const textarea = document.createElement('textarea');
+    textarea.value = svgContent;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    textarea.style.pointerEvents = 'none';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+  }
 }
 
 /**
@@ -122,14 +135,15 @@ export async function copyToClipboard(
 
   ctx.scale(scale, scale);
 
+  // Convert SVG to data URL for better browser compatibility
+  const svgBase64 = btoa(unescape(encodeURIComponent(svgContent)));
+  const svgDataUrl = `data:image/svg+xml;base64,${svgBase64}`;
+
   const img = new Image();
-  const svgBlob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
-  const svgUrl = URL.createObjectURL(svgBlob);
 
   return new Promise((resolve, reject) => {
     img.onload = async () => {
       ctx.drawImage(img, 0, 0);
-      URL.revokeObjectURL(svgUrl);
 
       try {
         const blob = await new Promise<Blob | null>((res) =>
@@ -148,30 +162,26 @@ export async function copyToClipboard(
           ]);
           resolve();
         } else {
-          // Fallback: copy as data URL
-          const reader = new FileReader();
-          reader.onload = async () => {
-            try {
-              await navigator.clipboard.writeText(reader.result as string);
-              resolve();
-            } catch {
-              reject(new Error('Clipboard API not supported'));
-            }
-          };
-          reader.onerror = () => reject(new Error('Failed to read blob'));
-          reader.readAsDataURL(blob);
+          // Fallback: copy SVG as text since image clipboard isn't supported
+          await copySvgToClipboard(svgContent);
+          resolve();
         }
       } catch (err) {
-        reject(err);
+        // If clipboard write fails, try SVG text fallback
+        try {
+          await copySvgToClipboard(svgContent);
+          resolve();
+        } catch {
+          reject(err);
+        }
       }
     };
 
     img.onerror = () => {
-      URL.revokeObjectURL(svgUrl);
-      reject(new Error('Failed to load SVG'));
+      reject(new Error('Failed to load SVG for clipboard'));
     };
 
-    img.src = svgUrl;
+    img.src = svgDataUrl;
   });
 }
 
