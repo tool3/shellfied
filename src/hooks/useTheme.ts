@@ -5,9 +5,15 @@ export function useTheme() {
   const colorMode = useColorMode();
   const setColorMode = useStore((s) => s.setColorMode);
 
-  // Apply theme to document
+  // Apply theme to document and update favicon
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', colorMode);
+
+    // Update favicon based on theme
+    const faviconLink = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+    if (faviconLink) {
+      faviconLink.href = colorMode === 'light' ? '/favicon-light.svg' : '/favicon-dark.svg';
+    }
   }, [colorMode]);
 
   // Listen for system preference changes

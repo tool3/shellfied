@@ -43,7 +43,7 @@
     border-color var(--transition-fast);
 
   .input:checked + & {
-    background: var(--gradient-brand);
+    background-color: var(--color-brand);
     border-color: transparent;
   }
 }

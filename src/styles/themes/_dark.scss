@@ -13,22 +13,22 @@
   --color-text-tertiary: #737373;
   --color-text-inverted: #ffffff;
 
-  // --- Border Colors (use gradient colors for subtle brand presence) ---
-  --color-border-primary: rgba(230, 132, 174, 0.2);
-  --color-border-secondary: rgba(230, 132, 174, 0.35);
-  --color-border-focus: var(--gradient-end);
+  // --- Border Colors ---
+  --color-border-primary: rgba(255, 255, 255, 0.1);
+  --color-border-secondary: rgba(255, 255, 255, 0.2);
+  --color-border-focus: var(--color-brand-dark);
 
-  // --- Brand Colors (gradient-based) ---
-  --color-brand-primary: var(--gradient-end);
-  --color-brand-primary-hover: color-mix(in srgb, var(--gradient-end) 85%, #000);
-  --color-brand-primary-active: color-mix(in srgb, var(--gradient-end) 70%, #000);
-  --color-brand-secondary: var(--gradient-start);
+  // --- Brand Colors (emerald green for dark mode) ---
+  --color-brand: var(--color-brand-dark);
+  --color-brand-primary: var(--color-brand-dark);
+  --color-brand-primary-hover: #059669;
+  --color-brand-primary-active: #047857;
 
   // --- Semantic Colors ---
   --color-success: #22c55e;
   --color-warning: #eab308;
   --color-error: #ef4444;
-  --color-info: var(--gradient-start);
+  --color-info: #3b82f6;
 
   // --- Shadows ---
   --shadow-color: rgba(0, 0, 0, 0.6);
@@ -38,6 +38,6 @@
   --shadow-xl: 0 20px 25px -5px var(--shadow-color);
 
   // --- Accent ---
-  --color-accent: var(--gradient-end);
-  --color-accent-subtle: rgba(230, 132, 174, 0.15);
+  --color-accent: var(--color-brand-dark);
+  --color-accent-subtle: rgba(16, 185, 129, 0.15);
 }

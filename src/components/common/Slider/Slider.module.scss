@@ -38,8 +38,8 @@
     border-radius: var(--radius-full);
     background: linear-gradient(
       to right,
-      var(--gradient-start) 0%,
-      var(--gradient-end) var(--progress, 0%),
+      var(--color-brand) 0%,
+      var(--color-brand) var(--progress, 0%),
       var(--color-bg-tertiary) var(--progress, 0%),
       var(--color-bg-tertiary) 100%
     );
@@ -50,8 +50,8 @@
     border-radius: var(--radius-full);
     background: linear-gradient(
       to right,
-      var(--gradient-start) 0%,
-      var(--gradient-end) var(--progress, 0%),
+      var(--color-brand) 0%,
+      var(--color-brand) var(--progress, 0%),
       var(--color-bg-tertiary) var(--progress, 0%),
       var(--color-bg-tertiary) 100%
     );
@@ -61,7 +61,7 @@
     appearance: none;
     width: 16px;
     height: 16px;
-    background: var(--gradient-brand);
+    background-color: var(--color-brand);
     border: 2px solid #fff;
     border-radius: 50%;
     cursor: pointer;
@@ -79,7 +79,7 @@
   &::-moz-range-thumb {
     width: 16px;
     height: 16px;
-    background: var(--gradient-brand);
+    background-color: var(--color-brand);
     border: 2px solid #fff;
     border-radius: 50%;
     cursor: pointer;
@@ -92,7 +92,7 @@
     &::-webkit-slider-thumb {
       box-shadow:
         0 0 0 2px var(--color-bg-primary),
-        0 0 0 4px var(--gradient-end);
+        0 0 0 4px var(--color-brand);
     }
   }
 
