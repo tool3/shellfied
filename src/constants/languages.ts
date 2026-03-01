@@ -8,7 +8,9 @@ export interface LanguageOption {
 }
 
 export const LANGUAGE_OPTIONS: LanguageOption[] = [
-  // Most common first
+  // Auto-detect first (default)
+  { value: 'auto', label: 'Auto Detect' },
+  // Most common
   { value: 'plain', label: 'Plain Text' },
   { value: 'bash', label: 'Shell / Bash' },
   { value: 'javascript', label: 'JavaScript' },
@@ -125,3 +127,133 @@ export const LANGUAGE_ALIASES: Record<string, string> = {
   apache: 'apacheconf',
   shell: 'bash',
 };
+
+/**
+ * Auto-detect programming language from code content
+ * Returns the detected language value or 'plain' if unknown
+ */
+export function detectLanguage(code: string): string {
+  if (!code || code.trim().length === 0) return 'plain';
+
+  const trimmed = code.trim();
+  const firstLine = trimmed.split('\n')[0].trim();
+
+  // Shell/Bash patterns
+  if (
+    /^(\$|#!\/bin\/(ba)?sh|#!\/usr\/bin\/env (ba)?sh)/.test(firstLine) ||
+    /^\s*(sudo|apt|npm|yarn|pnpm|brew|pip|git|docker|kubectl|curl|wget|chmod|chown|ls|cd|mkdir|rm|cp|mv|cat|echo|export)\s/.test(trimmed)
+  ) {
+    return 'bash';
+  }
+
+  // JavaScript/TypeScript patterns
+  if (/^(import|export|const|let|var|function|class|interface|type)\s/.test(firstLine)) {
+    // Check for TypeScript-specific
+    if (/:\s*(string|number|boolean|any|void|never|unknown)\b|interface\s+\w+|type\s+\w+\s*=|<[A-Z]\w*>/.test(trimmed)) {
+      // Check for JSX/TSX
+      if (/<[A-Z][a-zA-Z]*[\s/>]|<\/[A-Z]/.test(trimmed)) {
+        return 'tsx';
+      }
+      return 'typescript';
+    }
+    // Check for JSX
+    if (/<[A-Z][a-zA-Z]*[\s/>]|<\/[A-Z]/.test(trimmed)) {
+      return 'jsx';
+    }
+    return 'javascript';
+  }
+
+  // Python patterns
+  if (
+    /^(def|class|import|from|if __name__|print\(|async def)\s/.test(firstLine) ||
+    /^\s*(def|class|import|from)\s/.test(trimmed) ||
+    /#.*python/i.test(firstLine)
+  ) {
+    return 'python';
+  }
+
+  // HTML/XML patterns
+  if (/^<!DOCTYPE\s+html/i.test(firstLine) || /^<html/i.test(firstLine)) {
+    return 'html';
+  }
+  if (/^<\?xml/.test(firstLine)) {
+    return 'xml';
+  }
+
+  // CSS/SCSS patterns
+  if (/^(@import|@mixin|@include|\$[a-zA-Z]|\.[\w-]+\s*\{|#[\w-]+\s*\{)/.test(trimmed)) {
+    if (/\$[a-zA-Z]|@mixin|@include/.test(trimmed)) {
+      return 'scss';
+    }
+    return 'css';
+  }
+
+  // JSON pattern
+  if (/^\s*[\[{]/.test(trimmed) && /[\]}]\s*$/.test(trimmed)) {
+    try {
+      JSON.parse(trimmed);
+      return 'json';
+    } catch {
+      // Not valid JSON
+    }
+  }
+
+  // YAML patterns
+  if (/^[a-zA-Z_][\w-]*:\s/.test(firstLine) && !trimmed.includes('{')) {
+    return 'yaml';
+  }
+
+  // Markdown patterns
+  if (/^#{1,6}\s/.test(firstLine) || /^\*{3,}$|^-{3,}$/.test(firstLine)) {
+    return 'markdown';
+  }
+
+  // Go patterns
+  if (/^package\s+\w+|^func\s|^import\s+\(/.test(trimmed)) {
+    return 'go';
+  }
+
+  // Rust patterns
+  if (/^(fn|pub fn|impl|struct|enum|use|mod)\s/.test(trimmed) || /^#\[derive/.test(trimmed)) {
+    return 'rust';
+  }
+
+  // Java/Kotlin patterns
+  if (/^(public|private|protected)?\s*(class|interface|enum)\s/.test(trimmed)) {
+    if (/fun\s+\w+|val\s+\w+|var\s+\w+/.test(trimmed)) {
+      return 'kotlin';
+    }
+    return 'java';
+  }
+
+  // SQL patterns
+  if (/^(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP)\s/i.test(trimmed)) {
+    return 'sql';
+  }
+
+  // Ruby patterns
+  if (/^(require|def|class|module|end)\s/.test(trimmed) || /\.rb$/.test(firstLine)) {
+    return 'ruby';
+  }
+
+  // PHP patterns
+  if (/^<\?php/.test(trimmed)) {
+    return 'php';
+  }
+
+  // C/C++ patterns
+  if (/^#include\s*[<"]/.test(trimmed)) {
+    if (/iostream|vector|string|std::/.test(trimmed)) {
+      return 'cpp';
+    }
+    return 'c';
+  }
+
+  // Dockerfile
+  if (/^FROM\s+\w+/.test(firstLine)) {
+    return 'docker';
+  }
+
+  // Default to plain text
+  return 'plain';
+}

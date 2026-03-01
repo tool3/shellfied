@@ -3,7 +3,7 @@ import Prism from 'prismjs';
 import { useStore } from '@/store';
 import { Button, Select } from '@/components/common';
 import { SAMPLE_CODE_OPTIONS, SAMPLE_CODES, type SampleCodeKey } from '@/constants/sampleCode';
-import { LANGUAGE_OPTIONS } from '@/constants/languages';
+import { LANGUAGE_OPTIONS, detectLanguage } from '@/constants/languages';
 import '@/utils/syntaxHighlight'; // Imports all Prism languages
 import styles from './Editor.module.scss';
 
@@ -37,14 +37,22 @@ export const Editor = memo(function Editor() {
     }
   }, []);
 
+  // Resolve the actual language to use for highlighting
+  const effectiveLanguage = useMemo(() => {
+    if (language === 'auto') {
+      return detectLanguage(content);
+    }
+    return language;
+  }, [language, content]);
+
   const getHighlightedCode = () => {
-    if (language === 'plain' || !content) {
+    if (effectiveLanguage === 'plain' || !content) {
       return escapeHtml(content) || '&nbsp;';
     }
     try {
-      const grammar = Prism.languages[language];
+      const grammar = Prism.languages[effectiveLanguage];
       if (grammar) {
-        return Prism.highlight(content, grammar, language);
+        return Prism.highlight(content, grammar, effectiveLanguage);
       }
     } catch {
       // fallback to plain text

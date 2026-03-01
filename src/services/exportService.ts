@@ -1,6 +1,43 @@
 import type { ExportFormat } from '@/types';
 
 /**
+ * Check if we're on a mobile device
+ */
+function isMobileDevice(): boolean {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+/**
+ * Check if Web Share API is available with file support
+ */
+function canShareFiles(): boolean {
+  return typeof navigator.share === 'function' && typeof navigator.canShare === 'function';
+}
+
+/**
+ * Share a file using the Web Share API (for mobile save to gallery)
+ */
+async function shareFile(blob: Blob, filename: string, mimeType: string): Promise<boolean> {
+  if (!canShareFiles()) return false;
+
+  try {
+    const file = new File([blob], filename, { type: mimeType });
+    const shareData = { files: [file] };
+
+    if (navigator.canShare(shareData)) {
+      await navigator.share(shareData);
+      return true;
+    }
+  } catch (err) {
+    // User cancelled or share failed - fall back to download
+    if (err instanceof Error && err.name === 'AbortError') {
+      return true; // User cancelled, don't fall back
+    }
+  }
+  return false;
+}
+
+/**
  * Downloads an SVG string as a file
  */
 export function downloadSvg(svgContent: string, filename: string): void {
@@ -55,12 +92,22 @@ export async function downloadRaster(
       const mimeType = getMimeType(format);
 
       canvas.toBlob(
-        (blob) => {
+        async (blob) => {
           if (!blob) {
             reject(new Error(`Failed to create ${format.toUpperCase()} blob`));
             return;
           }
 
+          // On mobile, try to use share API for save to gallery
+          if (isMobileDevice()) {
+            const shared = await shareFile(blob, `${filename}.${format}`, mimeType);
+            if (shared) {
+              resolve();
+              return;
+            }
+          }
+
+          // Fall back to regular download
           const blobUrl = URL.createObjectURL(blob);
           const link = document.createElement('a');
           link.href = blobUrl;

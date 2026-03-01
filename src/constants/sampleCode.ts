@@ -63,9 +63,9 @@ const createScreenshot = (
 export default createScreenshot;`,
 
   neofetch: `\x1b[32m                    'c.          \x1b[0m  \x1b[32muser\x1b[0m@\x1b[32mmacbook\x1b[0m
-\x1b[32m                 ,xNMM.          \x1b[0m  \x1b[32m-----------\x1b[0m
-\x1b[32m               .OMMMMo           \x1b[0m  \x1b[33mOS:\x1b[0m macOS 14.0 Sonoma
-\x1b[32m               OMMM0,            \x1b[0m  \x1b[33mHost:\x1b[0m MacBook Pro (16-inch)
+\x1b[32m                 ,xNMM.          \x1b[0m \x1b[32m-----------\x1b[0m
+\x1b[32m               .OMMMMo           \x1b[0m \x1b[33mOS:\x1b[0m macOS 14.0 Sonoma
+\x1b[32m               OMMM0,            \x1b[0m \x1b[33mHost:\x1b[0m MacBook Pro (16-inch)
 \x1b[32m     .;loddo:' loolloddol;.     \x1b[0m  \x1b[33mKernel:\x1b[0m Darwin 23.0.0
 \x1b[32m   cKMMMMMMMMMMNWMMMMMMMMMM0:   \x1b[0m  \x1b[33mUptime:\x1b[0m 2 days, 5 hours
 \x1b[33m .KMMMMMMMMMMMMMMMMMMMMMMMWd.   \x1b[0m  \x1b[33mPackages:\x1b[0m 245 (brew)

@@ -77,12 +77,17 @@
   padding: var(--space-md);
   margin: 0;
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-sm);
+  // Use 16px on mobile to prevent auto-zoom, var on desktop
+  font-size: 16px;
   line-height: 1.6;
   white-space: pre;
   overflow-wrap: normal;
   overflow: auto;
   border: none;
+
+  @include breakpoint('lg') {
+    font-size: var(--font-size-sm);
+  }
 }
 
 .highlight {
@@ -158,6 +163,12 @@
   outline: none;
   resize: none;
   z-index: 1;
+  // Prevent auto-zoom on mobile iOS/Android
+  font-size: 16px;
+
+  @include breakpoint('lg') {
+    font-size: var(--font-size-sm);
+  }
 
   &::placeholder {
     color: var(--color-text-tertiary);

@@ -37,7 +37,7 @@ export const DEFAULT_SETTINGS: ShellfieSettings = {
 
 export const DEFAULT_CONTENT = SAMPLE_CODES.default;
 
-export const DEFAULT_LANGUAGE = 'bash';
+export const DEFAULT_LANGUAGE = 'auto';
 
 export const DEFAULT_COLOR_MODE: ColorMode = 'dark';
 

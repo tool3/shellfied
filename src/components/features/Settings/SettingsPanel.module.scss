@@ -106,4 +106,10 @@
 .footer {
   padding: var(--space-md);
   padding-top: 0;
+  padding-bottom: var(--space-xl);
+  flex-shrink: 0;
+
+  @include breakpoint-down('lg') {
+    padding-bottom: calc(var(--space-xl) + env(safe-area-inset-bottom, 0px));
+  }
 }
