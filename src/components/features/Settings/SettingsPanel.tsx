@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { useStore } from '@/store';
-import { Button, Input, Toggle, Slider, Select } from '@/components/common';
+import { Button, Input, Toggle, Slider, Select, ColorPicker, NumberSlider } from '@/components/common';
 import { ThemeSelector } from './ThemeSelector';
 import { TemplateSelector } from './TemplateSelector';
 import { ExportPanel } from '../Export';
@@ -122,36 +122,32 @@ export const SettingsPanel = memo(function SettingsPanel() {
                 fullWidth
               />
               {watermark && (
-                <div className={styles.paddingGrid}>
-                  <Input
+                <div className={styles.sliderGrid}>
+                  <NumberSlider
                     label="Top"
-                    type="number"
                     value={watermarkPadding[0]}
-                    onChange={(e) => handleWatermarkPaddingChange(0, Number(e.target.value))}
+                    onChange={(v) => handleWatermarkPaddingChange(0, v)}
                     min={PADDING_MIN}
                     max={PADDING_MAX}
                   />
-                  <Input
+                  <NumberSlider
                     label="Right"
-                    type="number"
                     value={watermarkPadding[1]}
-                    onChange={(e) => handleWatermarkPaddingChange(1, Number(e.target.value))}
+                    onChange={(v) => handleWatermarkPaddingChange(1, v)}
                     min={PADDING_MIN}
                     max={PADDING_MAX}
                   />
-                  <Input
+                  <NumberSlider
                     label="Bottom"
-                    type="number"
                     value={watermarkPadding[2]}
-                    onChange={(e) => handleWatermarkPaddingChange(2, Number(e.target.value))}
+                    onChange={(v) => handleWatermarkPaddingChange(2, v)}
                     min={PADDING_MIN}
                     max={PADDING_MAX}
                   />
-                  <Input
+                  <NumberSlider
                     label="Left"
-                    type="number"
                     value={watermarkPadding[3]}
-                    onChange={(e) => handleWatermarkPaddingChange(3, Number(e.target.value))}
+                    onChange={(v) => handleWatermarkPaddingChange(3, v)}
                     min={PADDING_MIN}
                     max={PADDING_MAX}
                   />
@@ -203,36 +199,32 @@ export const SettingsPanel = memo(function SettingsPanel() {
             <h3 className={styles.sectionTitle}>Padding</h3>
           </div>
           <div className={styles.sectionContent}>
-            <div className={styles.paddingGrid}>
-              <Input
+            <div className={styles.sliderGrid}>
+              <NumberSlider
                 label="Top"
-                type="number"
                 value={padding[0]}
-                onChange={(e) => handlePaddingChange(0, Number(e.target.value))}
+                onChange={(v) => handlePaddingChange(0, v)}
                 min={PADDING_MIN}
                 max={PADDING_MAX}
               />
-              <Input
+              <NumberSlider
                 label="Right"
-                type="number"
                 value={padding[1]}
-                onChange={(e) => handlePaddingChange(1, Number(e.target.value))}
+                onChange={(v) => handlePaddingChange(1, v)}
                 min={PADDING_MIN}
                 max={PADDING_MAX}
               />
-              <Input
+              <NumberSlider
                 label="Bottom"
-                type="number"
                 value={padding[2]}
-                onChange={(e) => handlePaddingChange(2, Number(e.target.value))}
+                onChange={(v) => handlePaddingChange(2, v)}
                 min={PADDING_MIN}
                 max={PADDING_MAX}
               />
-              <Input
+              <NumberSlider
                 label="Left"
-                type="number"
                 value={padding[3]}
-                onChange={(e) => handlePaddingChange(3, Number(e.target.value))}
+                onChange={(v) => handlePaddingChange(3, v)}
                 min={PADDING_MIN}
                 max={PADDING_MAX}
               />
@@ -252,10 +244,10 @@ export const SettingsPanel = memo(function SettingsPanel() {
           {header.enabled && (
             <div className={styles.sectionContent}>
               <div className={styles.fields}>
-                <Input
+                <ColorPicker
                   label="Background Color"
                   value={header.backgroundColor}
-                  onChange={(e) => setHeader({ backgroundColor: e.target.value })}
+                  onChange={(value) => setHeader({ backgroundColor: value })}
                   placeholder="#333333"
                   fullWidth
                 />
@@ -275,10 +267,10 @@ export const SettingsPanel = memo(function SettingsPanel() {
                 />
                 {header.border && (
                   <>
-                    <Input
+                    <ColorPicker
                       label="Border Color"
                       value={header.borderColor}
-                      onChange={(e) => setHeader({ borderColor: e.target.value })}
+                      onChange={(value) => setHeader({ borderColor: value })}
                       placeholder="#333333"
                       fullWidth
                     />
@@ -310,10 +302,10 @@ export const SettingsPanel = memo(function SettingsPanel() {
           {footer.enabled && (
             <div className={styles.sectionContent}>
               <div className={styles.fields}>
-                <Input
+                <ColorPicker
                   label="Background Color"
                   value={footer.backgroundColor}
-                  onChange={(e) => setFooter({ backgroundColor: e.target.value })}
+                  onChange={(value) => setFooter({ backgroundColor: value })}
                   placeholder="#333333"
                   fullWidth
                 />
@@ -333,10 +325,10 @@ export const SettingsPanel = memo(function SettingsPanel() {
                 />
                 {footer.border && (
                   <>
-                    <Input
+                    <ColorPicker
                       label="Border Color"
                       value={footer.borderColor}
-                      onChange={(e) => setFooter({ borderColor: e.target.value })}
+                      onChange={(value) => setFooter({ borderColor: value })}
                       placeholder="#333333"
                       fullWidth
                     />

@@ -13,8 +13,9 @@ $space-2xl: $space-unit * 6;     // 48px
 $space-3xl: $space-unit * 8;     // 64px
 
 // --- Typography Scale ---
-$font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+$font-family-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 $font-family-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
+$font-family-display: 'Space Mono', 'SF Mono', 'Monaco', monospace;
 
 $font-size-xs: 0.75rem;    // 12px
 $font-size-sm: 0.875rem;   // 14px
@@ -103,6 +104,7 @@ $z-toast: 600;
   // Typography
   --font-family-sans: #{$font-family-sans};
   --font-family-mono: #{$font-family-mono};
+  --font-family-display: #{$font-family-display};
 
   // Font sizes
   --font-size-xs: #{$font-size-xs};

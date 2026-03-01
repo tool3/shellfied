@@ -19,10 +19,11 @@
   gap: 2px;
 
   h1 {
+    font-family: var(--font-family-display);
     font-size: var(--font-size-lg);
     font-weight: 700;
     line-height: 1.2;
-    letter-spacing: -0.02em;
+    letter-spacing: 0.02em;
   }
 }
 

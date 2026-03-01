@@ -1,0 +1,45 @@
+import { forwardRef, useId } from 'react';
+import styles from './NumberSlider.module.scss';
+
+interface NumberSliderProps {
+  label?: string;
+  value: number;
+  onChange: (value: number) => void;
+  min: number;
+  max: number;
+  step?: number;
+  className?: string;
+}
+
+export const NumberSlider = forwardRef<HTMLInputElement, NumberSliderProps>(function NumberSlider(
+  { label, value, onChange, min, max, step = 1, className = '' },
+  ref
+) {
+  const id = useId();
+  const percentage = ((value - min) / (max - min)) * 100;
+
+  return (
+    <div className={`${styles.wrapper} ${className}`}>
+      {label && (
+        <label htmlFor={id} className={styles.label}>
+          {label}
+        </label>
+      )}
+      <div className={styles.sliderContainer}>
+        <input
+          ref={ref}
+          type="range"
+          id={id}
+          className={styles.slider}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          min={min}
+          max={max}
+          step={step}
+          style={{ '--progress': `${percentage}%` } as React.CSSProperties}
+        />
+        <span className={styles.value}>{value}</span>
+      </div>
+    </div>
+  );
+});

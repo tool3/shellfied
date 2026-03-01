@@ -21,8 +21,8 @@
   flex: 1;
   min-width: 0;
   min-height: 0;
-  padding: var(--space-md);
-  gap: var(--space-md);
+  padding: 0;
+  gap: 0;
   overflow: auto;
   @include custom-scrollbar;
 
@@ -41,31 +41,38 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  border-bottom: 1px solid var(--color-border-primary);
 
   @include breakpoint('lg') {
     flex: 0 0 40%;
     max-width: 40%;
     min-height: 0;
     max-height: none;
+    border-bottom: none;
   }
 }
 
 .previewPane {
   display: flex;
   flex-direction: column;
-  flex: 0 0 auto;
-  min-height: 400px;
-  gap: var(--space-md);
+  flex: 1;
+  min-height: 300px;
+  gap: 0;
   overflow: hidden;
+  padding: var(--space-md);
 
   @include breakpoint('lg') {
     flex: 1;
     min-height: 0;
+    padding: 0;
+    gap: var(--space-md);
   }
 }
 
 .exportPane {
   flex-shrink: 0;
+  padding: var(--space-md);
+  padding-top: 0;
 
   @include breakpoint('lg') {
     display: none;
@@ -73,26 +80,30 @@
 }
 
 .footer {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-xs);
-  padding: var(--space-sm) var(--space-md);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
-  background-color: var(--color-bg-secondary);
-  border-top: 1px solid var(--color-border-primary);
-  flex-shrink: 0;
+  display: none;
 
-  a {
-    color: var(--color-brand-primary);
-    text-decoration: none;
-    font-weight: 500;
-    transition: color var(--transition-fast);
+  @include breakpoint('lg') {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xs);
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-tertiary);
+    background-color: var(--color-bg-secondary);
+    border-top: 1px solid var(--color-border-primary);
+    flex-shrink: 0;
 
-    &:hover {
-      color: var(--color-brand-primary-hover);
-      text-decoration: underline;
+    a {
+      color: var(--color-brand-primary);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color var(--transition-fast);
+
+      &:hover {
+        color: var(--color-brand-primary-hover);
+        text-decoration: underline;
+      }
     }
   }
 }

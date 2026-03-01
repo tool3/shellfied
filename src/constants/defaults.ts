@@ -30,7 +30,7 @@ export const DEFAULT_SETTINGS: ShellfieSettings = {
   watermark: '',
   watermarkPadding: [8, 8, 8, 8],
   width: null,
-  fontFamily: 'JetBrains Mono',
+  fontFamily: 'system-ui',
   header: DEFAULT_HEADER,
   footer: DEFAULT_FOOTER,
 };
@@ -66,12 +66,14 @@ export const BORDER_WIDTH_MIN = 1;
 export const BORDER_WIDTH_MAX = 10;
 
 export const FONT_FAMILY_OPTIONS = [
+  { value: 'system-ui', label: 'System Default' },
   { value: 'JetBrains Mono', label: 'JetBrains Mono' },
   { value: 'Fira Code', label: 'Fira Code' },
   { value: 'Source Code Pro', label: 'Source Code Pro' },
-  { value: 'Monaco', label: 'Monaco' },
-  { value: 'Consolas', label: 'Consolas' },
-  { value: 'Menlo', label: 'Menlo' },
-  { value: 'Ubuntu Mono', label: 'Ubuntu Mono' },
+  { value: 'IBM Plex Mono', label: 'IBM Plex Mono' },
   { value: 'Roboto Mono', label: 'Roboto Mono' },
+  { value: 'Ubuntu Mono', label: 'Ubuntu Mono' },
+  { value: 'Monaco', label: 'Monaco' },
+  { value: 'Menlo', label: 'Menlo' },
+  { value: 'Consolas', label: 'Consolas' },
 ];

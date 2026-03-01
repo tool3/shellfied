@@ -1,0 +1,101 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.label {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--color-text-tertiary);
+}
+
+.sliderContainer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.slider {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  position: relative;
+
+  &::-webkit-slider-runnable-track {
+    height: 28px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border-primary);
+    background: linear-gradient(
+      to right,
+      var(--gradient-start) 0%,
+      var(--gradient-end) var(--progress, 0%),
+      var(--color-bg-tertiary) var(--progress, 0%),
+      var(--color-bg-tertiary) 100%
+    );
+  }
+
+  &::-moz-range-track {
+    height: 28px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border-primary);
+    background: linear-gradient(
+      to right,
+      var(--gradient-start) 0%,
+      var(--gradient-end) var(--progress, 0%),
+      var(--color-bg-tertiary) var(--progress, 0%),
+      var(--color-bg-tertiary) 100%
+    );
+  }
+
+  &::-webkit-slider-thumb {
+    appearance: none;
+    width: 4px;
+    height: 20px;
+    background: white;
+    border-radius: 2px;
+    cursor: grab;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    margin-top: 3px;
+    transition: transform var(--transition-fast);
+
+    &:active {
+      cursor: grabbing;
+      transform: scaleY(1.1);
+    }
+  }
+
+  &::-moz-range-thumb {
+    width: 4px;
+    height: 20px;
+    background: white;
+    border: none;
+    border-radius: 2px;
+    cursor: grab;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  &:focus-visible {
+    outline: none;
+
+    &::-webkit-slider-runnable-track {
+      border-color: var(--color-border-focus);
+      box-shadow: 0 0 0 2px var(--color-accent-subtle);
+    }
+  }
+}
+
+.value {
+  flex-shrink: 0;
+  min-width: 20px;
+  font-size: var(--font-size-xs);
+  font-family: var(--font-family-mono);
+  color: var(--color-text-secondary);
+  text-align: right;
+}

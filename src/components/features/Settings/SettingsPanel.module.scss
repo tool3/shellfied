@@ -89,6 +89,12 @@
   gap: var(--space-sm);
 }
 
+.sliderGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md) var(--space-sm);
+}
+
 .exportSection {
   display: none;
 

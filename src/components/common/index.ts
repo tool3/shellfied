@@ -5,4 +5,6 @@ export { Slider } from './Slider';
 export { Input } from './Input';
 export { Icon } from './Icon';
 export { Logo } from './Logo';
+export { ColorPicker } from './ColorPicker';
+export { NumberSlider } from './NumberSlider';
 export type { IconName } from './Icon';
