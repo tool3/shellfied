@@ -27,6 +27,7 @@ export const DEFAULT_SETTINGS: ShellfieSettings = {
   padding: [16, 24, 16, 24],
   title: 'Terminal',
   showControls: true,
+  controlsPosition: 'left',
   watermark: '',
   watermarkPadding: [8, 8, 8, 8],
   width: null,

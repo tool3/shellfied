@@ -1,10 +1,33 @@
 import { useMemo } from 'react';
-import shellfie from 'shellfie';
+import shellfie, { templates } from 'shellfie';
 import { useStore, useContent, useLanguage } from '@/store';
 import { TERMINAL_THEMES } from '@/constants/themes';
 import { useDebounce } from './useDebounce';
 import { highlightWithAnsi } from '@/utils/syntaxHighlight';
-import type { HeaderConfig, FooterConfig } from '@/types';
+import { detectLanguage } from '@/constants/languages';
+import type { HeaderConfig, FooterConfig, ControlsPosition, TemplateType } from '@/types';
+
+// Build a custom template with the specified controls position
+function buildTemplate(templateType: TemplateType, controlsPosition: ControlsPosition) {
+  const baseTemplate = templates[templateType];
+  if (!baseTemplate) return templateType;
+
+  // If position matches the template default, just return the template name
+  const defaultPosition = templateType === 'windows' ? 'right' : 'left';
+  if (controlsPosition === defaultPosition) {
+    return templateType;
+  }
+
+  // Create a custom template with only the controls position overridden
+  // Keep the original control style (macOS circles stay circles, Windows squares stay squares)
+  return {
+    ...baseTemplate,
+    shell: {
+      ...baseTemplate.shell,
+      controlsPosition,
+    },
+  };
+}
 
 // Build header/footer options for shellfie
 function buildHeaderOptions(header: HeaderConfig) {
@@ -34,8 +57,17 @@ export function useShellfie() {
   const language = useLanguage();
   const debouncedContent = useDebounce(content, 300);
 
+  // Resolve auto-detect to actual language
+  const effectiveLanguage = useMemo(() => {
+    if (language === 'auto') {
+      return detectLanguage(debouncedContent);
+    }
+    return language;
+  }, [language, debouncedContent]);
+
   // Get individual values to ensure proper reactivity
   const template = useStore((s) => s.template);
+  const controlsPosition = useStore((s) => s.controlsPosition);
   const terminalTheme = useStore((s) => s.terminalTheme);
   const fontSize = useStore((s) => s.fontSize);
   const lineHeight = useStore((s) => s.lineHeight);
@@ -55,11 +87,11 @@ export function useShellfie() {
     }
 
     try {
-      // Apply syntax highlighting with ANSI codes
-      const highlightedContent = highlightWithAnsi(debouncedContent, language);
+      // Apply syntax highlighting with ANSI codes using resolved language
+      const highlightedContent = highlightWithAnsi(debouncedContent, effectiveLanguage);
 
       const result = shellfie(highlightedContent, {
-        template,
+        template: buildTemplate(template, controlsPosition),
         theme: TERMINAL_THEMES[terminalTheme].theme,
         title: title || undefined,
         fontSize,
@@ -80,7 +112,7 @@ export function useShellfie() {
         error: err instanceof Error ? err.message : 'Failed to generate SVG',
       };
     }
-  }, [debouncedContent, language, template, terminalTheme, fontSize, lineHeight, padding, title, showControls, watermark, watermarkPadding, width, fontFamily, header, footer]);
+  }, [debouncedContent, effectiveLanguage, template, controlsPosition, terminalTheme, fontSize, lineHeight, padding, title, showControls, watermark, watermarkPadding, width, fontFamily, header, footer]);
 
   return { svg, error, hasContent: Boolean(debouncedContent.trim()) };
 }
@@ -89,6 +121,7 @@ export function useShellfieSync() {
   const content = useStore((s) => s.content);
   const language = useStore((s) => s.language);
   const template = useStore((s) => s.template);
+  const controlsPosition = useStore((s) => s.controlsPosition);
   const terminalTheme = useStore((s) => s.terminalTheme);
   const fontSize = useStore((s) => s.fontSize);
   const lineHeight = useStore((s) => s.lineHeight);
@@ -106,11 +139,13 @@ export function useShellfieSync() {
     if (!content.trim()) return '';
 
     try {
+      // Resolve auto-detect to actual language
+      const effectiveLang = language === 'auto' ? detectLanguage(content) : language;
       // Apply syntax highlighting with ANSI codes
-      const highlightedContent = highlightWithAnsi(content, language);
+      const highlightedContent = highlightWithAnsi(content, effectiveLang);
 
       return shellfie(highlightedContent, {
-        template,
+        template: buildTemplate(template, controlsPosition),
         theme: TERMINAL_THEMES[terminalTheme].theme,
         title: title || undefined,
         fontSize,

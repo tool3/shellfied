@@ -1,6 +1,7 @@
 import type {
   TemplateType,
   TerminalThemeName,
+  ControlsPosition,
   ColorMode,
   ExportFormat,
   ExportScale,
@@ -25,6 +26,7 @@ export interface SettingsState {
   padding: PaddingTuple;
   title: string;
   showControls: boolean;
+  controlsPosition: ControlsPosition;
   watermark: string;
   watermarkPadding: PaddingTuple;
   width: number | null;
@@ -42,6 +44,7 @@ export interface SettingsState {
   setPadding: (padding: PaddingTuple) => void;
   setTitle: (title: string) => void;
   setShowControls: (show: boolean) => void;
+  setControlsPosition: (position: ControlsPosition) => void;
   setWatermark: (watermark: string) => void;
   setWatermarkPadding: (padding: PaddingTuple) => void;
   setWidth: (width: number | null) => void;

@@ -7,7 +7,10 @@
   background-color: var(--color-bg-elevated);
   border-left: 1px solid var(--color-border-primary);
   overflow-y: auto;
+  overflow-x: hidden;
   flex-shrink: 0;
+  // Ensure scrolling works properly
+  -webkit-overflow-scrolling: touch;
 
   @include breakpoint-down('lg') {
     position: fixed;
@@ -16,6 +19,9 @@
     bottom: 0;
     z-index: 100;
     box-shadow: -4px 0 24px rgba(0, 0, 0, 0.1);
+    // Override height to be explicit
+    height: calc(100vh - 64px);
+    height: calc(100dvh - 64px);
   }
 }
 
@@ -41,7 +47,7 @@
 }
 
 .content {
-  flex: 1;
+  flex: 1 0 auto;
   padding: var(--space-md);
   display: flex;
   flex-direction: column;
@@ -110,6 +116,6 @@
   flex-shrink: 0;
 
   @include breakpoint-down('lg') {
-    padding-bottom: calc(var(--space-xl) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(var(--space-2xl) + env(safe-area-inset-bottom, 20px));
   }
 }

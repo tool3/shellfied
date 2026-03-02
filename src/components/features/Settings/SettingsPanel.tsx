@@ -28,6 +28,8 @@ export const SettingsPanel = memo(function SettingsPanel() {
   const setTitle = useStore((s) => s.setTitle);
   const showControls = useStore((s) => s.showControls);
   const setShowControls = useStore((s) => s.setShowControls);
+  const controlsPosition = useStore((s) => s.controlsPosition);
+  const setControlsPosition = useStore((s) => s.setControlsPosition);
   const watermark = useStore((s) => s.watermark);
   const setWatermark = useStore((s) => s.setWatermark);
   const watermarkPadding = useStore((s) => s.watermarkPadding);
@@ -114,6 +116,18 @@ export const SettingsPanel = memo(function SettingsPanel() {
                 onChange={setShowControls}
                 label="Show window controls"
               />
+              {showControls && (
+                <Select
+                  label="Controls Position"
+                  options={[
+                    { value: 'left', label: 'Left' },
+                    { value: 'right', label: 'Right' },
+                  ]}
+                  value={controlsPosition}
+                  onChange={(v) => setControlsPosition(v as 'left' | 'right')}
+                  fullWidth
+                />
+              )}
               <Input
                 label="Watermark"
                 value={watermark}

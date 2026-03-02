@@ -189,7 +189,7 @@ export function detectLanguage(code: string): string {
   }
 
   // JSON pattern
-  if (/^\s*[\[{]/.test(trimmed) && /[\]}]\s*$/.test(trimmed)) {
+  if (/^\s*[[{]/.test(trimmed) && /[\]}]\s*$/.test(trimmed)) {
     try {
       JSON.parse(trimmed);
       return 'json';

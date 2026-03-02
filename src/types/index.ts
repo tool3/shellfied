@@ -1,5 +1,7 @@
 export type TemplateType = 'macos' | 'windows' | 'minimal';
 
+export type ControlsPosition = 'left' | 'right';
+
 export type TerminalThemeName =
   | 'dracula'
   | 'nord'
@@ -53,6 +55,7 @@ export interface ShellfieSettings {
   padding: PaddingTuple;
   title: string;
   showControls: boolean;
+  controlsPosition: ControlsPosition;
   watermark: string;
   watermarkPadding: PaddingTuple;
   width: number | null;

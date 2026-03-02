@@ -20,6 +20,7 @@ export const createSettingsSlice: StateCreator<AppStore, [], [], SettingsState> 
   setPadding: (padding) => set({ padding }),
   setTitle: (title) => set({ title }),
   setShowControls: (showControls) => set({ showControls }),
+  setControlsPosition: (controlsPosition) => set({ controlsPosition }),
   setWatermark: (watermark) => set({ watermark }),
   setWatermarkPadding: (watermarkPadding) => set({ watermarkPadding }),
   setWidth: (width) => set({ width }),
