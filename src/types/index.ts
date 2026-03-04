@@ -29,6 +29,20 @@ export type JpegQuality = 0.6 | 0.8 | 0.9 | 1.0;
 
 export type PaddingTuple = [number, number, number, number];
 
+export type BackgroundType = 'none' | 'solid' | 'gradient' | 'image';
+
+export type GradientDirection = 'to-right' | 'to-bottom' | 'to-bottom-right' | 'to-bottom-left';
+
+export interface BackgroundConfig {
+  type: BackgroundType;
+  color: string;
+  gradientFrom: string;
+  gradientTo: string;
+  gradientDirection: GradientDirection;
+  image: string | null;
+  padding: number;
+}
+
 export interface HeaderConfig {
   enabled: boolean;
   backgroundColor: string;
@@ -62,4 +76,5 @@ export interface ShellfieSettings {
   fontFamily: string;
   header: HeaderConfig;
   footer: FooterConfig;
+  background: BackgroundConfig;
 }

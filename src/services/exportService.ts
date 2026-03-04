@@ -1,4 +1,4 @@
-import type { ExportFormat } from '@/types';
+import type { ExportFormat, BackgroundConfig } from '@/types';
 
 /**
  * Check if we're on a mobile device
@@ -57,6 +57,87 @@ export function downloadSvg(svgContent: string, filename: string): void {
 interface RasterExportOptions {
   scale?: number;
   quality?: number;
+  background?: BackgroundConfig;
+}
+
+/**
+ * Draws background on canvas context
+ */
+async function drawBackground(
+  ctx: CanvasRenderingContext2D,
+  background: BackgroundConfig,
+  totalWidth: number,
+  totalHeight: number
+): Promise<void> {
+  if (background.type === 'none') return;
+
+  switch (background.type) {
+    case 'solid':
+      ctx.fillStyle = background.color;
+      ctx.beginPath();
+      ctx.roundRect(0, 0, totalWidth, totalHeight, 12);
+      ctx.fill();
+      break;
+
+    case 'gradient': {
+      const direction = background.gradientDirection;
+      let gradient: CanvasGradient;
+
+      if (direction === 'to-right') {
+        gradient = ctx.createLinearGradient(0, 0, totalWidth, 0);
+      } else if (direction === 'to-bottom') {
+        gradient = ctx.createLinearGradient(0, 0, 0, totalHeight);
+      } else if (direction === 'to-bottom-right') {
+        gradient = ctx.createLinearGradient(0, 0, totalWidth, totalHeight);
+      } else {
+        gradient = ctx.createLinearGradient(totalWidth, 0, 0, totalHeight);
+      }
+
+      gradient.addColorStop(0, background.gradientFrom);
+      gradient.addColorStop(1, background.gradientTo);
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.roundRect(0, 0, totalWidth, totalHeight, 12);
+      ctx.fill();
+      break;
+    }
+
+    case 'image': {
+      if (!background.image) return;
+
+      const img = new Image();
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('Failed to load background image'));
+        img.src = background.image!;
+      });
+
+      // Draw with cover behavior
+      const imgRatio = img.width / img.height;
+      const canvasRatio = totalWidth / totalHeight;
+
+      let drawWidth: number, drawHeight: number, drawX: number, drawY: number;
+
+      if (imgRatio > canvasRatio) {
+        drawHeight = totalHeight;
+        drawWidth = totalHeight * imgRatio;
+        drawX = (totalWidth - drawWidth) / 2;
+        drawY = 0;
+      } else {
+        drawWidth = totalWidth;
+        drawHeight = totalWidth / imgRatio;
+        drawX = 0;
+        drawY = (totalHeight - drawHeight) / 2;
+      }
+
+      // Clip to rounded rectangle
+      ctx.beginPath();
+      ctx.roundRect(0, 0, totalWidth, totalHeight, 12);
+      ctx.clip();
+      ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+      break;
+    }
+  }
 }
 
 /**
@@ -68,17 +149,27 @@ export async function downloadRaster(
   format: Exclude<ExportFormat, 'svg'>,
   options: RasterExportOptions = {}
 ): Promise<void> {
-  const { scale = 2, quality = 1.0 } = options;
-  const { width, height } = getSvgDimensions(svgContent);
+  const { scale = 2, quality = 1.0, background } = options;
+  const { width: svgWidth, height: svgHeight } = getSvgDimensions(svgContent);
+
+  // Calculate total dimensions including background padding
+  const padding = background?.type !== 'none' ? (background?.padding ?? 0) : 0;
+  const totalWidth = svgWidth + padding * 2;
+  const totalHeight = svgHeight + padding * 2;
 
   const canvas = document.createElement('canvas');
-  canvas.width = width * scale;
-  canvas.height = height * scale;
+  canvas.width = totalWidth * scale;
+  canvas.height = totalHeight * scale;
 
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas context not available');
 
   ctx.scale(scale, scale);
+
+  // Draw background first if configured
+  if (background && background.type !== 'none') {
+    await drawBackground(ctx, background, totalWidth, totalHeight);
+  }
 
   const img = new Image();
   const svgBlob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
@@ -86,7 +177,8 @@ export async function downloadRaster(
 
   return new Promise((resolve, reject) => {
     img.onload = () => {
-      ctx.drawImage(img, 0, 0);
+      // Draw SVG with padding offset
+      ctx.drawImage(img, padding, padding);
       URL.revokeObjectURL(svgUrl);
 
       const mimeType = getMimeType(format);
@@ -164,23 +256,43 @@ export async function copySvgToClipboard(svgContent: string): Promise<void> {
   }
 }
 
+interface ClipboardOptions {
+  scale?: number;
+  background?: BackgroundConfig;
+}
+
 /**
  * Copies image to clipboard as PNG
  */
 export async function copyToClipboard(
   svgContent: string,
-  scale: number = 2
+  scaleOrOptions: number | ClipboardOptions = 2
 ): Promise<void> {
-  const { width, height } = getSvgDimensions(svgContent);
+  const options: ClipboardOptions = typeof scaleOrOptions === 'number'
+    ? { scale: scaleOrOptions }
+    : scaleOrOptions;
+  const { scale = 2, background } = options;
+
+  const { width: svgWidth, height: svgHeight } = getSvgDimensions(svgContent);
+
+  // Calculate total dimensions including background padding
+  const padding = background?.type !== 'none' ? (background?.padding ?? 0) : 0;
+  const totalWidth = svgWidth + padding * 2;
+  const totalHeight = svgHeight + padding * 2;
 
   const canvas = document.createElement('canvas');
-  canvas.width = width * scale;
-  canvas.height = height * scale;
+  canvas.width = totalWidth * scale;
+  canvas.height = totalHeight * scale;
 
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas context not available');
 
   ctx.scale(scale, scale);
+
+  // Draw background first if configured
+  if (background && background.type !== 'none') {
+    await drawBackground(ctx, background, totalWidth, totalHeight);
+  }
 
   // Convert SVG to data URL for better browser compatibility
   const svgBase64 = btoa(unescape(encodeURIComponent(svgContent)));
@@ -190,7 +302,8 @@ export async function copyToClipboard(
 
   return new Promise((resolve, reject) => {
     img.onload = async () => {
-      ctx.drawImage(img, 0, 0);
+      // Draw SVG with padding offset
+      ctx.drawImage(img, padding, padding);
 
       try {
         const blob = await new Promise<Blob | null>((res) =>

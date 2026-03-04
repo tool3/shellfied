@@ -1,15 +1,57 @@
-import { memo, useRef } from 'react';
+import { memo, useRef, useMemo } from 'react';
 import { useStore } from '@/store';
 import { useShellfie } from '@/hooks/useShellfie';
 import { Button } from '@/components/common';
 import styles from './Preview.module.scss';
 
+const GRADIENT_DIRECTIONS: Record<string, string> = {
+  'to-right': 'to right',
+  'to-bottom': 'to bottom',
+  'to-bottom-right': '135deg',
+  'to-bottom-left': '225deg',
+};
+
 export const Preview = memo(function Preview() {
   const previewRef = useRef<HTMLDivElement>(null);
   const previewZoom = useStore((s) => s.previewZoom);
   const setPreviewZoom = useStore((s) => s.setPreviewZoom);
+  const background = useStore((s) => s.background);
 
   const { svg, error, hasContent } = useShellfie();
+
+  const backgroundStyle = useMemo(() => {
+    if (background.type === 'none') return {};
+
+    const padding = background.padding;
+    const baseStyle: React.CSSProperties = { padding };
+
+    switch (background.type) {
+      case 'solid':
+        return {
+          ...baseStyle,
+          backgroundColor: background.color,
+          borderRadius: 'var(--radius-lg)',
+        };
+      case 'gradient':
+        return {
+          ...baseStyle,
+          background: `linear-gradient(${GRADIENT_DIRECTIONS[background.gradientDirection]}, ${background.gradientFrom}, ${background.gradientTo})`,
+          borderRadius: 'var(--radius-lg)',
+        };
+      case 'image':
+        return background.image
+          ? {
+              ...baseStyle,
+              backgroundImage: `url(${background.image})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              borderRadius: 'var(--radius-lg)',
+            }
+          : {};
+      default:
+        return {};
+    }
+  }, [background]);
 
   const handleZoomIn = () => {
     setPreviewZoom(Math.min(previewZoom + 25, 200));
@@ -47,10 +89,12 @@ export const Preview = memo(function Preview() {
               <code>{error}</code>
             </div>
           ) : svg ? (
-            <div
-              className={styles.svgWrapper}
-              dangerouslySetInnerHTML={{ __html: svg }}
-            />
+            <div className={styles.backgroundWrapper} style={backgroundStyle}>
+              <div
+                className={styles.svgWrapper}
+                dangerouslySetInnerHTML={{ __html: svg }}
+              />
+            </div>
           ) : hasContent ? (
             <div className={styles.loading}>
               <div className={styles.spinner} />

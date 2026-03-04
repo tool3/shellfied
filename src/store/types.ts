@@ -8,6 +8,7 @@ import type {
   PaddingTuple,
   HeaderConfig,
   FooterConfig,
+  BackgroundConfig,
 } from '@/types';
 
 export interface EditorState {
@@ -33,6 +34,7 @@ export interface SettingsState {
   fontFamily: string;
   header: HeaderConfig;
   footer: FooterConfig;
+  background: BackgroundConfig;
   exportFormat: ExportFormat;
   exportScale: ExportScale;
   jpegQuality: number;
@@ -51,6 +53,7 @@ export interface SettingsState {
   setFontFamily: (fontFamily: string) => void;
   setHeader: (header: Partial<HeaderConfig>) => void;
   setFooter: (footer: Partial<FooterConfig>) => void;
+  setBackground: (background: Partial<BackgroundConfig>) => void;
   setExportFormat: (format: ExportFormat) => void;
   setExportScale: (scale: ExportScale) => void;
   setJpegQuality: (quality: number) => void;

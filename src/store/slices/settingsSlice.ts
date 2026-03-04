@@ -27,6 +27,7 @@ export const createSettingsSlice: StateCreator<AppStore, [], [], SettingsState> 
   setFontFamily: (fontFamily) => set({ fontFamily }),
   setHeader: (headerUpdate) => set({ header: { ...get().header, ...headerUpdate } }),
   setFooter: (footerUpdate) => set({ footer: { ...get().footer, ...footerUpdate } }),
+  setBackground: (backgroundUpdate) => set({ background: { ...get().background, ...backgroundUpdate } }),
   setExportFormat: (exportFormat) => set({ exportFormat }),
   setExportScale: (exportScale) => set({ exportScale }),
   setJpegQuality: (jpegQuality) => set({ jpegQuality }),

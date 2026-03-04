@@ -62,10 +62,15 @@
   transition: transform 0.15s ease-out;
 }
 
-.svgWrapper {
+.backgroundWrapper {
   display: block;
   filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.15));
+}
+
+.svgWrapper {
+  display: block;
   border-radius: var(--radius-lg);
+  overflow: hidden;
 
   svg {
     display: block;

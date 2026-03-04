@@ -34,6 +34,7 @@ export const useStore = create<AppStore>()(
         fontFamily: state.fontFamily,
         header: state.header,
         footer: state.footer,
+        background: state.background,
         exportFormat: state.exportFormat,
         exportScale: state.exportScale,
         jpegQuality: state.jpegQuality,

@@ -26,18 +26,25 @@ export const NumberSlider = forwardRef<HTMLInputElement, NumberSliderProps>(func
         </label>
       )}
       <div className={styles.sliderContainer}>
-        <input
-          ref={ref}
-          type="range"
-          id={id}
-          className={styles.slider}
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          min={min}
-          max={max}
-          step={step}
-          style={{ '--progress': `${percentage}%` } as React.CSSProperties}
-        />
+        <div className={styles.sliderWrapper}>
+          <input
+            ref={ref}
+            type="range"
+            id={id}
+            className={styles.slider}
+            value={value}
+            onChange={(e) => onChange(Number(e.target.value))}
+            min={min}
+            max={max}
+            step={step}
+          />
+          <div className={styles.sliderTrack}>
+            <div
+              className={styles.sliderFill}
+              style={{ width: `${percentage}%` }}
+            />
+          </div>
+        </div>
         <span className={styles.value}>{value}</span>
       </div>
     </div>

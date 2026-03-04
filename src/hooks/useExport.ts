@@ -18,6 +18,7 @@ export function useExport() {
   const exportFormat = useStore((s) => s.exportFormat);
   const exportScale = useStore((s) => s.exportScale);
   const jpegQuality = useStore((s) => s.jpegQuality);
+  const background = useStore((s) => s.background);
   const { generate } = useShellfieSync();
 
   const resetStatus = useCallback(() => {
@@ -45,6 +46,7 @@ export function useExport() {
           await downloadRaster(svg, filename, exportFormat, {
             scale: exportScale,
             quality,
+            background,
           });
         }
 
@@ -55,7 +57,7 @@ export function useExport() {
         setStatus('error');
       }
     },
-    [generate, exportFormat, exportScale, jpegQuality, resetStatus]
+    [generate, exportFormat, exportScale, jpegQuality, background, resetStatus]
   );
 
   const copyToClipboardFn = useCallback(async () => {
@@ -72,7 +74,7 @@ export function useExport() {
       if (exportFormat === 'svg') {
         await copySvgToClipboard(svg);
       } else {
-        await copyToClipboard(svg, exportScale);
+        await copyToClipboard(svg, { scale: exportScale, background });
       }
 
       setStatus('success');
@@ -81,7 +83,7 @@ export function useExport() {
       setError(err instanceof Error ? err.message : 'Copy failed');
       setStatus('error');
     }
-  }, [generate, exportFormat, exportScale, resetStatus]);
+  }, [generate, exportFormat, exportScale, background, resetStatus]);
 
   // Legacy exports for backward compatibility
   const exportToSvg = useCallback(

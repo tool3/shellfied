@@ -16,8 +16,11 @@ import {
   BORDER_WIDTH_MIN,
   BORDER_WIDTH_MAX,
   FONT_FAMILY_OPTIONS,
+  BACKGROUND_PADDING_MIN,
+  BACKGROUND_PADDING_MAX,
+  GRADIENT_PRESETS,
 } from '@/constants/defaults';
-import type { PaddingTuple } from '@/types';
+import type { PaddingTuple, BackgroundType, GradientDirection } from '@/types';
 import styles from './SettingsPanel.module.scss';
 
 export const SettingsPanel = memo(function SettingsPanel() {
@@ -46,6 +49,8 @@ export const SettingsPanel = memo(function SettingsPanel() {
   const setHeader = useStore((s) => s.setHeader);
   const footer = useStore((s) => s.footer);
   const setFooter = useStore((s) => s.setFooter);
+  const background = useStore((s) => s.background);
+  const setBackground = useStore((s) => s.setBackground);
   const resetSettings = useStore((s) => s.resetSettings);
 
   const handlePaddingChange = (index: number, value: number) => {
@@ -58,6 +63,22 @@ export const SettingsPanel = memo(function SettingsPanel() {
     const newPadding = [...watermarkPadding] as PaddingTuple;
     newPadding[index] = value;
     setWatermarkPadding(newPadding);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      setBackground({ image: dataUrl, type: 'image' });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = () => {
+    setBackground({ image: null, type: 'none' });
   };
 
   if (!isSettingsPanelOpen) return null;
@@ -360,6 +381,128 @@ export const SettingsPanel = memo(function SettingsPanel() {
               </div>
             </div>
           )}
+        </section>
+
+        {/* Background Section */}
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h3 className={styles.sectionTitle}>Background</h3>
+          </div>
+          <div className={styles.sectionContent}>
+            <div className={styles.fields}>
+              <Select
+                label="Type"
+                options={[
+                  { value: 'none', label: 'None' },
+                  { value: 'solid', label: 'Solid Color' },
+                  { value: 'gradient', label: 'Gradient' },
+                  { value: 'image', label: 'Image' },
+                ]}
+                value={background.type}
+                onChange={(v) => setBackground({ type: v as BackgroundType })}
+                fullWidth
+              />
+
+              {background.type === 'solid' && (
+                <ColorPicker
+                  label="Color"
+                  value={background.color}
+                  onChange={(color) => setBackground({ color })}
+                  placeholder="#6366f1"
+                  fullWidth
+                />
+              )}
+
+              {background.type === 'gradient' && (
+                <>
+                  <div className={styles.gradientPresets}>
+                    {GRADIENT_PRESETS.map((preset) => (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        className={styles.gradientPreset}
+                        style={{
+                          background: `linear-gradient(135deg, ${preset.from}, ${preset.to})`,
+                        }}
+                        onClick={() =>
+                          setBackground({
+                            gradientFrom: preset.from,
+                            gradientTo: preset.to,
+                          })
+                        }
+                        title={preset.label}
+                      />
+                    ))}
+                  </div>
+                  <ColorPicker
+                    label="From"
+                    value={background.gradientFrom}
+                    onChange={(gradientFrom) => setBackground({ gradientFrom })}
+                    placeholder="#6366f1"
+                    fullWidth
+                  />
+                  <ColorPicker
+                    label="To"
+                    value={background.gradientTo}
+                    onChange={(gradientTo) => setBackground({ gradientTo })}
+                    placeholder="#ec4899"
+                    fullWidth
+                  />
+                  <Select
+                    label="Direction"
+                    options={[
+                      { value: 'to-right', label: 'Left to Right' },
+                      { value: 'to-bottom', label: 'Top to Bottom' },
+                      { value: 'to-bottom-right', label: 'Diagonal ↘' },
+                      { value: 'to-bottom-left', label: 'Diagonal ↙' },
+                    ]}
+                    value={background.gradientDirection}
+                    onChange={(v) => setBackground({ gradientDirection: v as GradientDirection })}
+                    fullWidth
+                  />
+                </>
+              )}
+
+              {background.type === 'image' && (
+                <div className={styles.imageUpload}>
+                  {background.image ? (
+                    <div className={styles.imagePreview}>
+                      <img src={background.image} alt="Background" />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon="x"
+                        onClick={handleRemoveImage}
+                        className={styles.removeImage}
+                      />
+                    </div>
+                  ) : (
+                    <label className={styles.uploadButton}>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        hidden
+                      />
+                      <span>Upload Image</span>
+                    </label>
+                  )}
+                </div>
+              )}
+
+              {background.type !== 'none' && (
+                <Slider
+                  label="Padding"
+                  value={background.padding}
+                  onChange={(padding) => setBackground({ padding })}
+                  min={BACKGROUND_PADDING_MIN}
+                  max={BACKGROUND_PADDING_MAX}
+                  step={4}
+                  formatValue={(v) => `${v}px`}
+                />
+              )}
+            </div>
+          </div>
         </section>
 
         {/* Export Section - Desktop only */}
