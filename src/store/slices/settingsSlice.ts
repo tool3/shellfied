@@ -9,6 +9,7 @@ import {
 
 export const createSettingsSlice: StateCreator<AppStore, [], [], SettingsState> = (set, get) => ({
   ...DEFAULT_SETTINGS,
+  customThemes: [],
   exportFormat: DEFAULT_EXPORT_FORMAT,
   exportScale: DEFAULT_EXPORT_SCALE,
   jpegQuality: DEFAULT_JPEG_QUALITY,
@@ -21,19 +22,31 @@ export const createSettingsSlice: StateCreator<AppStore, [], [], SettingsState> 
   setTitle: (title) => set({ title }),
   setShowControls: (showControls) => set({ showControls }),
   setControlsPosition: (controlsPosition) => set({ controlsPosition }),
-  setWatermark: (watermark) => set({ watermark }),
-  setWatermarkPadding: (watermarkPadding) => set({ watermarkPadding }),
+  setBorderRadius: (borderRadius) => set({ borderRadius }),
+  setWatermark: (watermarkUpdate) => set({ watermark: { ...get().watermark, ...watermarkUpdate } }),
   setWidth: (width) => set({ width }),
   setFontFamily: (fontFamily) => set({ fontFamily }),
   setHeader: (headerUpdate) => set({ header: { ...get().header, ...headerUpdate } }),
   setFooter: (footerUpdate) => set({ footer: { ...get().footer, ...footerUpdate } }),
   setBackground: (backgroundUpdate) => set({ background: { ...get().background, ...backgroundUpdate } }),
+  addCustomTheme: (theme) => set({ customThemes: [...get().customThemes, theme] }),
+  updateCustomTheme: (id, themeUpdate) =>
+    set({
+      customThemes: get().customThemes.map((t) => (t.id === id ? { ...t, ...themeUpdate } : t)),
+    }),
+  deleteCustomTheme: (id) =>
+    set({
+      customThemes: get().customThemes.filter((t) => t.id !== id),
+      // Reset to dracula if the deleted theme was selected
+      terminalTheme: get().terminalTheme === id ? 'dracula' : get().terminalTheme,
+    }),
   setExportFormat: (exportFormat) => set({ exportFormat }),
   setExportScale: (exportScale) => set({ exportScale }),
   setJpegQuality: (jpegQuality) => set({ jpegQuality }),
   resetSettings: () =>
     set({
       ...DEFAULT_SETTINGS,
+      customThemes: get().customThemes, // Preserve custom themes on reset
       exportFormat: DEFAULT_EXPORT_FORMAT,
       exportScale: DEFAULT_EXPORT_SCALE,
       jpegQuality: DEFAULT_JPEG_QUALITY,

@@ -15,6 +15,8 @@ import {
   HEADER_HEIGHT_MAX,
   BORDER_WIDTH_MIN,
   BORDER_WIDTH_MAX,
+  BORDER_RADIUS_MIN,
+  BORDER_RADIUS_MAX,
   FONT_FAMILY_OPTIONS,
   BACKGROUND_PADDING_MIN,
   BACKGROUND_PADDING_MAX,
@@ -33,10 +35,10 @@ export const SettingsPanel = memo(function SettingsPanel() {
   const setShowControls = useStore((s) => s.setShowControls);
   const controlsPosition = useStore((s) => s.controlsPosition);
   const setControlsPosition = useStore((s) => s.setControlsPosition);
+  const borderRadius = useStore((s) => s.borderRadius);
+  const setBorderRadius = useStore((s) => s.setBorderRadius);
   const watermark = useStore((s) => s.watermark);
   const setWatermark = useStore((s) => s.setWatermark);
-  const watermarkPadding = useStore((s) => s.watermarkPadding);
-  const setWatermarkPadding = useStore((s) => s.setWatermarkPadding);
   const fontSize = useStore((s) => s.fontSize);
   const setFontSize = useStore((s) => s.setFontSize);
   const lineHeight = useStore((s) => s.lineHeight);
@@ -60,9 +62,9 @@ export const SettingsPanel = memo(function SettingsPanel() {
   };
 
   const handleWatermarkPaddingChange = (index: number, value: number) => {
-    const newPadding = [...watermarkPadding] as PaddingTuple;
+    const newPadding = [...watermark.padding] as PaddingTuple;
     newPadding[index] = value;
-    setWatermarkPadding(newPadding);
+    setWatermark({ padding: newPadding });
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -149,44 +151,62 @@ export const SettingsPanel = memo(function SettingsPanel() {
                   fullWidth
                 />
               )}
+              <Slider
+                label="Border Radius"
+                value={borderRadius}
+                onChange={setBorderRadius}
+                min={BORDER_RADIUS_MIN}
+                max={BORDER_RADIUS_MAX}
+                step={1}
+                formatValue={(v) => `${v}px`}
+              />
               <Input
                 label="Watermark"
-                value={watermark}
-                onChange={(e) => setWatermark(e.target.value)}
+                value={watermark.text}
+                onChange={(e) => setWatermark({ text: e.target.value })}
                 placeholder="Optional watermark text"
                 fullWidth
               />
-              {watermark && (
-                <div className={styles.sliderGrid}>
-                  <NumberSlider
-                    label="Top"
-                    value={watermarkPadding[0]}
-                    onChange={(v) => handleWatermarkPaddingChange(0, v)}
-                    min={PADDING_MIN}
-                    max={PADDING_MAX}
+              {watermark.text && (
+                <>
+                  <ColorPicker
+                    label="Watermark Color"
+                    value={watermark.color}
+                    onChange={(color) => setWatermark({ color })}
+                    placeholder="#888888"
+                    fullWidth
                   />
-                  <NumberSlider
-                    label="Right"
-                    value={watermarkPadding[1]}
-                    onChange={(v) => handleWatermarkPaddingChange(1, v)}
-                    min={PADDING_MIN}
-                    max={PADDING_MAX}
-                  />
-                  <NumberSlider
-                    label="Bottom"
-                    value={watermarkPadding[2]}
-                    onChange={(v) => handleWatermarkPaddingChange(2, v)}
-                    min={PADDING_MIN}
-                    max={PADDING_MAX}
-                  />
-                  <NumberSlider
-                    label="Left"
-                    value={watermarkPadding[3]}
-                    onChange={(v) => handleWatermarkPaddingChange(3, v)}
-                    min={PADDING_MIN}
-                    max={PADDING_MAX}
-                  />
-                </div>
+                  <div className={styles.sliderGrid}>
+                    <NumberSlider
+                      label="Top"
+                      value={watermark.padding[0]}
+                      onChange={(v) => handleWatermarkPaddingChange(0, v)}
+                      min={PADDING_MIN}
+                      max={PADDING_MAX}
+                    />
+                    <NumberSlider
+                      label="Right"
+                      value={watermark.padding[1]}
+                      onChange={(v) => handleWatermarkPaddingChange(1, v)}
+                      min={PADDING_MIN}
+                      max={PADDING_MAX}
+                    />
+                    <NumberSlider
+                      label="Bottom"
+                      value={watermark.padding[2]}
+                      onChange={(v) => handleWatermarkPaddingChange(2, v)}
+                      min={PADDING_MIN}
+                      max={PADDING_MAX}
+                    />
+                    <NumberSlider
+                      label="Left"
+                      value={watermark.padding[3]}
+                      onChange={(v) => handleWatermarkPaddingChange(3, v)}
+                      min={PADDING_MIN}
+                      max={PADDING_MAX}
+                    />
+                  </div>
+                </>
               )}
             </div>
           </div>

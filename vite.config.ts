@@ -10,9 +10,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'robots.txt'],
       manifest: {
-        name: 'Shellfied - Terminal Screenshots Made Beautiful',
+        name: 'Shellfied - Code Made Beautiful',
         short_name: 'Shellfied',
-        description: 'Create beautiful SVG terminal screenshots from your code and terminal output',
+        description: 'Create beautiful SVGs from your code and terminal output',
         theme_color: '#3b82f6',
         background_color: '#0f172a',
         display: 'standalone',

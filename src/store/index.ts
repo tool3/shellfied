@@ -4,6 +4,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { createEditorSlice } from './slices/editorSlice';
 import { createSettingsSlice } from './slices/settingsSlice';
 import { createUISlice } from './slices/uiSlice';
+import { DEFAULT_WATERMARK, DEFAULT_BACKGROUND } from '@/constants/defaults';
 import type { AppStore } from './types';
 
 export const useStore = create<AppStore>()(
@@ -28,18 +29,42 @@ export const useStore = create<AppStore>()(
         title: state.title,
         showControls: state.showControls,
         controlsPosition: state.controlsPosition,
+        borderRadius: state.borderRadius,
         watermark: state.watermark,
-        watermarkPadding: state.watermarkPadding,
         width: state.width,
         fontFamily: state.fontFamily,
         header: state.header,
         footer: state.footer,
         background: state.background,
+        customThemes: state.customThemes,
         exportFormat: state.exportFormat,
         exportScale: state.exportScale,
         jpegQuality: state.jpegQuality,
         colorMode: state.colorMode,
       }),
+      // Migrate old data formats
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<AppStore>;
+
+        // Handle watermark migration: old format was just a string
+        let watermark = persisted.watermark;
+        if (typeof watermark === 'string') {
+          watermark = { ...DEFAULT_WATERMARK, text: watermark };
+        } else if (watermark && !watermark.padding) {
+          watermark = { ...DEFAULT_WATERMARK, ...watermark };
+        }
+
+        // Handle background migration: might not exist in old data
+        const background = persisted.background || DEFAULT_BACKGROUND;
+
+        return {
+          ...currentState,
+          ...persisted,
+          watermark: watermark || DEFAULT_WATERMARK,
+          background,
+          customThemes: persisted.customThemes || [],
+        };
+      },
     }
   )
 );
@@ -63,8 +88,8 @@ export const useShellfieOptions = () =>
       title: s.title,
       showControls: s.showControls,
       controlsPosition: s.controlsPosition,
+      borderRadius: s.borderRadius,
       watermark: s.watermark,
-      watermarkPadding: s.watermarkPadding,
       width: s.width,
       fontFamily: s.fontFamily,
       header: s.header,

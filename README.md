@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="https://shellfied.dev">Live Demo</a> •
+  <a href="https://shellfied.vercel.app">Live Demo</a> •
   <a href="https://github.com/tool3/shellfie">shellfie library</a> •
   <a href="https://github.com/tool3/shellfie-cli">shellfie CLI</a>
 </p>

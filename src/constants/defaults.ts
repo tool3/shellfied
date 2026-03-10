@@ -1,4 +1,4 @@
-import type { ShellfieSettings, ColorMode, ExportFormat, ExportScale, HeaderConfig, FooterConfig, BackgroundConfig } from '@/types';
+import type { ShellfieSettings, ColorMode, ExportFormat, ExportScale, HeaderConfig, FooterConfig, BackgroundConfig, WatermarkConfig } from '@/types';
 import { SAMPLE_CODES } from './sampleCode';
 
 export const DEFAULT_HEADER: HeaderConfig = {
@@ -29,8 +29,14 @@ export const DEFAULT_BACKGROUND: BackgroundConfig = {
   padding: 32,
 };
 
-// Default font stack that works in SVG across platforms
-const DEFAULT_FONT_STACK = "'SF Mono', Monaco, Menlo, 'Ubuntu Mono', Consolas, 'Courier New', monospace";
+// Default monospace font stack for code rendering in SVG
+const DEFAULT_FONT_STACK = "'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace";
+
+export const DEFAULT_WATERMARK: WatermarkConfig = {
+  text: '',
+  color: '#888888',
+  padding: [8, 8, 8, 8],
+};
 
 export const DEFAULT_SETTINGS: ShellfieSettings = {
   template: 'macos',
@@ -41,8 +47,8 @@ export const DEFAULT_SETTINGS: ShellfieSettings = {
   title: 'Terminal',
   showControls: true,
   controlsPosition: 'left',
-  watermark: '',
-  watermarkPadding: [8, 8, 8, 8],
+  borderRadius: 8,
+  watermark: DEFAULT_WATERMARK,
   width: null,
   fontFamily: DEFAULT_FONT_STACK,
   header: DEFAULT_HEADER,
@@ -96,11 +102,14 @@ export const GRADIENT_PRESETS = [
 
 export const FONT_FAMILY_OPTIONS = [
   { value: DEFAULT_FONT_STACK, label: 'System Default' },
-  { value: "'JetBrains Mono', 'SF Mono', Monaco, Menlo, monospace", label: 'JetBrains Mono' },
-  { value: "'Fira Code', 'SF Mono', Monaco, Menlo, monospace", label: 'Fira Code' },
-  { value: "'Source Code Pro', 'SF Mono', Monaco, Menlo, monospace", label: 'Source Code Pro' },
-  { value: "'IBM Plex Mono', 'SF Mono', Monaco, Menlo, monospace", label: 'IBM Plex Mono' },
-  { value: "'Roboto Mono', 'SF Mono', Monaco, Menlo, monospace", label: 'Roboto Mono' },
-  { value: "'Ubuntu Mono', 'SF Mono', Monaco, Menlo, monospace", label: 'Ubuntu Mono' },
-  { value: "'Courier New', Courier, monospace", label: 'Courier New' },
+  { value: "'JetBrains Mono', monospace", label: 'JetBrains Mono' },
+  { value: "'Fira Code', monospace", label: 'Fira Code' },
+  { value: "'Source Code Pro', monospace", label: 'Source Code Pro' },
+  { value: "'IBM Plex Mono', monospace", label: 'IBM Plex Mono' },
+  { value: "'Roboto Mono', monospace", label: 'Roboto Mono' },
+  { value: "'Ubuntu Mono', monospace", label: 'Ubuntu Mono' },
+  { value: "'Space Mono', monospace", label: 'Space Mono' },
 ];
+
+export const BORDER_RADIUS_MIN = 0;
+export const BORDER_RADIUS_MAX = 24;
