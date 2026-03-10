@@ -38,10 +38,12 @@
 
 .canvas {
   @include flex-center;
-  @include custom-scrollbar;
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
   padding: var(--space-lg);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
 
   // Checkerboard background to show transparency
   background-color: var(--color-bg-tertiary);
@@ -55,11 +57,15 @@
     0 10px,
     10px -10px,
     -10px 0px;
+
+  &.panning {
+    cursor: grabbing;
+  }
 }
 
 .svgContainer {
   transform-origin: center center;
-  transition: transform 0.15s ease-out;
+  pointer-events: none;
 }
 
 .backgroundWrapper {

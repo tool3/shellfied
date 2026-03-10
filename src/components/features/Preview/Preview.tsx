@@ -1,6 +1,7 @@
-import { memo, useRef, useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { useStore } from '@/store';
 import { useShellfie } from '@/hooks/useShellfie';
+import { usePanZoom } from '@/hooks/usePanZoom';
 import { Button } from '@/components/common';
 import styles from './Preview.module.scss';
 
@@ -12,12 +13,19 @@ const GRADIENT_DIRECTIONS: Record<string, string> = {
 };
 
 export const Preview = memo(function Preview() {
-  const previewRef = useRef<HTMLDivElement>(null);
   const previewZoom = useStore((s) => s.previewZoom);
   const setPreviewZoom = useStore((s) => s.setPreviewZoom);
   const background = useStore((s) => s.background);
 
   const { svg, error, hasContent } = useShellfie();
+
+  const { containerRef, state, isPanning, handlers, reset } = usePanZoom({
+    minScale: 0.25,
+    maxScale: 2,
+    scaleStep: 0.25,
+    initialScale: previewZoom / 100,
+    onScaleChange: setPreviewZoom,
+  });
 
   const backgroundStyle = useMemo(() => {
     if (background.type === 'none') return {};
@@ -62,7 +70,11 @@ export const Preview = memo(function Preview() {
   };
 
   const handleZoomReset = () => {
-    setPreviewZoom(100);
+    reset();
+  };
+
+  const transformStyle: React.CSSProperties = {
+    transform: `translate(${state.x}px, ${state.y}px) scale(${state.scale})`,
   };
 
   return (
@@ -71,18 +83,18 @@ export const Preview = memo(function Preview() {
         <span className={styles.title}>Preview</span>
         <div className={styles.controls}>
           <Button variant="ghost" size="sm" icon="zoomOut" onClick={handleZoomOut} aria-label="Zoom out" />
-          <span className={styles.zoomLevel}>{previewZoom}%</span>
+          <span className={styles.zoomLevel}>{Math.round(state.scale * 100)}%</span>
           <Button variant="ghost" size="sm" icon="zoomIn" onClick={handleZoomIn} aria-label="Zoom in" />
           <Button variant="ghost" size="sm" icon="refresh" onClick={handleZoomReset} aria-label="Reset zoom" />
         </div>
       </div>
 
-      <div className={styles.canvas}>
-        <div
-          ref={previewRef}
-          className={styles.svgContainer}
-          style={{ transform: `scale(${previewZoom / 100})` }}
-        >
+      <div
+        ref={containerRef}
+        className={`${styles.canvas} ${isPanning ? styles.panning : ''}`}
+        {...handlers}
+      >
+        <div className={styles.svgContainer} style={transformStyle}>
           {error ? (
             <div className={styles.error}>
               <p>Error generating preview</p>

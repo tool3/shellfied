@@ -23,7 +23,7 @@ export interface EditorState {
 
 export interface SettingsState {
   template: TemplateType;
-  terminalTheme: TerminalThemeName | string;
+  terminalTheme: TerminalThemeName;
   fontSize: number;
   lineHeight: number;
   padding: PaddingTuple;
@@ -43,7 +43,7 @@ export interface SettingsState {
   jpegQuality: number;
 
   setTemplate: (template: TemplateType) => void;
-  setTerminalTheme: (theme: TerminalThemeName | string) => void;
+  setTerminalTheme: (theme: TerminalThemeName) => void;
   setFontSize: (size: number) => void;
   setLineHeight: (height: number) => void;
   setPadding: (padding: PaddingTuple) => void;

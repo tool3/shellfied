@@ -3,7 +3,7 @@ import { useStore } from '@/store';
 import { DARK_THEMES, LIGHT_THEMES } from '@/constants/themes';
 import { Button } from '@/components/common';
 import { CustomThemeEditor } from './CustomThemeEditor';
-import type { TerminalThemeName, CustomTheme } from '@/types';
+import type { CustomTheme } from '@/types';
 import styles from './ThemeSelector.module.scss';
 
 export const ThemeSelector = memo(function ThemeSelector() {
@@ -14,8 +14,8 @@ export const ThemeSelector = memo(function ThemeSelector() {
   const [editingTheme, setEditingTheme] = useState<CustomTheme | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
-  const handleSelect = (theme: TerminalThemeName | string) => {
-    setTerminalTheme(theme);
+  const handleSelect = (themeId: string) => {
+    setTerminalTheme(themeId);
   };
 
   const handleEditTheme = (theme: CustomTheme, e: React.MouseEvent) => {

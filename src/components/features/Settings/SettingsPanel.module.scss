@@ -2,7 +2,7 @@
   @include custom-scrollbar;
   display: flex;
   flex-direction: column;
-  width: 320px;
+  width: 360px;
   height: 100%;
   background-color: var(--color-bg-elevated);
   border-right: 1px solid var(--color-border-primary);
@@ -12,15 +12,13 @@
   order: -1; // Place before main content
   // Ensure scrolling works properly
   -webkit-overflow-scrolling: touch;
-  // Animation
-  transform: translateX(0);
-  transition: transform var(--transition-base), opacity var(--transition-base);
+  // Animation - use margin to keep in document flow
+  margin-left: 0;
+  transition: margin-left var(--transition-base);
 
   &.hidden {
-    transform: translateX(-100%);
-    opacity: 0;
+    margin-left: -360px;
     pointer-events: none;
-    position: absolute;
   }
 
   @include breakpoint-down('lg') {
@@ -33,9 +31,14 @@
     // Override height to be explicit
     height: calc(100vh - 64px);
     height: calc(100dvh - 64px);
+    // On mobile, use transform instead of margin
+    margin-left: 0;
+    transform: translateX(0);
+    transition: transform var(--transition-base);
 
     &.hidden {
-      position: fixed;
+      margin-left: 0;
+      transform: translateX(-100%);
     }
   }
 }

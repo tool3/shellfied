@@ -1,20 +1,4 @@
-import {
-  dracula,
-  nord,
-  tokyoNight,
-  oneDark,
-  monokai,
-  catppuccinMocha,
-  githubDark,
-  githubLight,
-  gruvboxDark,
-  gruvboxLight,
-  solarizedDark,
-  solarizedLight,
-  createTheme,
-  type Theme,
-} from 'shellfie';
-import type { TerminalThemeName } from '@/types';
+import { themes, createTheme, type Theme } from 'shellfie';
 
 // Custom themes not included in shellfie
 export const nightOwl = createTheme({
@@ -89,6 +73,19 @@ export const materialDark = createTheme({
   selection: '#80cbc4',
 });
 
+// Custom themes to add alongside shellfie themes
+const customThemes: Record<string, Theme> = {
+  nightOwl,
+  cobalt2,
+  materialDark,
+};
+
+// Combine shellfie themes with custom themes
+const allThemes: Record<string, Theme> = {
+  ...themes,
+  ...customThemes,
+};
+
 export interface TerminalThemeConfig {
   theme: Theme;
   label: string;
@@ -97,120 +94,90 @@ export interface TerminalThemeConfig {
   previewFg: string;
 }
 
-export const TERMINAL_THEMES: Record<TerminalThemeName, TerminalThemeConfig> = {
-  // Dark themes
-  dracula: {
-    theme: dracula,
-    label: 'Dracula',
-    isDark: true,
-    previewBg: '#282a36',
-    previewFg: '#f8f8f2',
-  },
-  nord: {
-    theme: nord,
-    label: 'Nord',
-    isDark: true,
-    previewBg: '#2e3440',
-    previewFg: '#eceff4',
-  },
-  tokyoNight: {
-    theme: tokyoNight,
-    label: 'Tokyo Night',
-    isDark: true,
-    previewBg: '#1a1b26',
-    previewFg: '#c0caf5',
-  },
-  oneDark: {
-    theme: oneDark,
-    label: 'One Dark',
-    isDark: true,
-    previewBg: '#282c34',
-    previewFg: '#abb2bf',
-  },
-  monokai: {
-    theme: monokai,
-    label: 'Monokai',
-    isDark: true,
-    previewBg: '#272822',
-    previewFg: '#f8f8f2',
-  },
-  catppuccinMocha: {
-    theme: catppuccinMocha,
-    label: 'Catppuccin',
-    isDark: true,
-    previewBg: '#1e1e2e',
-    previewFg: '#cdd6f4',
-  },
-  githubDark: {
-    theme: githubDark,
-    label: 'GitHub Dark',
-    isDark: true,
-    previewBg: '#0d1117',
-    previewFg: '#c9d1d9',
-  },
-  gruvboxDark: {
-    theme: gruvboxDark,
-    label: 'Gruvbox Dark',
-    isDark: true,
-    previewBg: '#282828',
-    previewFg: '#ebdbb2',
-  },
-  solarizedDark: {
-    theme: solarizedDark,
-    label: 'Solarized Dark',
-    isDark: true,
-    previewBg: '#002b36',
-    previewFg: '#839496',
-  },
-  nightOwl: {
-    theme: nightOwl,
-    label: 'Night Owl',
-    isDark: true,
-    previewBg: '#011627',
-    previewFg: '#d6deeb',
-  },
-  cobalt2: {
-    theme: cobalt2,
-    label: 'Cobalt2',
-    isDark: true,
-    previewBg: '#193549',
-    previewFg: '#ffffff',
-  },
-  materialDark: {
-    theme: materialDark,
-    label: 'Material Dark',
-    isDark: true,
-    previewBg: '#263238',
-    previewFg: '#eeffff',
-  },
-  // Light themes
-  githubLight: {
-    theme: githubLight,
-    label: 'GitHub Light',
-    isDark: false,
-    previewBg: '#ffffff',
-    previewFg: '#24292f',
-  },
-  gruvboxLight: {
-    theme: gruvboxLight,
-    label: 'Gruvbox Light',
-    isDark: false,
-    previewBg: '#fbf1c7',
-    previewFg: '#3c3836',
-  },
-  solarizedLight: {
-    theme: solarizedLight,
-    label: 'Solarized Light',
-    isDark: false,
-    previewBg: '#fdf6e3',
-    previewFg: '#657b83',
-  },
-};
+// Calculate relative luminance to determine if a color is dark
+function getLuminance(hex: string): number {
+  const rgb = hex
+    .replace('#', '')
+    .match(/.{2}/g)
+    ?.map((c) => {
+      const val = parseInt(c, 16) / 255;
+      return val <= 0.03928 ? val / 12.92 : Math.pow((val + 0.055) / 1.055, 2.4);
+    });
+  if (!rgb || rgb.length !== 3) return 0;
+  return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+}
+
+// Determine if a background color is dark (luminance < 0.5)
+function isDarkColor(hex: string): boolean {
+  return getLuminance(hex) < 0.5;
+}
+
+// Convert camelCase or other formats to Title Case
+function toLabel(name: string): string {
+  // Handle special cases
+  const specialLabels: Record<string, string> = {
+    night3024: '3024 Night',
+    a11yDark: 'A11y Dark',
+    base16Dark: 'Base16 Dark',
+    base16Light: 'Base16 Light',
+    catppuccinMocha: 'Catppuccin Mocha',
+    draculaPro: 'Dracula Pro',
+    duotoneDark: 'Duotone Dark',
+    githubDark: 'GitHub Dark',
+    githubLight: 'GitHub Light',
+    gruvboxDark: 'Gruvbox Dark',
+    gruvboxLight: 'Gruvbox Light',
+    oceanicNext: 'Oceanic Next',
+    oneDark: 'One Dark',
+    oneLight: 'One Light',
+    pandaSyntax: 'Panda Syntax',
+    paraisoDark: 'Paraiso Dark',
+    shadesOfPurple: 'Shades of Purple',
+    solarizedDark: 'Solarized Dark',
+    solarizedLight: 'Solarized Light',
+    synthwave84: 'Synthwave 84',
+    tokyoNight: 'Tokyo Night',
+    materialDark: 'Material Dark',
+    nightOwl: 'Night Owl',
+    cobalt2: 'Cobalt2',
+    vscode: 'VS Code',
+  };
+
+  if (specialLabels[name]) {
+    return specialLabels[name];
+  }
+
+  // Default: convert camelCase to Title Case
+  return name
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/^./, (str) => str.toUpperCase())
+    .trim();
+}
+
+// Programmatically generate theme configs from all available themes
+export const TERMINAL_THEMES: Record<string, TerminalThemeConfig> = Object.fromEntries(
+  Object.entries(allThemes).map(([name, theme]) => [
+    name,
+    {
+      theme,
+      label: toLabel(name),
+      isDark: isDarkColor(theme.background),
+      previewBg: theme.background,
+      previewFg: theme.foreground,
+    },
+  ])
+);
+
+// Get all theme names as a type-safe array
+export const THEME_NAMES = Object.keys(TERMINAL_THEMES) as string[];
 
 export const THEME_LIST = Object.entries(TERMINAL_THEMES).map(([key, config]) => ({
-  id: key as TerminalThemeName,
+  id: key,
   ...config,
 }));
 
 export const DARK_THEMES = THEME_LIST.filter((t) => t.isDark);
 export const LIGHT_THEMES = THEME_LIST.filter((t) => !t.isDark);
+
+// Default theme
+export const DEFAULT_THEME = 'dracula';

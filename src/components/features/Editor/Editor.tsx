@@ -25,6 +25,7 @@ export const Editor = memo(function Editor() {
   const language = useStore((s) => s.language);
   const setLanguage = useStore((s) => s.setLanguage);
   const clearContent = useStore((s) => s.clearContent);
+  const setTitle = useStore((s) => s.setTitle);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const highlightRef = useRef<HTMLPreElement>(null);
@@ -37,8 +38,12 @@ export const Editor = memo(function Editor() {
 
   const handleSampleSelect = (sampleId: string) => {
     const sample = SAMPLE_CODES[sampleId as keyof typeof SAMPLE_CODES];
+    const sampleOption = SAMPLE_CODE_OPTIONS.find((s) => s.id === sampleId);
     if (sample) {
       setContent(sample);
+      if (sampleOption) {
+        setTitle(sampleOption.label);
+      }
     }
   };
 

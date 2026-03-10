@@ -2,22 +2,9 @@ export type TemplateType = 'macos' | 'windows' | 'minimal';
 
 export type ControlsPosition = 'left' | 'right';
 
-export type TerminalThemeName =
-  | 'dracula'
-  | 'nord'
-  | 'tokyoNight'
-  | 'oneDark'
-  | 'monokai'
-  | 'catppuccinMocha'
-  | 'githubDark'
-  | 'githubLight'
-  | 'gruvboxDark'
-  | 'gruvboxLight'
-  | 'solarizedDark'
-  | 'solarizedLight'
-  | 'nightOwl'
-  | 'cobalt2'
-  | 'materialDark';
+// Theme names are now dynamic - derived from shellfie's themes export
+// Using string for flexibility as themes can be added at runtime
+export type TerminalThemeName = string;
 
 export type ColorMode = 'light' | 'dark';
 
