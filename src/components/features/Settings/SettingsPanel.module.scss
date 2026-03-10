@@ -12,6 +12,16 @@
   order: -1; // Place before main content
   // Ensure scrolling works properly
   -webkit-overflow-scrolling: touch;
+  // Animation
+  transform: translateX(0);
+  transition: transform var(--transition-base), opacity var(--transition-base);
+
+  &.hidden {
+    transform: translateX(-100%);
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+  }
 
   @include breakpoint-down('lg') {
     position: fixed;
@@ -23,6 +33,10 @@
     // Override height to be explicit
     height: calc(100vh - 64px);
     height: calc(100dvh - 64px);
+
+    &.hidden {
+      position: fixed;
+    }
   }
 }
 

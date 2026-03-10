@@ -21,8 +21,8 @@
   // --- Brand Colors (emerald green for dark mode) ---
   --color-brand: var(--color-brand-dark);
   --color-brand-primary: var(--color-brand-dark);
-  --color-brand-primary-hover: #059669;
-  --color-brand-primary-active: #047857;
+  --color-brand-primary-hover: var(--color-brand-dark-hover);
+  --color-brand-primary-active: var(--color-brand-dark-active);
 
   // --- Semantic Colors ---
   --color-success: #22c55e;
@@ -39,5 +39,5 @@
 
   // --- Accent ---
   --color-accent: var(--color-brand-dark);
-  --color-accent-subtle: rgba(16, 185, 129, 0.15);
+  --color-accent-subtle: var(--color-brand-dark-subtle);
 }

@@ -83,10 +83,8 @@ export const SettingsPanel = memo(function SettingsPanel() {
     setBackground({ image: null, type: 'none' });
   };
 
-  if (!isSettingsPanelOpen) return null;
-
   return (
-    <aside className={styles.panel}>
+    <aside className={`${styles.panel} ${!isSettingsPanelOpen ? styles.hidden : ''}`}>
       <div className={styles.header}>
         <h2 className={styles.title}>Settings</h2>
         <Button

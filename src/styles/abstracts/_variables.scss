@@ -54,9 +54,18 @@ $transition-slow: 300ms ease;
 $transition-slower: 500ms ease;
 
 // --- Brand Colors ---
-// Solid, professional colors for each theme
-$brand-dark: #10B981;   // Emerald green - classic terminal aesthetic
-$brand-light: #0EA5E9;  // Sky blue - clean and professional
+// SINGLE SOURCE OF TRUTH: Change these to update brand colors globally
+// Dark theme brand (emerald green - classic terminal aesthetic)
+$brand-dark: #10B981;
+$brand-dark-hover: #059669;
+$brand-dark-active: #047857;
+$brand-dark-subtle: rgba(16, 185, 129, 0.15);
+
+// Light theme brand (sky blue - clean and professional)
+$brand-light: #0EA5E9;
+$brand-light-hover: #0284c7;
+$brand-light-active: #0369a1;
+$brand-light-subtle: rgba(14, 165, 233, 0.1);
 
 // --- Breakpoints ---
 $breakpoint-sm: 640px;
@@ -116,5 +125,11 @@ $z-toast: 600;
 
   // Brand Colors (theme-specific, set in theme files)
   --color-brand-dark: #{$brand-dark};
+  --color-brand-dark-hover: #{$brand-dark-hover};
+  --color-brand-dark-active: #{$brand-dark-active};
+  --color-brand-dark-subtle: #{$brand-dark-subtle};
   --color-brand-light: #{$brand-light};
+  --color-brand-light-hover: #{$brand-light-hover};
+  --color-brand-light-active: #{$brand-light-active};
+  --color-brand-light-subtle: #{$brand-light-subtle};
 }

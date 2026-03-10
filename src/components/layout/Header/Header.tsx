@@ -42,7 +42,7 @@ export const Header = memo(function Header() {
 
         <Button
           variant="ghost"
-          icon="panelRight"
+          icon="panelLeft"
           onClick={() => setSettingsPanelOpen(!isSettingsPanelOpen)}
           aria-label={isSettingsPanelOpen ? 'Hide settings' : 'Show settings'}
           className={styles.settingsToggle}

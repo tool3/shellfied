@@ -185,16 +185,28 @@ function processToken(token: PrismToken): string {
 }
 
 // Check if text contains ANSI escape sequences
-const ANSI_REGEX = /\x1b\[[0-9;]*m/;
+// Matches ESC character followed by any CSI sequence or other escape patterns
+const ANSI_REGEX = /\x1b(?:\[[0-9;:]*[A-Za-z]|\][^\x07]*\x07|\(B|=|>|c)/;
+
+// Matches literal escape notations in text (e.g., \u001b, \x1b, \033, \e)
+const LITERAL_ESCAPE_REGEX = /\\u001[bB]|\\x1[bB]|\\033|\\e/g;
+
+// Convert literal escape sequence notations to actual ESC character
+export function normalizeAnsiEscapes(text: string): string {
+  return text.replace(LITERAL_ESCAPE_REGEX, '\x1b');
+}
 
 export function containsAnsi(text: string): boolean {
-  return ANSI_REGEX.test(text);
+  // Check for actual ESC character
+  if (ANSI_REGEX.test(text)) return true;
+  // Check for literal escape notations
+  return LITERAL_ESCAPE_REGEX.test(text);
 }
 
 export function highlightWithAnsi(code: string, language: string): string {
-  // If the code already contains ANSI codes, preserve them as-is
+  // If the code already contains ANSI codes, normalize and preserve them as-is
   if (containsAnsi(code)) {
-    return code;
+    return normalizeAnsiEscapes(code);
   }
 
   if (language === 'plain' || !code) {

@@ -21,8 +21,8 @@
   // --- Brand Colors (sky blue for light mode) ---
   --color-brand: var(--color-brand-light);
   --color-brand-primary: var(--color-brand-light);
-  --color-brand-primary-hover: #0284c7;
-  --color-brand-primary-active: #0369a1;
+  --color-brand-primary-hover: var(--color-brand-light-hover);
+  --color-brand-primary-active: var(--color-brand-light-active);
 
   // --- Semantic Colors ---
   --color-success: #10b981;
@@ -39,5 +39,5 @@
 
   // --- Accent ---
   --color-accent: var(--color-brand-light);
-  --color-accent-subtle: rgba(14, 165, 233, 0.1);
+  --color-accent-subtle: var(--color-brand-light-subtle);
 }

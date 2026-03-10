@@ -73,9 +73,3 @@
   background-color: var(--color-border-primary);
   margin: 0 var(--space-xs);
 }
-
-.settingsToggle {
-  @include breakpoint('lg') {
-    display: none;
-  }
-}
