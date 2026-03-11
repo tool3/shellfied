@@ -11,6 +11,7 @@ export const createUISlice: StateCreator<AppStore, [], [], UIState> = (set, get)
   colorMode: getSystemColorMode(),
   isSettingsPanelOpen: true,
   previewZoom: 100,
+  compareMode: false,
 
   toggleColorMode: () =>
     set({
@@ -19,4 +20,5 @@ export const createUISlice: StateCreator<AppStore, [], [], UIState> = (set, get)
   setColorMode: (colorMode) => set({ colorMode }),
   setSettingsPanelOpen: (isSettingsPanelOpen) => set({ isSettingsPanelOpen }),
   setPreviewZoom: (previewZoom) => set({ previewZoom }),
+  setCompareMode: (compareMode) => set({ compareMode }),
 });

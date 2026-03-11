@@ -41,6 +41,15 @@ export const useStore = create<AppStore>()(
         exportScale: state.exportScale,
         jpegQuality: state.jpegQuality,
         colorMode: state.colorMode,
+        // Compare mode
+        compareMode: state.compareMode,
+        beforeContent: state.beforeContent,
+        afterContent: state.afterContent,
+        beforeLabel: state.beforeLabel,
+        afterLabel: state.afterLabel,
+        beforeLanguage: state.beforeLanguage,
+        afterLanguage: state.afterLanguage,
+        compareLabelConfig: state.compareLabelConfig,
       }),
       // Migrate old data formats
       merge: (persistedState, currentState) => {
@@ -76,6 +85,7 @@ export const useColorMode = () => useStore((s) => s.colorMode);
 export const useTerminalTheme = () => useStore((s) => s.terminalTheme);
 export const useTemplate = () => useStore((s) => s.template);
 export const useExportScale = () => useStore((s) => s.exportScale);
+export const useCompareMode = () => useStore((s) => s.compareMode);
 
 export const useShellfieOptions = () =>
   useStore(

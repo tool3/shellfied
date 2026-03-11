@@ -11,6 +11,7 @@ import type {
   BackgroundConfig,
   WatermarkConfig,
   CustomTheme,
+  CompareLabelConfig,
 } from '@/types';
 
 export interface EditorState {
@@ -19,6 +20,22 @@ export interface EditorState {
   setContent: (content: string) => void;
   setLanguage: (language: string) => void;
   clearContent: () => void;
+
+  // Compare mode content
+  beforeContent: string;
+  afterContent: string;
+  beforeLabel: string;
+  afterLabel: string;
+  beforeLanguage: string;
+  afterLanguage: string;
+  compareLabelConfig: CompareLabelConfig;
+  setBeforeContent: (content: string) => void;
+  setAfterContent: (content: string) => void;
+  setBeforeLabel: (label: string) => void;
+  setAfterLabel: (label: string) => void;
+  setBeforeLanguage: (language: string) => void;
+  setAfterLanguage: (language: string) => void;
+  setCompareLabelConfig: (config: Partial<CompareLabelConfig>) => void;
 }
 
 export interface SettingsState {
@@ -70,11 +87,13 @@ export interface UIState {
   colorMode: ColorMode;
   isSettingsPanelOpen: boolean;
   previewZoom: number;
+  compareMode: boolean;
 
   toggleColorMode: () => void;
   setColorMode: (mode: ColorMode) => void;
   setSettingsPanelOpen: (open: boolean) => void;
   setPreviewZoom: (zoom: number) => void;
+  setCompareMode: (enabled: boolean) => void;
 }
 
 export type AppStore = EditorState & SettingsState & UIState;

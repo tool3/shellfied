@@ -155,6 +155,141 @@ export function useShellfie() {
   return { svg, error, hasContent: Boolean(debouncedContent.trim()) };
 }
 
+export function useShellfieCompare() {
+  const beforeContent = useStore((s) => s.beforeContent);
+  const afterContent = useStore((s) => s.afterContent);
+  const beforeLanguage = useStore((s) => s.beforeLanguage);
+  const afterLanguage = useStore((s) => s.afterLanguage);
+  const beforeLabel = useStore((s) => s.beforeLabel);
+  const afterLabel = useStore((s) => s.afterLabel);
+
+  const debouncedBeforeContent = useDebounce(beforeContent, 300);
+  const debouncedAfterContent = useDebounce(afterContent, 300);
+
+  // Resolve auto-detect to actual languages
+  const effectiveBeforeLanguage = useMemo(() => {
+    if (beforeLanguage === 'auto') {
+      return detectLanguage(debouncedBeforeContent);
+    }
+    return beforeLanguage;
+  }, [beforeLanguage, debouncedBeforeContent]);
+
+  const effectiveAfterLanguage = useMemo(() => {
+    if (afterLanguage === 'auto') {
+      return detectLanguage(debouncedAfterContent);
+    }
+    return afterLanguage;
+  }, [afterLanguage, debouncedAfterContent]);
+
+  // Get shared styling settings
+  const template = useStore((s) => s.template);
+  const controlsPosition = useStore((s) => s.controlsPosition);
+  const borderRadius = useStore((s) => s.borderRadius);
+  const terminalTheme = useStore((s) => s.terminalTheme);
+  const customThemes = useStore((s) => s.customThemes);
+  const fontSize = useStore((s) => s.fontSize);
+  const lineHeight = useStore((s) => s.lineHeight);
+  const padding = useStore((s) => s.padding);
+  const showControls = useStore((s) => s.showControls);
+  const fontFamily = useStore((s) => s.fontFamily);
+
+  const generateSvg = useMemo(() => {
+    return (content: string, effectiveLanguage: string) => {
+      if (!content.trim()) return '';
+      try {
+        const highlightedContent = highlightWithAnsi(content, effectiveLanguage);
+        const theme = getTheme(terminalTheme, customThemes);
+
+        return shellfie(highlightedContent, {
+          template: buildTemplate(template, controlsPosition, borderRadius),
+          theme,
+          fontSize,
+          lineHeight,
+          padding,
+          controls: showControls,
+          fontFamily: fontFamily || undefined,
+        });
+      } catch {
+        return '';
+      }
+    };
+  }, [template, controlsPosition, borderRadius, terminalTheme, customThemes, fontSize, lineHeight, padding, showControls, fontFamily]);
+
+  const { beforeSvg, afterSvg, error } = useMemo(() => {
+    try {
+      const before = generateSvg(debouncedBeforeContent, effectiveBeforeLanguage);
+      const after = generateSvg(debouncedAfterContent, effectiveAfterLanguage);
+      return { beforeSvg: before, afterSvg: after, error: null };
+    } catch (err) {
+      return {
+        beforeSvg: '',
+        afterSvg: '',
+        error: err instanceof Error ? err.message : 'Failed to generate SVG',
+      };
+    }
+  }, [generateSvg, debouncedBeforeContent, debouncedAfterContent, effectiveBeforeLanguage, effectiveAfterLanguage]);
+
+  return {
+    beforeSvg,
+    afterSvg,
+    beforeLabel,
+    afterLabel,
+    error,
+    hasContent: Boolean(debouncedBeforeContent.trim() || debouncedAfterContent.trim()),
+  };
+}
+
+export function useShellfieCompareSync() {
+  const beforeContent = useStore((s) => s.beforeContent);
+  const afterContent = useStore((s) => s.afterContent);
+  const beforeLanguage = useStore((s) => s.beforeLanguage);
+  const afterLanguage = useStore((s) => s.afterLanguage);
+  const beforeLabel = useStore((s) => s.beforeLabel);
+  const afterLabel = useStore((s) => s.afterLabel);
+  const template = useStore((s) => s.template);
+  const controlsPosition = useStore((s) => s.controlsPosition);
+  const borderRadius = useStore((s) => s.borderRadius);
+  const terminalTheme = useStore((s) => s.terminalTheme);
+  const customThemes = useStore((s) => s.customThemes);
+  const fontSize = useStore((s) => s.fontSize);
+  const lineHeight = useStore((s) => s.lineHeight);
+  const padding = useStore((s) => s.padding);
+  const showControls = useStore((s) => s.showControls);
+  const fontFamily = useStore((s) => s.fontFamily);
+
+  const generate = () => {
+    const generateOne = (content: string, language: string) => {
+      if (!content.trim()) return '';
+      try {
+        const effectiveLang = language === 'auto' ? detectLanguage(content) : language;
+        const highlightedContent = highlightWithAnsi(content, effectiveLang);
+        const theme = getTheme(terminalTheme, customThemes);
+
+        return shellfie(highlightedContent, {
+          template: buildTemplate(template, controlsPosition, borderRadius),
+          theme,
+          fontSize,
+          lineHeight,
+          padding,
+          controls: showControls,
+          fontFamily: fontFamily || undefined,
+        });
+      } catch {
+        return '';
+      }
+    };
+
+    return {
+      beforeSvg: generateOne(beforeContent, beforeLanguage),
+      afterSvg: generateOne(afterContent, afterLanguage),
+      beforeLabel,
+      afterLabel,
+    };
+  };
+
+  return { generate };
+}
+
 export function useShellfieSync() {
   const content = useStore((s) => s.content);
   const language = useStore((s) => s.language);

@@ -1,11 +1,14 @@
 import { useState, useCallback } from 'react';
 import { useStore } from '@/store';
-import { useShellfieSync } from './useShellfie';
+import { useShellfieSync, useShellfieCompareSync } from './useShellfie';
 import {
   downloadSvg,
   downloadRaster,
   copySvgToClipboard,
   copyToClipboard,
+  downloadCompareRaster,
+  downloadCompareSvg,
+  copyCompareToClipboard,
 } from '@/services/exportService';
 
 type ExportStatus = 'idle' | 'exporting' | 'success' | 'error';
@@ -19,7 +22,10 @@ export function useExport() {
   const exportScale = useStore((s) => s.exportScale);
   const jpegQuality = useStore((s) => s.jpegQuality);
   const background = useStore((s) => s.background);
+  const compareMode = useStore((s) => s.compareMode);
+  const compareLabelConfig = useStore((s) => s.compareLabelConfig);
   const { generate } = useShellfieSync();
+  const { generate: generateCompare } = useShellfieCompareSync();
 
   const resetStatus = useCallback(() => {
     setStatus('idle');
@@ -34,20 +40,54 @@ export function useExport() {
       setError(null);
 
       try {
-        const svg = generate();
-        if (!svg) {
-          throw new Error('No content to export');
-        }
+        // Handle compare mode export
+        if (compareMode) {
+          const { beforeSvg, afterSvg, beforeLabel, afterLabel } = generateCompare();
+          if (!beforeSvg && !afterSvg) {
+            throw new Error('No content to export');
+          }
 
-        if (exportFormat === 'svg') {
-          downloadSvg(svg, filename);
-        } else {
-          const quality = exportFormat === 'jpeg' ? jpegQuality : 1.0;
-          await downloadRaster(svg, filename, exportFormat, {
+          const compareOptions = {
             scale: exportScale,
-            quality,
+            quality: exportFormat === 'jpeg' ? jpegQuality : 1.0,
             background,
-          });
+            gap: 32,
+            labelHeight: compareLabelConfig.fontSize + 24,
+            labelColor: compareLabelConfig.color,
+            labelFont: `600 ${compareLabelConfig.fontSize}px ${compareLabelConfig.fontFamily}`,
+            labelAlignment: compareLabelConfig.alignment,
+          };
+
+          if (exportFormat === 'svg') {
+            downloadCompareSvg(beforeSvg, afterSvg, beforeLabel, afterLabel, filename, compareOptions);
+          } else {
+            await downloadCompareRaster(
+              beforeSvg,
+              afterSvg,
+              beforeLabel,
+              afterLabel,
+              filename,
+              exportFormat,
+              compareOptions
+            );
+          }
+        } else {
+          // Handle single mode export
+          const svg = generate();
+          if (!svg) {
+            throw new Error('No content to export');
+          }
+
+          if (exportFormat === 'svg') {
+            downloadSvg(svg, filename);
+          } else {
+            const quality = exportFormat === 'jpeg' ? jpegQuality : 1.0;
+            await downloadRaster(svg, filename, exportFormat, {
+              scale: exportScale,
+              quality,
+              background,
+            });
+          }
         }
 
         setStatus('success');
@@ -57,7 +97,7 @@ export function useExport() {
         setStatus('error');
       }
     },
-    [generate, exportFormat, exportScale, jpegQuality, background, resetStatus]
+    [generate, generateCompare, compareMode, exportFormat, exportScale, jpegQuality, background, compareLabelConfig, resetStatus]
   );
 
   const copyToClipboardFn = useCallback(async () => {
@@ -66,15 +106,37 @@ export function useExport() {
     setError(null);
 
     try {
-      const svg = generate();
-      if (!svg) {
-        throw new Error('No content to copy');
-      }
+      // Handle compare mode copy
+      if (compareMode) {
+        const { beforeSvg, afterSvg, beforeLabel, afterLabel } = generateCompare();
+        if (!beforeSvg && !afterSvg) {
+          throw new Error('No content to copy');
+        }
 
-      if (exportFormat === 'svg') {
-        await copySvgToClipboard(svg);
+        const compareOptions = {
+          scale: exportScale,
+          background,
+          gap: 32,
+          labelHeight: compareLabelConfig.fontSize + 24,
+          labelColor: compareLabelConfig.color,
+          labelFont: `600 ${compareLabelConfig.fontSize}px ${compareLabelConfig.fontFamily}`,
+          labelAlignment: compareLabelConfig.alignment,
+        };
+
+        // For compare mode, we always copy as PNG (combined image)
+        await copyCompareToClipboard(beforeSvg, afterSvg, beforeLabel, afterLabel, compareOptions);
       } else {
-        await copyToClipboard(svg, { scale: exportScale, background });
+        // Handle single mode copy
+        const svg = generate();
+        if (!svg) {
+          throw new Error('No content to copy');
+        }
+
+        if (exportFormat === 'svg') {
+          await copySvgToClipboard(svg);
+        } else {
+          await copyToClipboard(svg, { scale: exportScale, background });
+        }
       }
 
       setStatus('success');
@@ -83,7 +145,7 @@ export function useExport() {
       setError(err instanceof Error ? err.message : 'Copy failed');
       setStatus('error');
     }
-  }, [generate, exportFormat, exportScale, background, resetStatus]);
+  }, [generate, generateCompare, compareMode, exportFormat, exportScale, background, compareLabelConfig, resetStatus]);
 
   // Legacy exports for backward compatibility
   const exportToSvg = useCallback(

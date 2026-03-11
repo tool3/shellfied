@@ -1,4 +1,4 @@
-import type { ExportFormat, BackgroundConfig } from '@/types';
+import type { ExportFormat, BackgroundConfig, CompareExportOptions } from '@/types';
 
 /**
  * Check if we're on a mobile device
@@ -389,4 +389,406 @@ function getSvgDimensions(svgContent: string): { width: number; height: number }
   }
 
   return { width: width || 800, height: height || 600 };
+}
+
+/**
+ * Loads an SVG string as an Image element
+ */
+async function loadSvgAsImage(svgContent: string): Promise<HTMLImageElement> {
+  const img = new Image();
+  const svgBase64 = btoa(unescape(encodeURIComponent(svgContent)));
+  const svgDataUrl = `data:image/svg+xml;base64,${svgBase64}`;
+
+  return new Promise((resolve, reject) => {
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('Failed to load SVG'));
+    img.src = svgDataUrl;
+  });
+}
+
+/**
+ * Downloads a compare mode image (two SVGs side by side with labels)
+ */
+export async function downloadCompareRaster(
+  beforeSvg: string,
+  afterSvg: string,
+  beforeLabel: string,
+  afterLabel: string,
+  filename: string,
+  format: Exclude<ExportFormat, 'svg'>,
+  options: CompareExportOptions
+): Promise<void> {
+  const {
+    scale = 2,
+    quality = 1.0,
+    background,
+    gap = 32,
+    labelHeight = 40,
+    labelColor = '#ffffff',
+    labelFont = '600 16px system-ui, -apple-system, sans-serif',
+    labelAlignment = 'left',
+  } = options;
+
+  // Get dimensions for both SVGs
+  const beforeDims = beforeSvg ? getSvgDimensions(beforeSvg) : { width: 400, height: 300 };
+  const afterDims = afterSvg ? getSvgDimensions(afterSvg) : { width: 400, height: 300 };
+
+  // Calculate total canvas size
+  const maxHeight = Math.max(beforeDims.height, afterDims.height);
+  const padding = background?.type !== 'none' ? (background?.padding ?? 32) : 32;
+  const totalWidth = beforeDims.width + gap + afterDims.width + padding * 2;
+  const totalHeight = maxHeight + labelHeight + padding * 2;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = totalWidth * scale;
+  canvas.height = totalHeight * scale;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas context not available');
+
+  ctx.scale(scale, scale);
+
+  // Draw background
+  if (background && background.type !== 'none') {
+    await drawBackground(ctx, background, totalWidth, totalHeight);
+  }
+
+  // Draw labels with alignment
+  ctx.font = labelFont;
+  ctx.fillStyle = labelColor;
+  ctx.textBaseline = 'top';
+
+  // Calculate label x positions based on alignment
+  let beforeLabelX = padding;
+  let afterLabelX = padding + beforeDims.width + gap;
+
+  if (labelAlignment === 'center') {
+    ctx.textAlign = 'center';
+    beforeLabelX = padding + beforeDims.width / 2;
+    afterLabelX = padding + beforeDims.width + gap + afterDims.width / 2;
+  } else if (labelAlignment === 'right') {
+    ctx.textAlign = 'right';
+    beforeLabelX = padding + beforeDims.width;
+    afterLabelX = padding + beforeDims.width + gap + afterDims.width;
+  } else {
+    ctx.textAlign = 'left';
+  }
+
+  ctx.fillText(beforeLabel, beforeLabelX, padding);
+  ctx.fillText(afterLabel, afterLabelX, padding);
+
+  // Reset text align for any future operations
+  ctx.textAlign = 'left';
+
+  // Draw before SVG
+  if (beforeSvg) {
+    const beforeImg = await loadSvgAsImage(beforeSvg);
+    ctx.drawImage(beforeImg, padding, padding + labelHeight);
+  } else {
+    // Draw placeholder
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.fillRect(padding, padding + labelHeight, beforeDims.width, beforeDims.height);
+  }
+
+  // Draw after SVG
+  if (afterSvg) {
+    const afterImg = await loadSvgAsImage(afterSvg);
+    ctx.drawImage(afterImg, padding + beforeDims.width + gap, padding + labelHeight);
+  } else {
+    // Draw placeholder
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.fillRect(padding + beforeDims.width + gap, padding + labelHeight, afterDims.width, afterDims.height);
+  }
+
+  const mimeType = getMimeType(format);
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      async (blob) => {
+        if (!blob) {
+          reject(new Error(`Failed to create ${format.toUpperCase()} blob`));
+          return;
+        }
+
+        // On mobile, try to use share API for save to gallery
+        if (isMobileDevice()) {
+          const shared = await shareFile(blob, `${filename}.${format}`, mimeType);
+          if (shared) {
+            resolve();
+            return;
+          }
+        }
+
+        // Fall back to regular download
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = `${filename}.${format}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        URL.revokeObjectURL(blobUrl);
+        resolve();
+      },
+      mimeType,
+      quality
+    );
+  });
+}
+
+/**
+ * Generates SVG background element based on config
+ */
+function generateSvgBackground(
+  background: BackgroundConfig | undefined,
+  totalWidth: number,
+  totalHeight: number,
+  borderRadius: number = 12
+): string {
+  if (!background || background.type === 'none') return '';
+
+  const GRADIENT_DIRECTIONS: Record<string, { x1: string; y1: string; x2: string; y2: string }> = {
+    'to-right': { x1: '0%', y1: '0%', x2: '100%', y2: '0%' },
+    'to-bottom': { x1: '0%', y1: '0%', x2: '0%', y2: '100%' },
+    'to-bottom-right': { x1: '0%', y1: '0%', x2: '100%', y2: '100%' },
+    'to-bottom-left': { x1: '100%', y1: '0%', x2: '0%', y2: '100%' },
+  };
+
+  switch (background.type) {
+    case 'solid':
+      return `<rect width="${totalWidth}" height="${totalHeight}" rx="${borderRadius}" fill="${background.color}"/>`;
+
+    case 'gradient': {
+      const dir = GRADIENT_DIRECTIONS[background.gradientDirection] || GRADIENT_DIRECTIONS['to-right'];
+      return `
+        <defs>
+          <linearGradient id="bgGradient" x1="${dir.x1}" y1="${dir.y1}" x2="${dir.x2}" y2="${dir.y2}">
+            <stop offset="0%" stop-color="${background.gradientFrom}"/>
+            <stop offset="100%" stop-color="${background.gradientTo}"/>
+          </linearGradient>
+        </defs>
+        <rect width="${totalWidth}" height="${totalHeight}" rx="${borderRadius}" fill="url(#bgGradient)"/>`;
+    }
+
+    case 'image':
+      // For SVG export, we can embed the image if it's a data URL
+      if (background.image) {
+        return `
+          <defs>
+            <clipPath id="bgClip">
+              <rect width="${totalWidth}" height="${totalHeight}" rx="${borderRadius}"/>
+            </clipPath>
+          </defs>
+          <image href="${background.image}" width="${totalWidth}" height="${totalHeight}" preserveAspectRatio="xMidYMid slice" clip-path="url(#bgClip)"/>`;
+      }
+      return '';
+
+    default:
+      return '';
+  }
+}
+
+/**
+ * Downloads compare mode as SVG (creates a combined SVG)
+ */
+export function downloadCompareSvg(
+  beforeSvg: string,
+  afterSvg: string,
+  beforeLabel: string,
+  afterLabel: string,
+  filename: string,
+  options: Pick<CompareExportOptions, 'gap' | 'labelHeight' | 'labelColor' | 'labelFont' | 'labelAlignment' | 'background'>
+): void {
+  const {
+    gap = 32,
+    labelHeight = 40,
+    labelColor = '#ffffff',
+    labelFont = '600 16px system-ui',
+    labelAlignment = 'left',
+    background,
+  } = options;
+
+  // Get dimensions for both SVGs
+  const beforeDims = beforeSvg ? getSvgDimensions(beforeSvg) : { width: 400, height: 300 };
+  const afterDims = afterSvg ? getSvgDimensions(afterSvg) : { width: 400, height: 300 };
+
+  const maxHeight = Math.max(beforeDims.height, afterDims.height);
+  const padding = background?.type !== 'none' ? (background?.padding ?? 32) : 32;
+  const totalWidth = beforeDims.width + gap + afterDims.width + padding * 2;
+  const totalHeight = maxHeight + labelHeight + padding * 2;
+
+  // Parse the font to extract size
+  const fontSizeMatch = labelFont.match(/(\d+)px/);
+  const fontSize = fontSizeMatch ? fontSizeMatch[1] : '16';
+
+  // Calculate label positions based on alignment
+  let beforeLabelX = padding;
+  let afterLabelX = padding + beforeDims.width + gap;
+  let textAnchor = 'start';
+
+  if (labelAlignment === 'center') {
+    beforeLabelX = padding + beforeDims.width / 2;
+    afterLabelX = padding + beforeDims.width + gap + afterDims.width / 2;
+    textAnchor = 'middle';
+  } else if (labelAlignment === 'right') {
+    beforeLabelX = padding + beforeDims.width;
+    afterLabelX = padding + beforeDims.width + gap + afterDims.width;
+    textAnchor = 'end';
+  }
+
+  // Generate background SVG element
+  const backgroundSvg = generateSvgBackground(background, totalWidth, totalHeight);
+
+  // Create combined SVG
+  const combinedSvg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}">
+  <defs>
+    <style>
+      .label { font: ${labelFont}; fill: ${labelColor}; text-anchor: ${textAnchor}; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  ${backgroundSvg}
+
+  <!-- Before label -->
+  <text x="${beforeLabelX}" y="${padding + parseInt(fontSize)}" class="label">${escapeXml(beforeLabel)}</text>
+
+  <!-- After label -->
+  <text x="${afterLabelX}" y="${padding + parseInt(fontSize)}" class="label">${escapeXml(afterLabel)}</text>
+
+  <!-- Before SVG -->
+  <g transform="translate(${padding}, ${padding + labelHeight})">
+    ${beforeSvg ? extractSvgContent(beforeSvg) : `<rect width="${beforeDims.width}" height="${beforeDims.height}" fill="rgba(255,255,255,0.1)"/>`}
+  </g>
+
+  <!-- After SVG -->
+  <g transform="translate(${padding + beforeDims.width + gap}, ${padding + labelHeight})">
+    ${afterSvg ? extractSvgContent(afterSvg) : `<rect width="${afterDims.width}" height="${afterDims.height}" fill="rgba(255,255,255,0.1)"/>`}
+  </g>
+</svg>`;
+
+  downloadSvg(combinedSvg, filename);
+}
+
+/**
+ * Copy compare mode to clipboard as PNG
+ */
+export async function copyCompareToClipboard(
+  beforeSvg: string,
+  afterSvg: string,
+  beforeLabel: string,
+  afterLabel: string,
+  options: CompareExportOptions
+): Promise<void> {
+  const {
+    scale = 2,
+    background,
+    gap = 32,
+    labelHeight = 40,
+    labelColor = '#ffffff',
+    labelFont = '600 16px system-ui, -apple-system, sans-serif',
+    labelAlignment = 'left',
+  } = options;
+
+  // Get dimensions for both SVGs
+  const beforeDims = beforeSvg ? getSvgDimensions(beforeSvg) : { width: 400, height: 300 };
+  const afterDims = afterSvg ? getSvgDimensions(afterSvg) : { width: 400, height: 300 };
+
+  const maxHeight = Math.max(beforeDims.height, afterDims.height);
+  const padding = background?.type !== 'none' ? (background?.padding ?? 32) : 32;
+  const totalWidth = beforeDims.width + gap + afterDims.width + padding * 2;
+  const totalHeight = maxHeight + labelHeight + padding * 2;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = totalWidth * scale;
+  canvas.height = totalHeight * scale;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas context not available');
+
+  ctx.scale(scale, scale);
+
+  // Draw background
+  if (background && background.type !== 'none') {
+    await drawBackground(ctx, background, totalWidth, totalHeight);
+  }
+
+  // Draw labels with alignment
+  ctx.font = labelFont;
+  ctx.fillStyle = labelColor;
+  ctx.textBaseline = 'top';
+
+  // Calculate label x positions based on alignment
+  let beforeLabelX = padding;
+  let afterLabelX = padding + beforeDims.width + gap;
+
+  if (labelAlignment === 'center') {
+    ctx.textAlign = 'center';
+    beforeLabelX = padding + beforeDims.width / 2;
+    afterLabelX = padding + beforeDims.width + gap + afterDims.width / 2;
+  } else if (labelAlignment === 'right') {
+    ctx.textAlign = 'right';
+    beforeLabelX = padding + beforeDims.width;
+    afterLabelX = padding + beforeDims.width + gap + afterDims.width;
+  } else {
+    ctx.textAlign = 'left';
+  }
+
+  ctx.fillText(beforeLabel, beforeLabelX, padding);
+  ctx.fillText(afterLabel, afterLabelX, padding);
+
+  // Reset text align for any future operations
+  ctx.textAlign = 'left';
+
+  // Draw before SVG
+  if (beforeSvg) {
+    const beforeImg = await loadSvgAsImage(beforeSvg);
+    ctx.drawImage(beforeImg, padding, padding + labelHeight);
+  }
+
+  // Draw after SVG
+  if (afterSvg) {
+    const afterImg = await loadSvgAsImage(afterSvg);
+    ctx.drawImage(afterImg, padding + beforeDims.width + gap, padding + labelHeight);
+  }
+
+  const blob = await new Promise<Blob | null>((res) =>
+    canvas.toBlob(res, 'image/png', 1.0)
+  );
+
+  if (!blob) {
+    throw new Error('Failed to create PNG blob');
+  }
+
+  if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
+    await navigator.clipboard.write([
+      new ClipboardItem({ 'image/png': blob }),
+    ]);
+  } else {
+    throw new Error('Clipboard API not supported');
+  }
+}
+
+/**
+ * Escapes XML special characters
+ */
+function escapeXml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+/**
+ * Extracts the inner content of an SVG (everything inside the <svg> tags)
+ */
+function extractSvgContent(svgString: string): string {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(svgString, 'image/svg+xml');
+  const svg = doc.querySelector('svg');
+  if (!svg) return '';
+  return svg.innerHTML;
 }

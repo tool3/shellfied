@@ -96,3 +96,23 @@ export interface ShellfieSettings {
   footer: FooterConfig;
   background: BackgroundConfig;
 }
+
+export type CompareLabelAlignment = 'left' | 'center' | 'right';
+
+export interface CompareLabelConfig {
+  fontSize: number;
+  fontFamily: string;
+  color: string;
+  alignment: CompareLabelAlignment;
+}
+
+export interface CompareExportOptions {
+  scale: ExportScale;
+  quality?: number;
+  background?: BackgroundConfig;
+  gap?: number;
+  labelHeight?: number;
+  labelColor?: string;
+  labelFont?: string;
+  labelAlignment?: CompareLabelAlignment;
+}
