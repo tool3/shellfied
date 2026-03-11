@@ -344,7 +344,14 @@ export const Editor = memo(function Editor() {
             variant="ghost"
             icon="play"
             size="sm"
-            onClick={() => setCompareMode(true)}
+            onClick={() => {
+              // Preserve current content in the "before" editor when entering compare mode
+              if (content && !beforeContent) {
+                setBeforeContent(content);
+                setBeforeLanguage(language);
+              }
+              setCompareMode(true);
+            }}
             aria-label="Enter compare mode"
           >
             Compare

@@ -155,6 +155,12 @@ export function useShellfie() {
   return { svg, error, hasContent: Boolean(debouncedContent.trim()) };
 }
 
+// Helper to extract width from SVG string
+function getSvgWidth(svg: string): number {
+  const match = svg.match(/width="(\d+(?:\.\d+)?)"/);
+  return match ? parseFloat(match[1]) : 0;
+}
+
 export function useShellfieCompare() {
   const beforeContent = useStore((s) => s.beforeContent);
   const afterContent = useStore((s) => s.afterContent);
@@ -194,7 +200,7 @@ export function useShellfieCompare() {
   const fontFamily = useStore((s) => s.fontFamily);
 
   const generateSvg = useMemo(() => {
-    return (content: string, effectiveLanguage: string) => {
+    return (content: string, effectiveLanguage: string, width?: number) => {
       if (!content.trim()) return '';
       try {
         const highlightedContent = highlightWithAnsi(content, effectiveLanguage);
@@ -208,6 +214,7 @@ export function useShellfieCompare() {
           padding,
           controls: showControls,
           fontFamily: fontFamily || undefined,
+          width: width || undefined,
         });
       } catch {
         return '';
@@ -217,8 +224,28 @@ export function useShellfieCompare() {
 
   const { beforeSvg, afterSvg, error } = useMemo(() => {
     try {
-      const before = generateSvg(debouncedBeforeContent, effectiveBeforeLanguage);
-      const after = generateSvg(debouncedAfterContent, effectiveAfterLanguage);
+      // First pass: generate SVGs to determine natural widths
+      const beforeInitial = generateSvg(debouncedBeforeContent, effectiveBeforeLanguage);
+      const afterInitial = generateSvg(debouncedAfterContent, effectiveAfterLanguage);
+
+      // Get the maximum width
+      const beforeWidth = getSvgWidth(beforeInitial);
+      const afterWidth = getSvgWidth(afterInitial);
+      const maxWidth = Math.max(beforeWidth, afterWidth);
+
+      // If both have the same width or one is empty, no need to regenerate
+      if (beforeWidth === afterWidth || maxWidth === 0) {
+        return { beforeSvg: beforeInitial, afterSvg: afterInitial, error: null };
+      }
+
+      // Second pass: regenerate with the shared max width
+      const before = beforeWidth < maxWidth && debouncedBeforeContent.trim()
+        ? generateSvg(debouncedBeforeContent, effectiveBeforeLanguage, maxWidth)
+        : beforeInitial;
+      const after = afterWidth < maxWidth && debouncedAfterContent.trim()
+        ? generateSvg(debouncedAfterContent, effectiveAfterLanguage, maxWidth)
+        : afterInitial;
+
       return { beforeSvg: before, afterSvg: after, error: null };
     } catch (err) {
       return {
@@ -229,6 +256,13 @@ export function useShellfieCompare() {
     }
   }, [generateSvg, debouncedBeforeContent, debouncedAfterContent, effectiveBeforeLanguage, effectiveAfterLanguage]);
 
+  // Calculate the shared width for empty pane placeholders
+  const sharedWidth = useMemo(() => {
+    const beforeWidth = getSvgWidth(beforeSvg);
+    const afterWidth = getSvgWidth(afterSvg);
+    return Math.max(beforeWidth, afterWidth);
+  }, [beforeSvg, afterSvg]);
+
   return {
     beforeSvg,
     afterSvg,
@@ -236,6 +270,7 @@ export function useShellfieCompare() {
     afterLabel,
     error,
     hasContent: Boolean(debouncedBeforeContent.trim() || debouncedAfterContent.trim()),
+    sharedWidth,
   };
 }
 
@@ -258,7 +293,7 @@ export function useShellfieCompareSync() {
   const fontFamily = useStore((s) => s.fontFamily);
 
   const generate = () => {
-    const generateOne = (content: string, language: string) => {
+    const generateOne = (content: string, language: string, width?: number) => {
       if (!content.trim()) return '';
       try {
         const effectiveLang = language === 'auto' ? detectLanguage(content) : language;
@@ -273,15 +308,43 @@ export function useShellfieCompareSync() {
           padding,
           controls: showControls,
           fontFamily: fontFamily || undefined,
+          width: width || undefined,
         });
       } catch {
         return '';
       }
     };
 
+    // First pass: generate SVGs to determine natural widths
+    const beforeInitial = generateOne(beforeContent, beforeLanguage);
+    const afterInitial = generateOne(afterContent, afterLanguage);
+
+    // Get the maximum width
+    const beforeWidth = getSvgWidth(beforeInitial);
+    const afterWidth = getSvgWidth(afterInitial);
+    const maxWidth = Math.max(beforeWidth, afterWidth);
+
+    // If both have the same width or one is empty, no need to regenerate
+    if (beforeWidth === afterWidth || maxWidth === 0) {
+      return {
+        beforeSvg: beforeInitial,
+        afterSvg: afterInitial,
+        beforeLabel,
+        afterLabel,
+      };
+    }
+
+    // Second pass: regenerate with the shared max width
+    const beforeSvg = beforeWidth < maxWidth && beforeContent.trim()
+      ? generateOne(beforeContent, beforeLanguage, maxWidth)
+      : beforeInitial;
+    const afterSvg = afterWidth < maxWidth && afterContent.trim()
+      ? generateOne(afterContent, afterLanguage, maxWidth)
+      : afterInitial;
+
     return {
-      beforeSvg: generateOne(beforeContent, beforeLanguage),
-      afterSvg: generateOne(afterContent, afterLanguage),
+      beforeSvg,
+      afterSvg,
       beforeLabel,
       afterLabel,
     };

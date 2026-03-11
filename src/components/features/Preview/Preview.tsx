@@ -27,6 +27,7 @@ export const Preview = memo(function Preview() {
     afterLabel,
     error: compareError,
     hasContent: hasCompareContent,
+    sharedWidth,
   } = useShellfieCompare();
 
   const { containerRef, state, isPanning, handlers, reset } = usePanZoom({
@@ -108,6 +109,9 @@ export const Preview = memo(function Preview() {
         textAlign: compareLabelConfig.alignment,
       };
 
+      // Calculate empty pane style to match the other terminal's width
+      const emptyPaneStyle: React.CSSProperties = sharedWidth > 0 ? { width: sharedWidth, minWidth: sharedWidth } : {};
+
       return (
         <div className={styles.comparePreview} style={backgroundStyle}>
           <div className={styles.comparePane}>
@@ -115,7 +119,7 @@ export const Preview = memo(function Preview() {
             {beforeSvg ? (
               <div className={styles.svgWrapper} dangerouslySetInnerHTML={{ __html: beforeSvg }} />
             ) : (
-              <div className={styles.emptyPane}>
+              <div className={styles.emptyPane} style={emptyPaneStyle}>
                 <p>No content</p>
               </div>
             )}
@@ -125,7 +129,7 @@ export const Preview = memo(function Preview() {
             {afterSvg ? (
               <div className={styles.svgWrapper} dangerouslySetInnerHTML={{ __html: afterSvg }} />
             ) : (
-              <div className={styles.emptyPane}>
+              <div className={styles.emptyPane} style={emptyPaneStyle}>
                 <p>No content</p>
               </div>
             )}
