@@ -73,36 +73,44 @@ export function usePanZoom(options: UsePanZoomOptions = {}) {
     setIsPanning(false);
   }, []);
 
-  const handleWheel = useCallback(
-    (e: React.WheelEvent) => {
-      e.preventDefault();
+  // Wheel handler needs to be attached manually with { passive: false } to allow preventDefault
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
-      const container = containerRef.current;
-      if (!container) return;
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
 
       const rect = container.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
 
+      const currentState = stateRef.current;
+
       // Calculate zoom
       const delta = -e.deltaY * 0.001;
-      const newScale = clampScale(state.scale + delta * state.scale);
+      const newScale = clampScale(currentState.scale + delta * currentState.scale);
 
-      if (newScale === state.scale) return;
+      if (newScale === currentState.scale) return;
 
       // Calculate new position to zoom towards mouse
-      const scaleRatio = newScale / state.scale;
+      const scaleRatio = newScale / currentState.scale;
       const containerCenterX = rect.width / 2;
       const containerCenterY = rect.height / 2;
 
-      const newX = mouseX - scaleRatio * (mouseX - containerCenterX - state.x) - containerCenterX;
-      const newY = mouseY - scaleRatio * (mouseY - containerCenterY - state.y) - containerCenterY;
+      const newX = mouseX - scaleRatio * (mouseX - containerCenterX - currentState.x) - containerCenterX;
+      const newY = mouseY - scaleRatio * (mouseY - containerCenterY - currentState.y) - containerCenterY;
 
       setState({ x: newX, y: newY, scale: newScale });
       onScaleChange?.(Math.round(newScale * 100));
-    },
-    [state, clampScale, onScaleChange]
-  );
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, [clampScale, onScaleChange]);
 
   // Touch handlers for mobile pinch-to-zoom
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -187,7 +195,6 @@ export function usePanZoom(options: UsePanZoomOptions = {}) {
       onMouseMove: handleMouseMove,
       onMouseUp: handleMouseUp,
       onMouseLeave: handleMouseUp,
-      onWheel: handleWheel,
       onTouchStart: handleTouchStart,
       onTouchMove: handleTouchMove,
       onTouchEnd: handleTouchEnd,
