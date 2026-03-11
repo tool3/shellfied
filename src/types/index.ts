@@ -18,7 +18,7 @@ export type PaddingTuple = [number, number, number, number];
 
 export type BackgroundType = 'none' | 'solid' | 'gradient' | 'image';
 
-export type GradientDirection = 'to-right' | 'to-bottom' | 'to-bottom-right' | 'to-bottom-left';
+export type GradientDirection = 'to-right' | 'to-bottom' | 'to-bottom-right' | 'to-bottom-left' | 'radial';
 
 export interface BackgroundConfig {
   type: BackgroundType;

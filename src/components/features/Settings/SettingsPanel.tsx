@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { useStore } from '@/store';
-import { Button, Input, Toggle, Slider, Select, ColorPicker, NumberSlider } from '@/components/common';
+import { Button, Input, Toggle, Slider, Select, ColorPicker, NumberSlider, Icon } from '@/components/common';
 import { ThemeSelector } from './ThemeSelector';
 import { TemplateSelector } from './TemplateSelector';
 import { ExportPanel } from '../Export';
@@ -466,18 +466,29 @@ export const SettingsPanel = memo(function SettingsPanel() {
                     placeholder="#ec4899"
                     fullWidth
                   />
-                  <Select
-                    label="Direction"
-                    options={[
-                      { value: 'to-right', label: 'Left to Right' },
-                      { value: 'to-bottom', label: 'Top to Bottom' },
-                      { value: 'to-bottom-right', label: 'Diagonal ↘' },
-                      { value: 'to-bottom-left', label: 'Diagonal ↙' },
-                    ]}
-                    value={background.gradientDirection}
-                    onChange={(v) => setBackground({ gradientDirection: v as GradientDirection })}
-                    fullWidth
-                  />
+                  <div className={styles.directionField}>
+                    <label className={styles.directionLabel}>Direction</label>
+                    <div className={styles.directionButtons}>
+                      {[
+                        { value: 'to-right', icon: 'arrowRight', label: 'Left to Right' },
+                        { value: 'to-bottom', icon: 'arrowDown', label: 'Top to Bottom' },
+                        { value: 'to-bottom-right', icon: 'arrowDownRight', label: 'Diagonal Down-Right' },
+                        { value: 'to-bottom-left', icon: 'arrowDownLeft', label: 'Diagonal Down-Left' },
+                        { value: 'radial', icon: 'circle', label: 'Radial' },
+                      ].map((dir) => (
+                        <button
+                          key={dir.value}
+                          type="button"
+                          className={`${styles.directionButton} ${background.gradientDirection === dir.value ? styles.active : ''}`}
+                          onClick={() => setBackground({ gradientDirection: dir.value as GradientDirection })}
+                          title={dir.label}
+                          aria-label={dir.label}
+                        >
+                          <Icon name={dir.icon as 'arrowRight' | 'arrowDown' | 'arrowDownRight' | 'arrowDownLeft' | 'circle'} size={16} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </>
               )}
 

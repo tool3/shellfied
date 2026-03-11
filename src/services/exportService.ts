@@ -83,7 +83,13 @@ async function drawBackground(
       const direction = background.gradientDirection;
       let gradient: CanvasGradient;
 
-      if (direction === 'to-right') {
+      if (direction === 'radial') {
+        // Create radial gradient from center
+        const centerX = totalWidth / 2;
+        const centerY = totalHeight / 2;
+        const radius = Math.max(totalWidth, totalHeight) / 2;
+        gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+      } else if (direction === 'to-right') {
         gradient = ctx.createLinearGradient(0, 0, totalWidth, 0);
       } else if (direction === 'to-bottom') {
         gradient = ctx.createLinearGradient(0, 0, 0, totalHeight);
@@ -560,6 +566,16 @@ function generateSvgBackground(
       return `<rect width="${totalWidth}" height="${totalHeight}" rx="${borderRadius}" fill="${background.color}"/>`;
 
     case 'gradient': {
+      if (background.gradientDirection === 'radial') {
+        return `
+          <defs>
+            <radialGradient id="bgGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+              <stop offset="0%" stop-color="${background.gradientFrom}"/>
+              <stop offset="100%" stop-color="${background.gradientTo}"/>
+            </radialGradient>
+          </defs>
+          <rect width="${totalWidth}" height="${totalHeight}" rx="${borderRadius}" fill="url(#bgGradient)"/>`;
+      }
       const dir = GRADIENT_DIRECTIONS[background.gradientDirection] || GRADIENT_DIRECTIONS['to-right'];
       return `
         <defs>

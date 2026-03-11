@@ -53,7 +53,9 @@ export const Preview = memo(function Preview() {
       case 'gradient':
         return {
           ...baseStyle,
-          background: `linear-gradient(${GRADIENT_DIRECTIONS[background.gradientDirection]}, ${background.gradientFrom}, ${background.gradientTo})`,
+          background: background.gradientDirection === 'radial'
+            ? `radial-gradient(circle, ${background.gradientFrom}, ${background.gradientTo})`
+            : `linear-gradient(${GRADIENT_DIRECTIONS[background.gradientDirection]}, ${background.gradientFrom}, ${background.gradientTo})`,
           borderRadius: 'var(--radius-lg)',
         };
       case 'image':

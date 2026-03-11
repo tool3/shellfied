@@ -91,11 +91,11 @@ export const BACKGROUND_PADDING_MAX = 128;
 
 export const GRADIENT_PRESETS = [
   { from: '#6366f1', to: '#ec4899', label: 'Purple Pink' },
-  { from: '#3b82f6', to: '#06b6d4', label: 'Blue Cyan' },
-  { from: '#f59e0b', to: '#ef4444', label: 'Amber Red' },
-  { from: '#10b981', to: '#3b82f6', label: 'Emerald Blue' },
+  { from: '#14b8a6', to: '#a855f7', label: 'Teal Purple' },
+  { from: '#f97316', to: '#fbbf24', label: 'Orange Gold' },
+  { from: '#dc2626', to: '#7c3aed', label: 'Red Violet' },
   { from: '#8b5cf6', to: '#06b6d4', label: 'Violet Cyan' },
-  { from: '#f43f5e', to: '#f59e0b', label: 'Rose Orange' },
+  { from: '#059669', to: '#84cc16', label: 'Emerald Lime' },
   { from: '#1e1e1e', to: '#3b3b3b', label: 'Dark Gray' },
   { from: '#0f172a', to: '#1e3a5f', label: 'Slate Blue' },
 ];

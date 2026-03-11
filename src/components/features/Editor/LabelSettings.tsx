@@ -13,10 +13,23 @@ const ALIGNMENT_OPTIONS = [
 const FONT_FAMILY_OPTIONS = [
   { value: 'system-ui, -apple-system, sans-serif', label: 'System' },
   { value: 'Inter, sans-serif', label: 'Inter' },
-  { value: 'SF Pro, sans-serif', label: 'SF Pro' },
   { value: 'Roboto, sans-serif', label: 'Roboto' },
+  { value: 'Poppins, sans-serif', label: 'Poppins' },
+  { value: 'Montserrat, sans-serif', label: 'Montserrat' },
+  { value: 'Open Sans, sans-serif', label: 'Open Sans' },
+  { value: 'Lato, sans-serif', label: 'Lato' },
+  { value: 'Oswald, sans-serif', label: 'Oswald' },
+  { value: 'Raleway, sans-serif', label: 'Raleway' },
+  { value: 'Nunito, sans-serif', label: 'Nunito' },
+  { value: 'Ubuntu, sans-serif', label: 'Ubuntu' },
+  { value: 'Rubik, sans-serif', label: 'Rubik' },
+  { value: 'Work Sans, sans-serif', label: 'Work Sans' },
+  { value: 'Quicksand, sans-serif', label: 'Quicksand' },
+  { value: 'Bebas Neue, sans-serif', label: 'Bebas Neue' },
+  { value: 'Playfair Display, serif', label: 'Playfair Display' },
+  { value: 'Merriweather, serif', label: 'Merriweather' },
   { value: 'Georgia, serif', label: 'Georgia' },
-  { value: "'SF Mono', 'Monaco', monospace", label: 'Monospace' },
+  { value: "'JetBrains Mono', monospace", label: 'JetBrains Mono' },
 ];
 
 export const LabelSettings = memo(function LabelSettings() {
@@ -68,7 +81,7 @@ export const LabelSettings = memo(function LabelSettings() {
                 value={compareLabelConfig.fontSize}
                 onChange={(value) => setCompareLabelConfig({ fontSize: value })}
                 min={12}
-                max={32}
+                max={64}
                 step={1}
               />
             </div>
