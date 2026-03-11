@@ -34,15 +34,44 @@ const FONT_FAMILY_OPTIONS = [
 
 export const LabelSettings = memo(function LabelSettings() {
   const [isOpen, setIsOpen] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const compareLabelConfig = useStore((s) => s.compareLabelConfig);
   const setCompareLabelConfig = useStore((s) => s.setCompareLabelConfig);
 
+  // Position dropdown when opened
+  useEffect(() => {
+    if (isOpen && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const dropdownWidth = 280;
+      const viewportWidth = window.innerWidth;
+      const padding = 16;
+
+      // Calculate left position, ensuring dropdown stays within viewport
+      let left = rect.left;
+      if (left + dropdownWidth > viewportWidth - padding) {
+        left = Math.max(padding, viewportWidth - dropdownWidth - padding);
+      }
+
+      setDropdownPosition({
+        top: rect.bottom + 4,
+        left,
+      });
+    }
+  }, [isOpen]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     };
@@ -56,7 +85,7 @@ export const LabelSettings = memo(function LabelSettings() {
   }, [isOpen]);
 
   return (
-    <div className={styles.container} ref={dropdownRef}>
+    <div className={styles.container} ref={containerRef}>
       <Button
         variant="ghost"
         icon="settings"
@@ -69,7 +98,11 @@ export const LabelSettings = memo(function LabelSettings() {
       </Button>
 
       {isOpen && (
-        <div className={styles.dropdown}>
+        <div
+          className={styles.dropdown}
+          ref={dropdownRef}
+          style={{ top: dropdownPosition.top, left: dropdownPosition.left }}
+        >
           <div className={styles.header}>
             <span>Label Settings</span>
           </div>
