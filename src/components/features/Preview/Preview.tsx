@@ -1,4 +1,4 @@
-import { memo, useMemo, useRef, useState, useLayoutEffect } from 'react';
+import { memo, useMemo, useRef, useState, useEffect } from 'react';
 import { useStore } from '@/store';
 import { useShellfie, useShellfieCompare } from '@/hooks/useShellfie';
 import { usePanZoom } from '@/hooks/usePanZoom';
@@ -82,24 +82,39 @@ export const Preview = memo(function Preview() {
   const [compareDimensions, setCompareDimensions] = useState({ width: 0, height: 0 });
 
   // Measure SVG dimensions after render for aspect ratio calculations
-  useLayoutEffect(() => {
+  // Use useEffect (not useLayoutEffect) for Safari mobile compatibility
+  useEffect(() => {
     if (svgWrapperRef.current && svg) {
-      const svgEl = svgWrapperRef.current.querySelector('svg');
-      if (svgEl) {
-        setSvgDimensions({
-          width: svgEl.clientWidth || svgEl.getBoundingClientRect().width,
-          height: svgEl.clientHeight || svgEl.getBoundingClientRect().height,
-        });
-      }
+      // Use requestAnimationFrame to ensure DOM is painted before measuring
+      requestAnimationFrame(() => {
+        const svgEl = svgWrapperRef.current?.querySelector('svg');
+        if (svgEl) {
+          const width = svgEl.clientWidth || svgEl.getBoundingClientRect().width;
+          const height = svgEl.clientHeight || svgEl.getBoundingClientRect().height;
+          // Only update if dimensions actually changed to prevent loops
+          setSvgDimensions(prev =>
+            prev.width !== width || prev.height !== height
+              ? { width, height }
+              : prev
+          );
+        }
+      });
     }
   }, [svg]);
 
   // Measure compare preview dimensions
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (compareWrapperRef.current && (beforeSvg || afterSvg)) {
-      setCompareDimensions({
-        width: compareWrapperRef.current.scrollWidth,
-        height: compareWrapperRef.current.scrollHeight,
+      requestAnimationFrame(() => {
+        if (compareWrapperRef.current) {
+          const width = compareWrapperRef.current.scrollWidth;
+          const height = compareWrapperRef.current.scrollHeight;
+          setCompareDimensions(prev =>
+            prev.width !== width || prev.height !== height
+              ? { width, height }
+              : prev
+          );
+        }
       });
     }
   }, [beforeSvg, afterSvg]);

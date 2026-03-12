@@ -63,8 +63,12 @@ export const useStore = create<AppStore>()(
           watermark = { ...DEFAULT_WATERMARK, ...watermark };
         }
 
-        // Handle background migration: might not exist in old data
-        const background = persisted.background || DEFAULT_BACKGROUND;
+        // Handle background migration: might not exist in old data or missing new fields
+        let background = persisted.background || DEFAULT_BACKGROUND;
+        // Ensure imageAspectRatio exists (added in later version)
+        if (background && !background.imageAspectRatio) {
+          background = { ...background, imageAspectRatio: 'auto' };
+        }
 
         return {
           ...currentState,

@@ -114,6 +114,9 @@ export function usePanZoom(options: UsePanZoomOptions = {}) {
 
   // Use refs to track panning state for native event handlers
   const isPanningRef = useRef(false);
+  // Refs for RAF-based updates to avoid React state updates on every frame
+  const pendingUpdate = useRef<{ x: number; y: number } | null>(null);
+  const rafId = useRef<number | null>(null);
 
   // Native touch handlers for better mobile performance
   // React's synthetic events add significant overhead on mobile
@@ -138,17 +141,38 @@ export function usePanZoom(options: UsePanZoomOptions = {}) {
       }
     };
 
+    // Batched update function using RAF to avoid multiple React updates per frame
+    const flushPendingUpdate = () => {
+      if (pendingUpdate.current) {
+        const { x, y } = pendingUpdate.current;
+        setState((prev) => ({
+          ...prev,
+          x: prev.x + x,
+          y: prev.y + y,
+        }));
+        pendingUpdate.current = null;
+      }
+      rafId.current = null;
+    };
+
     const handleTouchMove = (e: TouchEvent) => {
       if (e.touches.length === 1 && isPanningRef.current) {
-        // Pan - use functional update to avoid stale state
+        // Pan - batch updates using RAF to limit to 60fps
         const deltaX = e.touches[0].clientX - lastPosition.current.x;
         const deltaY = e.touches[0].clientY - lastPosition.current.y;
 
-        setState((prev) => ({
-          ...prev,
-          x: prev.x + deltaX,
-          y: prev.y + deltaY,
-        }));
+        // Accumulate deltas
+        if (pendingUpdate.current) {
+          pendingUpdate.current.x += deltaX;
+          pendingUpdate.current.y += deltaY;
+        } else {
+          pendingUpdate.current = { x: deltaX, y: deltaY };
+        }
+
+        // Schedule update if not already scheduled
+        if (rafId.current === null) {
+          rafId.current = requestAnimationFrame(flushPendingUpdate);
+        }
 
         lastPosition.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
       } else if (e.touches.length === 2 && lastTouchDistance.current !== null) {
@@ -177,6 +201,20 @@ export function usePanZoom(options: UsePanZoomOptions = {}) {
     };
 
     const handleTouchEnd = () => {
+      // Flush any pending updates immediately
+      if (rafId.current !== null) {
+        cancelAnimationFrame(rafId.current);
+        rafId.current = null;
+      }
+      if (pendingUpdate.current) {
+        const { x, y } = pendingUpdate.current;
+        setState((prev) => ({
+          ...prev,
+          x: prev.x + x,
+          y: prev.y + y,
+        }));
+        pendingUpdate.current = null;
+      }
       isPanningRef.current = false;
       setIsPanning(false);
       lastTouchDistance.current = null;
@@ -189,6 +227,9 @@ export function usePanZoom(options: UsePanZoomOptions = {}) {
     container.addEventListener('touchcancel', handleTouchEnd, { passive: true });
 
     return () => {
+      if (rafId.current !== null) {
+        cancelAnimationFrame(rafId.current);
+      }
       container.removeEventListener('touchstart', handleTouchStart);
       container.removeEventListener('touchmove', handleTouchMove);
       container.removeEventListener('touchend', handleTouchEnd);
