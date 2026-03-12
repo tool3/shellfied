@@ -92,17 +92,31 @@ function isValidStyle(styleStr: string): boolean {
   return true;
 }
 
+// Common named colors to hex mapping for color picker sync
+const NAMED_COLOR_TO_HEX: Record<string, string> = {
+  black: '#000000', white: '#ffffff', red: '#ff0000', green: '#008000',
+  blue: '#0000ff', yellow: '#ffff00', cyan: '#00ffff', magenta: '#ff00ff',
+  gray: '#808080', grey: '#808080', orange: '#ffa500', pink: '#ffc0cb',
+  purple: '#800080', brown: '#a52a2a', navy: '#000080', teal: '#008080',
+  maroon: '#800000', olive: '#808000', lime: '#00ff00', aqua: '#00ffff',
+  silver: '#c0c0c0', fuchsia: '#ff00ff',
+};
+
 // Extract color value from style string
 function extractColor(styleStr: string): string | null {
   const match = styleStr.match(/color\s*:\s*([^;\n]+)/i);
   if (match) {
-    const value = match[1].trim();
+    const value = match[1].trim().toLowerCase();
     // If it's a hex color, return it for the color picker
     if (/^#[0-9a-f]{6}$/i.test(value)) return value;
     if (/^#[0-9a-f]{3}$/i.test(value)) {
       // Expand 3-digit hex to 6-digit
       const r = value[1], g = value[2], b = value[3];
       return `#${r}${r}${g}${g}${b}${b}`;
+    }
+    // Check for named colors
+    if (NAMED_COLOR_TO_HEX[value]) {
+      return NAMED_COLOR_TO_HEX[value];
     }
   }
   return null;
