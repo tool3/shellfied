@@ -24,56 +24,89 @@ export function usePanZoom(options: UsePanZoomOptions = {}) {
   } = options;
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
   const [state, setState] = useState<PanZoomState>({
     x: 0,
     y: 0,
     scale: initialScale,
   });
   const [isPanning, setIsPanning] = useState(false);
+
+  // Live transform values (updated during panning without React)
+  const liveTransform = useRef({ x: 0, y: 0, scale: initialScale });
   const lastPosition = useRef({ x: 0, y: 0 });
   const lastTouchDistance = useRef<number | null>(null);
+  const isPanningRef = useRef(false);
 
   // Update scale when initialScale changes (from external zoom buttons)
   useEffect(() => {
+    liveTransform.current.scale = initialScale;
     setState((prev) => ({ ...prev, scale: initialScale }));
   }, [initialScale]);
+
+  // Sync live transform with state when state changes externally
+  useEffect(() => {
+    liveTransform.current = { x: state.x, y: state.y, scale: state.scale };
+  }, [state.x, state.y, state.scale]);
 
   const clampScale = useCallback(
     (scale: number) => Math.min(Math.max(scale, minScale), maxScale),
     [minScale, maxScale]
   );
 
+  // Direct DOM update - bypasses React for 120fps performance
+  const updateTransformDirect = useCallback(() => {
+    if (contentRef.current) {
+      const { x, y, scale } = liveTransform.current;
+      contentRef.current.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+    }
+  }, []);
+
+  // Find the content element (first child of container)
+  useEffect(() => {
+    const container = containerRef.current;
+    if (container) {
+      contentRef.current = container.querySelector('[data-pan-content]') as HTMLDivElement;
+    }
+  }, []);
+
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button !== 0) return; // Only left click
+    if (e.button !== 0) return;
     e.preventDefault();
+    isPanningRef.current = true;
     setIsPanning(true);
     lastPosition.current = { x: e.clientX, y: e.clientY };
-  }, []);
+    // Sync live transform at start
+    liveTransform.current = { ...state };
+  }, [state]);
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
-      if (!isPanning) return;
+      if (!isPanningRef.current) return;
       e.preventDefault();
 
       const deltaX = e.clientX - lastPosition.current.x;
       const deltaY = e.clientY - lastPosition.current.y;
 
-      setState((prev) => ({
-        ...prev,
-        x: prev.x + deltaX,
-        y: prev.y + deltaY,
-      }));
+      liveTransform.current.x += deltaX;
+      liveTransform.current.y += deltaY;
+      updateTransformDirect();
 
       lastPosition.current = { x: e.clientX, y: e.clientY };
     },
-    [isPanning]
+    [updateTransformDirect]
   );
 
   const handleMouseUp = useCallback(() => {
+    if (isPanningRef.current) {
+      // Sync React state with final position
+      setState({ ...liveTransform.current });
+    }
+    isPanningRef.current = false;
     setIsPanning(false);
   }, []);
 
-  // Wheel handler needs to be attached manually with { passive: false } to allow preventDefault
+  // Wheel handler
   const stateRef = useRef(state);
   stateRef.current = state;
 
@@ -89,14 +122,11 @@ export function usePanZoom(options: UsePanZoomOptions = {}) {
       const mouseY = e.clientY - rect.top;
 
       const currentState = stateRef.current;
-
-      // Calculate zoom
       const delta = -e.deltaY * 0.001;
       const newScale = clampScale(currentState.scale + delta * currentState.scale);
 
       if (newScale === currentState.scale) return;
 
-      // Calculate new position to zoom towards mouse
       const scaleRatio = newScale / currentState.scale;
       const containerCenterX = rect.width / 2;
       const containerCenterY = rect.height / 2;
@@ -104,6 +134,7 @@ export function usePanZoom(options: UsePanZoomOptions = {}) {
       const newX = mouseX - scaleRatio * (mouseX - containerCenterX - currentState.x) - containerCenterX;
       const newY = mouseY - scaleRatio * (mouseY - containerCenterY - currentState.y) - containerCenterY;
 
+      liveTransform.current = { x: newX, y: newY, scale: newScale };
       setState({ x: newX, y: newY, scale: newScale });
       onScaleChange?.(Math.round(newScale * 100));
     };
@@ -112,71 +143,51 @@ export function usePanZoom(options: UsePanZoomOptions = {}) {
     return () => container.removeEventListener('wheel', handleWheel);
   }, [clampScale, onScaleChange]);
 
-  // Use refs to track panning state for native event handlers
-  const isPanningRef = useRef(false);
-  // Refs for RAF-based updates to avoid React state updates on every frame
-  const pendingUpdate = useRef<{ x: number; y: number } | null>(null);
-  const rafId = useRef<number | null>(null);
-
-  // Native touch handlers for better mobile performance
-  // React's synthetic events add significant overhead on mobile
+  // Native touch handlers - direct DOM manipulation for 120fps
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
+    // Find content element
+    const content = container.querySelector('[data-pan-content]') as HTMLDivElement;
+    contentRef.current = content;
+
     const handleTouchStart = (e: TouchEvent) => {
       if (e.touches.length === 1) {
-        // Single touch - pan
         isPanningRef.current = true;
         setIsPanning(true);
         lastPosition.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        // Sync live transform with current React state
+        liveTransform.current = { ...stateRef.current };
       } else if (e.touches.length === 2) {
-        // Two finger - prepare for pinch zoom
         isPanningRef.current = false;
         const distance = Math.hypot(
           e.touches[0].clientX - e.touches[1].clientX,
           e.touches[0].clientY - e.touches[1].clientY
         );
         lastTouchDistance.current = distance;
+        // Sync live transform
+        liveTransform.current = { ...stateRef.current };
       }
-    };
-
-    // Batched update function using RAF to avoid multiple React updates per frame
-    const flushPendingUpdate = () => {
-      if (pendingUpdate.current) {
-        const { x, y } = pendingUpdate.current;
-        setState((prev) => ({
-          ...prev,
-          x: prev.x + x,
-          y: prev.y + y,
-        }));
-        pendingUpdate.current = null;
-      }
-      rafId.current = null;
     };
 
     const handleTouchMove = (e: TouchEvent) => {
       if (e.touches.length === 1 && isPanningRef.current) {
-        // Pan - batch updates using RAF to limit to 60fps
+        // Direct DOM manipulation - no React involved
         const deltaX = e.touches[0].clientX - lastPosition.current.x;
         const deltaY = e.touches[0].clientY - lastPosition.current.y;
 
-        // Accumulate deltas
-        if (pendingUpdate.current) {
-          pendingUpdate.current.x += deltaX;
-          pendingUpdate.current.y += deltaY;
-        } else {
-          pendingUpdate.current = { x: deltaX, y: deltaY };
-        }
+        liveTransform.current.x += deltaX;
+        liveTransform.current.y += deltaY;
 
-        // Schedule update if not already scheduled
-        if (rafId.current === null) {
-          rafId.current = requestAnimationFrame(flushPendingUpdate);
+        // Update DOM directly for 120fps performance
+        if (content) {
+          const { x, y, scale } = liveTransform.current;
+          content.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
         }
 
         lastPosition.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
       } else if (e.touches.length === 2 && lastTouchDistance.current !== null) {
-        // Pinch zoom - prevent default to stop page zoom
         e.preventDefault();
         const distance = Math.hypot(
           e.touches[0].clientX - e.touches[1].clientX,
@@ -184,52 +195,44 @@ export function usePanZoom(options: UsePanZoomOptions = {}) {
         );
 
         const delta = (distance - lastTouchDistance.current) * 0.01;
+        const newScale = clampScale(liveTransform.current.scale + delta);
 
-        // Use functional update to avoid stale state and reduce re-renders
-        setState((prev) => {
-          const newScale = clampScale(prev.scale + delta);
-          if (newScale !== prev.scale) {
-            // Schedule scale change notification after render
-            requestAnimationFrame(() => onScaleChange?.(Math.round(newScale * 100)));
-            return { ...prev, scale: newScale };
+        if (newScale !== liveTransform.current.scale) {
+          liveTransform.current.scale = newScale;
+
+          // Update DOM directly
+          if (content) {
+            const { x, y, scale } = liveTransform.current;
+            content.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
           }
-          return prev;
-        });
+        }
 
         lastTouchDistance.current = distance;
       }
     };
 
     const handleTouchEnd = () => {
-      // Flush any pending updates immediately
-      if (rafId.current !== null) {
-        cancelAnimationFrame(rafId.current);
-        rafId.current = null;
-      }
-      if (pendingUpdate.current) {
-        const { x, y } = pendingUpdate.current;
-        setState((prev) => ({
-          ...prev,
-          x: prev.x + x,
-          y: prev.y + y,
-        }));
-        pendingUpdate.current = null;
+      if (isPanningRef.current || lastTouchDistance.current !== null) {
+        // Sync React state with final transform
+        const { x, y, scale } = liveTransform.current;
+        setState({ x, y, scale });
+
+        // Notify scale change if it changed during pinch
+        if (scale !== stateRef.current.scale) {
+          onScaleChange?.(Math.round(scale * 100));
+        }
       }
       isPanningRef.current = false;
       setIsPanning(false);
       lastTouchDistance.current = null;
     };
 
-    // Use passive: false only for touchmove to allow preventDefault for pinch zoom
     container.addEventListener('touchstart', handleTouchStart, { passive: true });
     container.addEventListener('touchmove', handleTouchMove, { passive: false });
     container.addEventListener('touchend', handleTouchEnd, { passive: true });
     container.addEventListener('touchcancel', handleTouchEnd, { passive: true });
 
     return () => {
-      if (rafId.current !== null) {
-        cancelAnimationFrame(rafId.current);
-      }
       container.removeEventListener('touchstart', handleTouchStart);
       container.removeEventListener('touchmove', handleTouchMove);
       container.removeEventListener('touchend', handleTouchEnd);
@@ -239,17 +242,20 @@ export function usePanZoom(options: UsePanZoomOptions = {}) {
 
   const zoomIn = useCallback(() => {
     const newScale = clampScale(state.scale + scaleStep);
+    liveTransform.current.scale = newScale;
     setState((prev) => ({ ...prev, scale: newScale }));
     onScaleChange?.(Math.round(newScale * 100));
   }, [state.scale, scaleStep, clampScale, onScaleChange]);
 
   const zoomOut = useCallback(() => {
     const newScale = clampScale(state.scale - scaleStep);
+    liveTransform.current.scale = newScale;
     setState((prev) => ({ ...prev, scale: newScale }));
     onScaleChange?.(Math.round(newScale * 100));
   }, [state.scale, scaleStep, clampScale, onScaleChange]);
 
   const reset = useCallback(() => {
+    liveTransform.current = { x: 0, y: 0, scale: 1 };
     setState({ x: 0, y: 0, scale: 1 });
     onScaleChange?.(100);
   }, [onScaleChange]);
@@ -263,7 +269,6 @@ export function usePanZoom(options: UsePanZoomOptions = {}) {
       onMouseMove: handleMouseMove,
       onMouseUp: handleMouseUp,
       onMouseLeave: handleMouseUp,
-      // Touch handlers are now native event listeners for better mobile performance
     },
     zoomIn,
     zoomOut,

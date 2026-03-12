@@ -393,7 +393,7 @@ export const Preview = memo(function Preview() {
         className={`${styles.canvas} ${isPanning ? styles.panning : ''}`}
         {...handlers}
       >
-        <div className={styles.svgContainer} style={transformStyle}>
+        <div className={styles.svgContainer} style={transformStyle} data-pan-content>
           {compareMode ? renderComparePreview() : renderSinglePreview()}
         </div>
       </div>
