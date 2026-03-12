@@ -64,6 +64,8 @@ export const icons = {
   arrowDownRight: `<path d="M7 7l10 10M17 7v10H7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`,
 
   arrowDownLeft: `<path d="M17 7L7 17M7 7v10h10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`,
+
+  fitView: `<path d="M8 3H5a2 2 0 00-2 2v3M21 8V5a2 2 0 00-2-2h-3M16 21h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`,
 } as const;
 
 export type IconName = keyof typeof icons;

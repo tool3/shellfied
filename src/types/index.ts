@@ -20,6 +20,8 @@ export type BackgroundType = 'none' | 'solid' | 'gradient' | 'image';
 
 export type GradientDirection = 'to-right' | 'to-bottom' | 'to-bottom-right' | 'to-bottom-left' | 'radial';
 
+export type ImageAspectRatio = 'auto' | '1:1' | '4:3' | '3:2' | '16:9' | '9:16' | '3:4' | '2:3';
+
 export interface BackgroundConfig {
   type: BackgroundType;
   color: string;
@@ -27,6 +29,7 @@ export interface BackgroundConfig {
   gradientTo: string;
   gradientDirection: GradientDirection;
   image: string | null;
+  imageAspectRatio: ImageAspectRatio;
   padding: number;
 }
 

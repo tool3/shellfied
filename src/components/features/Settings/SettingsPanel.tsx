@@ -22,7 +22,7 @@ import {
   BACKGROUND_PADDING_MAX,
   GRADIENT_PRESETS,
 } from '@/constants/defaults';
-import type { PaddingTuple, BackgroundType, GradientDirection } from '@/types';
+import type { PaddingTuple, BackgroundType, GradientDirection, ImageAspectRatio } from '@/types';
 import styles from './SettingsPanel.module.scss';
 
 export const SettingsPanel = memo(function SettingsPanel() {
@@ -291,7 +291,14 @@ export const SettingsPanel = memo(function SettingsPanel() {
             <h3 className={styles.sectionTitle}>Header</h3>
             <Toggle
               checked={header.enabled}
-              onChange={(enabled) => setHeader({ enabled })}
+              onChange={(enabled) => {
+                // Set default background color when enabling header
+                if (enabled && !header.backgroundColor) {
+                  setHeader({ enabled, backgroundColor: '#373837' });
+                } else {
+                  setHeader({ enabled });
+                }
+              }}
             />
           </div>
           {header.enabled && (
@@ -349,7 +356,14 @@ export const SettingsPanel = memo(function SettingsPanel() {
             <h3 className={styles.sectionTitle}>Footer</h3>
             <Toggle
               checked={footer.enabled}
-              onChange={(enabled) => setFooter({ enabled })}
+              onChange={(enabled) => {
+                // Set default background color when enabling footer
+                if (enabled && !footer.backgroundColor) {
+                  setFooter({ enabled, backgroundColor: '#373837' });
+                } else {
+                  setFooter({ enabled });
+                }
+              }}
             />
           </div>
           {footer.enabled && (
@@ -493,42 +507,61 @@ export const SettingsPanel = memo(function SettingsPanel() {
               )}
 
               {background.type === 'image' && (
-                <div className={styles.imageUpload}>
-                  {background.image ? (
-                    <div className={styles.imagePreview}>
-                      <img src={background.image} alt="Background" />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        icon="x"
-                        onClick={handleRemoveImage}
-                        className={styles.removeImage}
-                      />
-                    </div>
-                  ) : (
-                    <label className={styles.uploadButton}>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        hidden
-                      />
-                      <span>Upload Image</span>
-                    </label>
-                  )}
-                </div>
+                <>
+                  <div className={styles.imageUpload}>
+                    {background.image ? (
+                      <div className={styles.imagePreview}>
+                        <img src={background.image} alt="Background" />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          icon="x"
+                          onClick={handleRemoveImage}
+                          className={styles.removeImage}
+                        />
+                      </div>
+                    ) : (
+                      <label className={styles.uploadButton}>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          hidden
+                        />
+                        <span>Upload Image</span>
+                      </label>
+                    )}
+                  </div>
+                </>
               )}
 
               {background.type !== 'none' && (
-                <Slider
-                  label="Padding"
-                  value={background.padding}
-                  onChange={(padding) => setBackground({ padding })}
-                  min={BACKGROUND_PADDING_MIN}
-                  max={BACKGROUND_PADDING_MAX}
-                  step={4}
-                  formatValue={(v) => `${v}px`}
-                />
+                <>
+                  <Slider
+                    label="Padding"
+                    value={background.padding}
+                    onChange={(padding) => setBackground({ padding })}
+                    min={BACKGROUND_PADDING_MIN}
+                    max={BACKGROUND_PADDING_MAX}
+                    step={4}
+                    formatValue={(v) => `${v}px`}
+                  />
+                  <Select
+                    label="Export Ratio"
+                    options={[
+                      { value: 'auto', label: 'Auto (fit content)' },
+                      { value: '1:1', label: '1:1 (Square)' },
+                      { value: '4:3', label: '4:3' },
+                      { value: '3:2', label: '3:2' },
+                      { value: '16:9', label: '16:9 (Widescreen)' },
+                      { value: '9:16', label: '9:16 (Portrait)' },
+                      { value: '3:4', label: '3:4' },
+                      { value: '2:3', label: '2:3' },
+                    ]}
+                    value={background.imageAspectRatio}
+                    onChange={(value) => setBackground({ imageAspectRatio: value as ImageAspectRatio })}
+                  />
+                </>
               )}
             </div>
           </div>

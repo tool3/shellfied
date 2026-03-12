@@ -77,5 +77,5 @@ MIT © [tool3](https://github.com/tool3)
 ---
 
 <p align="center">
-  <sub>Built with shellfie</sub>
+  <sub>Powered by <a href="https://github.com/tool3/shellfie" target="_blank">shellfie</a></sub>
 </p>

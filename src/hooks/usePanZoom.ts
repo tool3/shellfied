@@ -112,26 +112,35 @@ export function usePanZoom(options: UsePanZoomOptions = {}) {
     return () => container.removeEventListener('wheel', handleWheel);
   }, [clampScale, onScaleChange]);
 
-  // Touch handlers for mobile pinch-to-zoom
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length === 1) {
-      // Single touch - pan
-      setIsPanning(true);
-      lastPosition.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    } else if (e.touches.length === 2) {
-      // Two finger - prepare for pinch zoom
-      const distance = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
-      lastTouchDistance.current = distance;
-    }
-  }, []);
+  // Use refs to track panning state for native event handlers
+  const isPanningRef = useRef(false);
 
-  const handleTouchMove = useCallback(
-    (e: React.TouchEvent) => {
-      if (e.touches.length === 1 && isPanning) {
-        // Pan
+  // Native touch handlers for better mobile performance
+  // React's synthetic events add significant overhead on mobile
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        // Single touch - pan
+        isPanningRef.current = true;
+        setIsPanning(true);
+        lastPosition.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      } else if (e.touches.length === 2) {
+        // Two finger - prepare for pinch zoom
+        isPanningRef.current = false;
+        const distance = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        lastTouchDistance.current = distance;
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 1 && isPanningRef.current) {
+        // Pan - use functional update to avoid stale state
         const deltaX = e.touches[0].clientX - lastPosition.current.x;
         const deltaY = e.touches[0].clientY - lastPosition.current.y;
 
@@ -143,7 +152,7 @@ export function usePanZoom(options: UsePanZoomOptions = {}) {
 
         lastPosition.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
       } else if (e.touches.length === 2 && lastTouchDistance.current !== null) {
-        // Pinch zoom
+        // Pinch zoom - prevent default to stop page zoom
         e.preventDefault();
         const distance = Math.hypot(
           e.touches[0].clientX - e.touches[1].clientX,
@@ -151,23 +160,41 @@ export function usePanZoom(options: UsePanZoomOptions = {}) {
         );
 
         const delta = (distance - lastTouchDistance.current) * 0.01;
-        const newScale = clampScale(state.scale + delta);
 
-        if (newScale !== state.scale) {
-          setState((prev) => ({ ...prev, scale: newScale }));
-          onScaleChange?.(Math.round(newScale * 100));
-        }
+        // Use functional update to avoid stale state and reduce re-renders
+        setState((prev) => {
+          const newScale = clampScale(prev.scale + delta);
+          if (newScale !== prev.scale) {
+            // Schedule scale change notification after render
+            requestAnimationFrame(() => onScaleChange?.(Math.round(newScale * 100)));
+            return { ...prev, scale: newScale };
+          }
+          return prev;
+        });
 
         lastTouchDistance.current = distance;
       }
-    },
-    [isPanning, state.scale, clampScale, onScaleChange]
-  );
+    };
 
-  const handleTouchEnd = useCallback(() => {
-    setIsPanning(false);
-    lastTouchDistance.current = null;
-  }, []);
+    const handleTouchEnd = () => {
+      isPanningRef.current = false;
+      setIsPanning(false);
+      lastTouchDistance.current = null;
+    };
+
+    // Use passive: false only for touchmove to allow preventDefault for pinch zoom
+    container.addEventListener('touchstart', handleTouchStart, { passive: true });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+    container.addEventListener('touchend', handleTouchEnd, { passive: true });
+    container.addEventListener('touchcancel', handleTouchEnd, { passive: true });
+
+    return () => {
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('touchend', handleTouchEnd);
+      container.removeEventListener('touchcancel', handleTouchEnd);
+    };
+  }, [clampScale, onScaleChange]);
 
   const zoomIn = useCallback(() => {
     const newScale = clampScale(state.scale + scaleStep);
@@ -195,9 +222,7 @@ export function usePanZoom(options: UsePanZoomOptions = {}) {
       onMouseMove: handleMouseMove,
       onMouseUp: handleMouseUp,
       onMouseLeave: handleMouseUp,
-      onTouchStart: handleTouchStart,
-      onTouchMove: handleTouchMove,
-      onTouchEnd: handleTouchEnd,
+      // Touch handlers are now native event listeners for better mobile performance
     },
     zoomIn,
     zoomOut,

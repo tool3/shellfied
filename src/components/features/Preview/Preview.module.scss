@@ -66,11 +66,18 @@
 .svgContainer {
   transform-origin: center center;
   pointer-events: none;
+  // GPU acceleration for smooth panning/zooming on mobile
+  will-change: transform;
+  // Force GPU layer to avoid repaint during transforms
+  backface-visibility: hidden;
 }
 
 .backgroundWrapper {
   display: block;
-  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.15));
+  // Use box-shadow instead of filter: drop-shadow for better mobile performance
+  // drop-shadow causes repaint on every frame during pan/zoom
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  border-radius: var(--radius-lg);
 }
 
 .svgWrapper {
@@ -130,11 +137,18 @@
 // Compare mode styles
 .comparePreview {
   display: flex;
-  flex-direction: row;
-  gap: var(--space-lg);
+  align-items: center;
+  justify-content: center;
   padding: var(--space-lg);
   border-radius: var(--radius-lg);
-  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.15));
+  // Use box-shadow instead of filter: drop-shadow for better mobile performance
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.comparePanes {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-lg);
 }
 
 .comparePane {

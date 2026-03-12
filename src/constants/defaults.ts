@@ -26,6 +26,7 @@ export const DEFAULT_BACKGROUND: BackgroundConfig = {
   gradientTo: '#ec4899',
   gradientDirection: 'to-bottom-right',
   image: null,
+  imageAspectRatio: 'auto',
   padding: 32,
 };
 

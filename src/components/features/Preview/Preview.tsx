@@ -1,8 +1,9 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useRef, useState, useLayoutEffect } from 'react';
 import { useStore } from '@/store';
 import { useShellfie, useShellfieCompare } from '@/hooks/useShellfie';
 import { usePanZoom } from '@/hooks/usePanZoom';
 import { Button } from '@/components/common';
+import type { ImageAspectRatio } from '@/types';
 import styles from './Preview.module.scss';
 
 const GRADIENT_DIRECTIONS: Record<string, string> = {
@@ -11,6 +12,50 @@ const GRADIENT_DIRECTIONS: Record<string, string> = {
   'to-bottom-right': '135deg',
   'to-bottom-left': '225deg',
 };
+
+/**
+ * Calculate expanded dimensions to fit aspect ratio (never shrinks)
+ * Same logic as exportService.ts calculateAspectRatioDimensions
+ */
+function calculateExpandedDimensions(
+  contentWidth: number,
+  contentHeight: number,
+  aspectRatio: ImageAspectRatio,
+  padding: number
+): { width: number; height: number; paddingX: number; paddingY: number } {
+  const baseWidth = contentWidth + padding * 2;
+  const baseHeight = contentHeight + padding * 2;
+
+  if (aspectRatio === 'auto') {
+    return { width: baseWidth, height: baseHeight, paddingX: padding, paddingY: padding };
+  }
+
+  // Parse aspect ratio string (e.g., "16:9" -> 16/9)
+  const [w, h] = aspectRatio.split(':').map(Number);
+  const targetRatio = w / h;
+  const currentRatio = baseWidth / baseHeight;
+
+  let totalWidth: number;
+  let totalHeight: number;
+  let paddingX: number;
+  let paddingY: number;
+
+  if (currentRatio > targetRatio) {
+    // Content is wider than target ratio - expand height
+    totalWidth = baseWidth;
+    totalHeight = baseWidth / targetRatio;
+    paddingX = padding;
+    paddingY = (totalHeight - contentHeight) / 2;
+  } else {
+    // Content is taller than target ratio - expand width
+    totalHeight = baseHeight;
+    totalWidth = baseHeight * targetRatio;
+    paddingX = (totalWidth - contentWidth) / 2;
+    paddingY = padding;
+  }
+
+  return { width: totalWidth, height: totalHeight, paddingX, paddingY };
+}
 
 export const Preview = memo(function Preview() {
   const previewZoom = useStore((s) => s.previewZoom);
@@ -30,6 +75,35 @@ export const Preview = memo(function Preview() {
     sharedWidth,
   } = useShellfieCompare();
 
+  // Refs for measuring SVG content dimensions
+  const svgWrapperRef = useRef<HTMLDivElement>(null);
+  const compareWrapperRef = useRef<HTMLDivElement>(null);
+  const [svgDimensions, setSvgDimensions] = useState({ width: 0, height: 0 });
+  const [compareDimensions, setCompareDimensions] = useState({ width: 0, height: 0 });
+
+  // Measure SVG dimensions after render for aspect ratio calculations
+  useLayoutEffect(() => {
+    if (svgWrapperRef.current && svg) {
+      const svgEl = svgWrapperRef.current.querySelector('svg');
+      if (svgEl) {
+        setSvgDimensions({
+          width: svgEl.clientWidth || svgEl.getBoundingClientRect().width,
+          height: svgEl.clientHeight || svgEl.getBoundingClientRect().height,
+        });
+      }
+    }
+  }, [svg]);
+
+  // Measure compare preview dimensions
+  useLayoutEffect(() => {
+    if (compareWrapperRef.current && (beforeSvg || afterSvg)) {
+      setCompareDimensions({
+        width: compareWrapperRef.current.scrollWidth,
+        height: compareWrapperRef.current.scrollHeight,
+      });
+    }
+  }, [beforeSvg, afterSvg]);
+
   const { containerRef, state, isPanning, handlers, reset } = usePanZoom({
     minScale: 0.25,
     maxScale: 2,
@@ -38,22 +112,54 @@ export const Preview = memo(function Preview() {
     onScaleChange: setPreviewZoom,
   });
 
+  // Create background style for single preview mode with aspect ratio support
   const backgroundStyle = useMemo(() => {
-    if (background.type === 'none') return {};
-
+    const aspectRatio = background.imageAspectRatio;
     const padding = background.padding;
-    const baseStyle: React.CSSProperties = { padding };
+
+    // Calculate expanded dimensions if we have measured the SVG and have a non-auto aspect ratio
+    let expandedStyle: React.CSSProperties = {};
+    if (aspectRatio !== 'auto' && svgDimensions.width > 0 && svgDimensions.height > 0) {
+      const { width, height, paddingX, paddingY } = calculateExpandedDimensions(
+        svgDimensions.width,
+        svgDimensions.height,
+        aspectRatio,
+        padding
+      );
+      expandedStyle = {
+        width,
+        height,
+        padding: `${paddingY}px ${paddingX}px`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      };
+    } else {
+      expandedStyle = { padding };
+    }
+
+    // Handle no background - show dashed border for aspect ratio indicator
+    if (background.type === 'none') {
+      if (aspectRatio !== 'auto' && svgDimensions.width > 0) {
+        return {
+          ...expandedStyle,
+          border: '2px dashed rgba(99, 102, 241, 0.4)',
+          borderRadius: 'var(--radius-lg)',
+        };
+      }
+      return {};
+    }
 
     switch (background.type) {
       case 'solid':
         return {
-          ...baseStyle,
+          ...expandedStyle,
           backgroundColor: background.color,
           borderRadius: 'var(--radius-lg)',
         };
       case 'gradient':
         return {
-          ...baseStyle,
+          ...expandedStyle,
           background: background.gradientDirection === 'radial'
             ? `radial-gradient(circle, ${background.gradientFrom}, ${background.gradientTo})`
             : `linear-gradient(${GRADIENT_DIRECTIONS[background.gradientDirection]}, ${background.gradientFrom}, ${background.gradientTo})`,
@@ -62,7 +168,7 @@ export const Preview = memo(function Preview() {
       case 'image':
         return background.image
           ? {
-              ...baseStyle,
+              ...expandedStyle,
               backgroundImage: `url(${background.image})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
@@ -72,7 +178,71 @@ export const Preview = memo(function Preview() {
       default:
         return {};
     }
-  }, [background]);
+  }, [background, svgDimensions]);
+
+  // Create background style for compare preview mode with aspect ratio support
+  const compareBackgroundStyle = useMemo(() => {
+    const aspectRatio = background.imageAspectRatio;
+    const padding = background.padding;
+
+    // Calculate expanded dimensions if we have measured and have a non-auto aspect ratio
+    let expandedStyle: React.CSSProperties = {};
+    if (aspectRatio !== 'auto' && compareDimensions.width > 0 && compareDimensions.height > 0) {
+      const { width, height, paddingX, paddingY } = calculateExpandedDimensions(
+        compareDimensions.width,
+        compareDimensions.height,
+        aspectRatio,
+        padding
+      );
+      expandedStyle = {
+        width,
+        height,
+        padding: `${paddingY}px ${paddingX}px`,
+        alignItems: 'center',
+        justifyContent: 'center',
+      };
+    } else {
+      expandedStyle = { padding };
+    }
+
+    // Handle no background - show dashed border for aspect ratio indicator
+    if (background.type === 'none') {
+      if (aspectRatio !== 'auto' && compareDimensions.width > 0) {
+        return {
+          ...expandedStyle,
+          border: '2px dashed rgba(99, 102, 241, 0.4)',
+          borderRadius: 'var(--radius-lg)',
+        };
+      }
+      return {};
+    }
+
+    switch (background.type) {
+      case 'solid':
+        return {
+          ...expandedStyle,
+          backgroundColor: background.color,
+        };
+      case 'gradient':
+        return {
+          ...expandedStyle,
+          background: background.gradientDirection === 'radial'
+            ? `radial-gradient(circle, ${background.gradientFrom}, ${background.gradientTo})`
+            : `linear-gradient(${GRADIENT_DIRECTIONS[background.gradientDirection]}, ${background.gradientFrom}, ${background.gradientTo})`,
+        };
+      case 'image':
+        return background.image
+          ? {
+              ...expandedStyle,
+              backgroundImage: `url(${background.image})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }
+          : {};
+      default:
+        return {};
+    }
+  }, [background, compareDimensions]);
 
   const handleZoomIn = () => {
     setPreviewZoom(Math.min(previewZoom + 25, 200));
@@ -113,26 +283,28 @@ export const Preview = memo(function Preview() {
       const emptyPaneStyle: React.CSSProperties = sharedWidth > 0 ? { width: sharedWidth, minWidth: sharedWidth } : {};
 
       return (
-        <div className={styles.comparePreview} style={backgroundStyle}>
-          <div className={styles.comparePane}>
-            <span className={styles.compareLabel} style={labelStyle}>{beforeLabel}</span>
-            {beforeSvg ? (
-              <div className={styles.svgWrapper} dangerouslySetInnerHTML={{ __html: beforeSvg }} />
-            ) : (
-              <div className={styles.emptyPane} style={emptyPaneStyle}>
-                <p>No content</p>
-              </div>
-            )}
-          </div>
-          <div className={styles.comparePane}>
-            <span className={styles.compareLabel} style={labelStyle}>{afterLabel}</span>
-            {afterSvg ? (
-              <div className={styles.svgWrapper} dangerouslySetInnerHTML={{ __html: afterSvg }} />
-            ) : (
-              <div className={styles.emptyPane} style={emptyPaneStyle}>
-                <p>No content</p>
-              </div>
-            )}
+        <div className={styles.comparePreview} style={compareBackgroundStyle}>
+          <div ref={compareWrapperRef} className={styles.comparePanes}>
+            <div className={styles.comparePane}>
+              <span className={styles.compareLabel} style={labelStyle}>{beforeLabel}</span>
+              {beforeSvg ? (
+                <div className={styles.svgWrapper} dangerouslySetInnerHTML={{ __html: beforeSvg }} />
+              ) : (
+                <div className={styles.emptyPane} style={emptyPaneStyle}>
+                  <p>No content</p>
+                </div>
+              )}
+            </div>
+            <div className={styles.comparePane}>
+              <span className={styles.compareLabel} style={labelStyle}>{afterLabel}</span>
+              {afterSvg ? (
+                <div className={styles.svgWrapper} dangerouslySetInnerHTML={{ __html: afterSvg }} />
+              ) : (
+                <div className={styles.emptyPane} style={emptyPaneStyle}>
+                  <p>No content</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       );
@@ -168,7 +340,7 @@ export const Preview = memo(function Preview() {
     if (svg) {
       return (
         <div className={styles.backgroundWrapper} style={backgroundStyle}>
-          <div className={styles.svgWrapper} dangerouslySetInnerHTML={{ __html: svg }} />
+          <div ref={svgWrapperRef} className={styles.svgWrapper} dangerouslySetInnerHTML={{ __html: svg }} />
         </div>
       );
     }
@@ -197,7 +369,7 @@ export const Preview = memo(function Preview() {
           <Button variant="ghost" size="sm" icon="zoomOut" onClick={handleZoomOut} aria-label="Zoom out" />
           <span className={styles.zoomLevel}>{Math.round(state.scale * 100)}%</span>
           <Button variant="ghost" size="sm" icon="zoomIn" onClick={handleZoomIn} aria-label="Zoom in" />
-          <Button variant="ghost" size="sm" icon="refresh" onClick={handleZoomReset} aria-label="Reset zoom" />
+          <Button variant="ghost" size="sm" icon="fitView" onClick={handleZoomReset} aria-label="Reset zoom" />
         </div>
       </div>
 

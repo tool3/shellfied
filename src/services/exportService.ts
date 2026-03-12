@@ -1,4 +1,47 @@
-import type { ExportFormat, BackgroundConfig, CompareExportOptions } from '@/types';
+import type { ExportFormat, BackgroundConfig, CompareExportOptions, ImageAspectRatio } from '@/types';
+
+/**
+ * Calculate dimensions with aspect ratio constraint for image backgrounds
+ */
+function calculateAspectRatioDimensions(
+  contentWidth: number,
+  contentHeight: number,
+  aspectRatio: ImageAspectRatio,
+  padding: number
+): { totalWidth: number; totalHeight: number; offsetX: number; offsetY: number } {
+  const baseWidth = contentWidth + padding * 2;
+  const baseHeight = contentHeight + padding * 2;
+
+  if (aspectRatio === 'auto') {
+    return { totalWidth: baseWidth, totalHeight: baseHeight, offsetX: padding, offsetY: padding };
+  }
+
+  // Parse aspect ratio string (e.g., "16:9" -> 16/9)
+  const [w, h] = aspectRatio.split(':').map(Number);
+  const targetRatio = w / h;
+  const currentRatio = baseWidth / baseHeight;
+
+  let totalWidth: number;
+  let totalHeight: number;
+  let offsetX: number;
+  let offsetY: number;
+
+  if (currentRatio > targetRatio) {
+    // Content is wider than target ratio - expand height
+    totalWidth = baseWidth;
+    totalHeight = baseWidth / targetRatio;
+    offsetX = padding;
+    offsetY = (totalHeight - contentHeight) / 2;
+  } else {
+    // Content is taller than target ratio - expand width
+    totalHeight = baseHeight;
+    totalWidth = baseHeight * targetRatio;
+    offsetX = (totalWidth - contentWidth) / 2;
+    offsetY = padding;
+  }
+
+  return { totalWidth, totalHeight, offsetX, offsetY };
+}
 
 /**
  * Check if we're on a mobile device
@@ -158,10 +201,15 @@ export async function downloadRaster(
   const { scale = 2, quality = 1.0, background } = options;
   const { width: svgWidth, height: svgHeight } = getSvgDimensions(svgContent);
 
-  // Calculate total dimensions including background padding
+  // Calculate total dimensions including background padding and aspect ratio
   const padding = background?.type !== 'none' ? (background?.padding ?? 0) : 0;
-  const totalWidth = svgWidth + padding * 2;
-  const totalHeight = svgHeight + padding * 2;
+  const aspectRatio = background?.type !== 'none' ? (background?.imageAspectRatio ?? 'auto') : 'auto';
+  const { totalWidth, totalHeight, offsetX, offsetY } = calculateAspectRatioDimensions(
+    svgWidth,
+    svgHeight,
+    aspectRatio,
+    padding
+  );
 
   const canvas = document.createElement('canvas');
   canvas.width = totalWidth * scale;
@@ -183,8 +231,8 @@ export async function downloadRaster(
 
   return new Promise((resolve, reject) => {
     img.onload = () => {
-      // Draw SVG with padding offset
-      ctx.drawImage(img, padding, padding);
+      // Draw SVG with offset (centered for aspect ratio)
+      ctx.drawImage(img, offsetX, offsetY);
       URL.revokeObjectURL(svgUrl);
 
       const mimeType = getMimeType(format);
@@ -281,10 +329,15 @@ export async function copyToClipboard(
 
   const { width: svgWidth, height: svgHeight } = getSvgDimensions(svgContent);
 
-  // Calculate total dimensions including background padding
+  // Calculate total dimensions including background padding and aspect ratio
   const padding = background?.type !== 'none' ? (background?.padding ?? 0) : 0;
-  const totalWidth = svgWidth + padding * 2;
-  const totalHeight = svgHeight + padding * 2;
+  const aspectRatio = background?.type !== 'none' ? (background?.imageAspectRatio ?? 'auto') : 'auto';
+  const { totalWidth, totalHeight, offsetX, offsetY } = calculateAspectRatioDimensions(
+    svgWidth,
+    svgHeight,
+    aspectRatio,
+    padding
+  );
 
   const canvas = document.createElement('canvas');
   canvas.width = totalWidth * scale;
@@ -308,8 +361,8 @@ export async function copyToClipboard(
 
   return new Promise((resolve, reject) => {
     img.onload = async () => {
-      // Draw SVG with padding offset
-      ctx.drawImage(img, padding, padding);
+      // Draw SVG with offset (centered for aspect ratio)
+      ctx.drawImage(img, offsetX, offsetY);
 
       try {
         const blob = await new Promise<Blob | null>((res) =>
