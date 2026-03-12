@@ -29,6 +29,7 @@ export const SettingsPanel = memo(function SettingsPanel() {
   const isSettingsPanelOpen = useStore((s) => s.isSettingsPanelOpen);
   const setSettingsPanelOpen = useStore((s) => s.setSettingsPanelOpen);
 
+  const template = useStore((s) => s.template);
   const title = useStore((s) => s.title);
   const setTitle = useStore((s) => s.setTitle);
   const showControls = useStore((s) => s.showControls);
@@ -285,88 +286,91 @@ export const SettingsPanel = memo(function SettingsPanel() {
           </div>
         </section>
 
-        {/* Header Section */}
-        <section className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <h3 className={styles.sectionTitle}>Header</h3>
-            <Toggle
-              checked={header.enabled}
-              onChange={(enabled) => {
-                // Set default background color when enabling header
-                if (enabled && !header.backgroundColor) {
-                  setHeader({ enabled, backgroundColor: '#373837' });
-                } else {
-                  setHeader({ enabled });
-                }
-              }}
-            />
-          </div>
-          {header.enabled && (
-            <div className={styles.sectionContent}>
-              <div className={styles.fields}>
-                <ColorPicker
-                  label="Background Color"
-                  value={header.backgroundColor}
-                  onChange={(value) => setHeader({ backgroundColor: value })}
-                  placeholder="#333333"
-                  fullWidth
-                />
-                <Slider
-                  label="Height"
-                  value={header.height}
-                  onChange={(height) => setHeader({ height })}
-                  min={HEADER_HEIGHT_MIN}
-                  max={HEADER_HEIGHT_MAX}
-                  step={1}
-                  formatValue={(v) => `${v}px`}
-                />
-                <Toggle
-                  checked={header.border}
-                  onChange={(border) => setHeader({ border })}
-                  label="Show border"
-                />
-                {header.border && (
-                  <>
-                    <ColorPicker
-                      label="Border Color"
-                      value={header.borderColor}
-                      onChange={(value) => setHeader({ borderColor: value })}
-                      placeholder="#333333"
-                      fullWidth
-                    />
-                    <Slider
-                      label="Border Width"
-                      value={header.borderWidth}
-                      onChange={(borderWidth) => setHeader({ borderWidth })}
-                      min={BORDER_WIDTH_MIN}
-                      max={BORDER_WIDTH_MAX}
-                      step={1}
-                      formatValue={(v) => `${v}px`}
-                    />
-                  </>
-                )}
-              </div>
+        {/* Header Section - not available for minimal template */}
+        {template !== 'minimal' && (
+          <section className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <h3 className={styles.sectionTitle}>Header</h3>
+              <Toggle
+                checked={header.enabled}
+                onChange={(enabled) => {
+                  // Set default background color when enabling header
+                  if (enabled && !header.backgroundColor) {
+                    setHeader({ enabled, backgroundColor: '#242526' });
+                  } else {
+                    setHeader({ enabled });
+                  }
+                }}
+              />
             </div>
-          )}
-        </section>
+            {header.enabled && (
+              <div className={styles.sectionContent}>
+                <div className={styles.fields}>
+                  <ColorPicker
+                    label="Background Color"
+                    value={header.backgroundColor}
+                    onChange={(value) => setHeader({ backgroundColor: value })}
+                    placeholder="#333333"
+                    fullWidth
+                  />
+                  <Slider
+                    label="Height"
+                    value={header.height}
+                    onChange={(height) => setHeader({ height })}
+                    min={HEADER_HEIGHT_MIN}
+                    max={HEADER_HEIGHT_MAX}
+                    step={1}
+                    formatValue={(v) => `${v}px`}
+                  />
+                  <Toggle
+                    checked={header.border}
+                    onChange={(border) => setHeader({ border })}
+                    label="Show border"
+                  />
+                  {header.border && (
+                    <>
+                      <ColorPicker
+                        label="Border Color"
+                        value={header.borderColor}
+                        onChange={(value) => setHeader({ borderColor: value })}
+                        placeholder="#333333"
+                        fullWidth
+                      />
+                      <Slider
+                        label="Border Width"
+                        value={header.borderWidth}
+                        onChange={(borderWidth) => setHeader({ borderWidth })}
+                        min={BORDER_WIDTH_MIN}
+                        max={BORDER_WIDTH_MAX}
+                        step={1}
+                        formatValue={(v) => `${v}px`}
+                      />
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
 
-        {/* Footer Section */}
-        <section className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <h3 className={styles.sectionTitle}>Footer</h3>
-            <Toggle
-              checked={footer.enabled}
-              onChange={(enabled) => {
-                // Set default background color when enabling footer
-                if (enabled && !footer.backgroundColor) {
-                  setFooter({ enabled, backgroundColor: '#373837' });
-                } else {
-                  setFooter({ enabled });
-                }
-              }}
-            />
-          </div>
-          {footer.enabled && (
+        {/* Footer Section - not available for minimal template */}
+        {template !== 'minimal' && (
+          <section className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <h3 className={styles.sectionTitle}>Footer</h3>
+              <Toggle
+                checked={footer.enabled}
+                onChange={(enabled) => {
+                  // Set default background color when enabling footer
+                  if (enabled && !footer.backgroundColor) {
+                    setFooter({ enabled, backgroundColor: '#242526' });
+                  } else {
+                    setFooter({ enabled });
+                  }
+                }}
+              />
+            </div>
+            {footer.enabled && (
             <div className={styles.sectionContent}>
               <div className={styles.fields}>
                 <ColorPicker
@@ -413,7 +417,8 @@ export const SettingsPanel = memo(function SettingsPanel() {
               </div>
             </div>
           )}
-        </section>
+          </section>
+        )}
 
         {/* Background Section */}
         <section className={styles.section}>

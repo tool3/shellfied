@@ -199,6 +199,8 @@ export function useShellfieCompare() {
   const showControls = useStore((s) => s.showControls);
   const fontFamily = useStore((s) => s.fontFamily);
   const watermark = useStore((s) => s.watermark);
+  const header = useStore((s) => s.header);
+  const footer = useStore((s) => s.footer);
 
   const generateSvg = useMemo(() => {
     return (content: string, effectiveLanguage: string, width?: number) => {
@@ -218,12 +220,14 @@ export function useShellfieCompare() {
           width: width || undefined,
           watermark: formatWatermark(watermark),
           watermarkPadding: watermark.text ? watermark.padding : undefined,
+          header: buildHeaderOptions(header),
+          footer: buildFooterOptions(footer),
         });
       } catch {
         return '';
       }
     };
-  }, [template, controlsPosition, borderRadius, terminalTheme, customThemes, fontSize, lineHeight, padding, showControls, fontFamily, watermark]);
+  }, [template, controlsPosition, borderRadius, terminalTheme, customThemes, fontSize, lineHeight, padding, showControls, fontFamily, watermark, header, footer]);
 
   const { beforeSvg, afterSvg, error } = useMemo(() => {
     try {
@@ -295,6 +299,8 @@ export function useShellfieCompareSync() {
   const showControls = useStore((s) => s.showControls);
   const fontFamily = useStore((s) => s.fontFamily);
   const watermark = useStore((s) => s.watermark);
+  const header = useStore((s) => s.header);
+  const footer = useStore((s) => s.footer);
 
   const generate = () => {
     const generateOne = (content: string, language: string, width?: number) => {
@@ -315,6 +321,8 @@ export function useShellfieCompareSync() {
           width: width || undefined,
           watermark: formatWatermark(watermark),
           watermarkPadding: watermark.text ? watermark.padding : undefined,
+          header: buildHeaderOptions(header),
+          footer: buildFooterOptions(footer),
         });
       } catch {
         return '';
