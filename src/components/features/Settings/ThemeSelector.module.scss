@@ -108,3 +108,8 @@
     color: var(--color-text-primary);
   }
 }
+
+.createThemeButton {
+  border: 1px dashed var(--color-border-secondary);
+  border-radius: var(--radius-md);
+}

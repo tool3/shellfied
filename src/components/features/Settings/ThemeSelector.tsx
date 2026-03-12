@@ -155,6 +155,7 @@ export const ThemeSelector = memo(function ThemeSelector() {
         icon="plus"
         onClick={() => setIsCreating(true)}
         fullWidth
+        className={styles.createThemeButton}
       >
         Create Custom Theme
       </Button>

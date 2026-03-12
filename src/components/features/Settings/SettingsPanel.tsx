@@ -211,81 +211,6 @@ export const SettingsPanel = memo(function SettingsPanel() {
           </div>
         </section>
 
-        {/* Typography Section */}
-        <section className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <h3 className={styles.sectionTitle}>Typography</h3>
-          </div>
-          <div className={styles.sectionContent}>
-            <div className={styles.fields}>
-              <Select
-                label="Font Family"
-                options={FONT_FAMILY_OPTIONS}
-                value={fontFamily}
-                onChange={setFontFamily}
-                fullWidth
-              />
-              <Slider
-                label="Font Size"
-                value={fontSize}
-                onChange={setFontSize}
-                min={FONT_SIZE_MIN}
-                max={FONT_SIZE_MAX}
-                step={1}
-                formatValue={(v) => `${v}px`}
-              />
-              <Slider
-                label="Line Height"
-                value={lineHeight}
-                onChange={setLineHeight}
-                min={LINE_HEIGHT_MIN}
-                max={LINE_HEIGHT_MAX}
-                step={0.1}
-                formatValue={(v) => v.toFixed(1)}
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* Padding Section */}
-        <section className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <h3 className={styles.sectionTitle}>Padding</h3>
-          </div>
-          <div className={styles.sectionContent}>
-            <div className={styles.sliderGrid}>
-              <NumberSlider
-                label="Top"
-                value={padding[0]}
-                onChange={(v) => handlePaddingChange(0, v)}
-                min={PADDING_MIN}
-                max={PADDING_MAX}
-              />
-              <NumberSlider
-                label="Right"
-                value={padding[1]}
-                onChange={(v) => handlePaddingChange(1, v)}
-                min={PADDING_MIN}
-                max={PADDING_MAX}
-              />
-              <NumberSlider
-                label="Bottom"
-                value={padding[2]}
-                onChange={(v) => handlePaddingChange(2, v)}
-                min={PADDING_MIN}
-                max={PADDING_MAX}
-              />
-              <NumberSlider
-                label="Left"
-                value={padding[3]}
-                onChange={(v) => handlePaddingChange(3, v)}
-                min={PADDING_MIN}
-                max={PADDING_MAX}
-              />
-            </div>
-          </div>
-        </section>
-
         {/* Header Section - not available for minimal template */}
         {template !== 'minimal' && (
           <section className={styles.section}>
@@ -419,6 +344,81 @@ export const SettingsPanel = memo(function SettingsPanel() {
           )}
           </section>
         )}
+
+        {/* Typography Section */}
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h3 className={styles.sectionTitle}>Typography</h3>
+          </div>
+          <div className={styles.sectionContent}>
+            <div className={styles.fields}>
+              <Select
+                label="Font Family"
+                options={FONT_FAMILY_OPTIONS}
+                value={fontFamily}
+                onChange={setFontFamily}
+                fullWidth
+              />
+              <Slider
+                label="Font Size"
+                value={fontSize}
+                onChange={setFontSize}
+                min={FONT_SIZE_MIN}
+                max={FONT_SIZE_MAX}
+                step={1}
+                formatValue={(v) => `${v}px`}
+              />
+              <Slider
+                label="Line Height"
+                value={lineHeight}
+                onChange={setLineHeight}
+                min={LINE_HEIGHT_MIN}
+                max={LINE_HEIGHT_MAX}
+                step={0.1}
+                formatValue={(v) => v.toFixed(1)}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Padding Section */}
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h3 className={styles.sectionTitle}>Padding</h3>
+          </div>
+          <div className={styles.sectionContent}>
+            <div className={styles.sliderGrid}>
+              <NumberSlider
+                label="Top"
+                value={padding[0]}
+                onChange={(v) => handlePaddingChange(0, v)}
+                min={PADDING_MIN}
+                max={PADDING_MAX}
+              />
+              <NumberSlider
+                label="Right"
+                value={padding[1]}
+                onChange={(v) => handlePaddingChange(1, v)}
+                min={PADDING_MIN}
+                max={PADDING_MAX}
+              />
+              <NumberSlider
+                label="Bottom"
+                value={padding[2]}
+                onChange={(v) => handlePaddingChange(2, v)}
+                min={PADDING_MIN}
+                max={PADDING_MAX}
+              />
+              <NumberSlider
+                label="Left"
+                value={padding[3]}
+                onChange={(v) => handlePaddingChange(3, v)}
+                min={PADDING_MIN}
+                max={PADDING_MAX}
+              />
+            </div>
+          </div>
+        </section>
 
         {/* Background Section */}
         <section className={styles.section}>
