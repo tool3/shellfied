@@ -124,9 +124,13 @@ async function drawBackground(
 
     case 'gradient': {
       const direction = background.gradientDirection;
+      const isRadialReverse = direction === 'radial-reverse';
+      const isRadial = direction === 'radial' || isRadialReverse;
+      const fromColor = isRadialReverse ? background.gradientTo : background.gradientFrom;
+      const toColor = isRadialReverse ? background.gradientFrom : background.gradientTo;
       let gradient: CanvasGradient;
 
-      if (direction === 'radial') {
+      if (isRadial) {
         // Create radial gradient from center
         const centerX = totalWidth / 2;
         const centerY = totalHeight / 2;
@@ -134,16 +138,25 @@ async function drawBackground(
         gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
       } else if (direction === 'to-right') {
         gradient = ctx.createLinearGradient(0, 0, totalWidth, 0);
+      } else if (direction === 'to-left') {
+        gradient = ctx.createLinearGradient(totalWidth, 0, 0, 0);
       } else if (direction === 'to-bottom') {
         gradient = ctx.createLinearGradient(0, 0, 0, totalHeight);
+      } else if (direction === 'to-top') {
+        gradient = ctx.createLinearGradient(0, totalHeight, 0, 0);
       } else if (direction === 'to-bottom-right') {
         gradient = ctx.createLinearGradient(0, 0, totalWidth, totalHeight);
+      } else if (direction === 'to-top-left') {
+        gradient = ctx.createLinearGradient(totalWidth, totalHeight, 0, 0);
+      } else if (direction === 'to-top-right') {
+        gradient = ctx.createLinearGradient(0, totalHeight, totalWidth, 0);
       } else {
+        // to-bottom-left
         gradient = ctx.createLinearGradient(totalWidth, 0, 0, totalHeight);
       }
 
-      gradient.addColorStop(0, background.gradientFrom);
-      gradient.addColorStop(1, background.gradientTo);
+      gradient.addColorStop(0, fromColor);
+      gradient.addColorStop(1, toColor);
       ctx.fillStyle = gradient;
       ctx.beginPath();
       ctx.roundRect(0, 0, totalWidth, totalHeight, 12);
@@ -609,9 +622,13 @@ function generateSvgBackground(
 
   const GRADIENT_DIRECTIONS: Record<string, { x1: string; y1: string; x2: string; y2: string }> = {
     'to-right': { x1: '0%', y1: '0%', x2: '100%', y2: '0%' },
+    'to-left': { x1: '100%', y1: '0%', x2: '0%', y2: '0%' },
     'to-bottom': { x1: '0%', y1: '0%', x2: '0%', y2: '100%' },
+    'to-top': { x1: '0%', y1: '100%', x2: '0%', y2: '0%' },
     'to-bottom-right': { x1: '0%', y1: '0%', x2: '100%', y2: '100%' },
+    'to-top-left': { x1: '100%', y1: '100%', x2: '0%', y2: '0%' },
     'to-bottom-left': { x1: '100%', y1: '0%', x2: '0%', y2: '100%' },
+    'to-top-right': { x1: '0%', y1: '100%', x2: '100%', y2: '0%' },
   };
 
   switch (background.type) {
@@ -619,12 +636,17 @@ function generateSvgBackground(
       return `<rect width="${totalWidth}" height="${totalHeight}" rx="${borderRadius}" fill="${background.color}"/>`;
 
     case 'gradient': {
-      if (background.gradientDirection === 'radial') {
+      const isRadialReverse = background.gradientDirection === 'radial-reverse';
+      const isRadial = background.gradientDirection === 'radial' || isRadialReverse;
+      const fromColor = isRadialReverse ? background.gradientTo : background.gradientFrom;
+      const toColor = isRadialReverse ? background.gradientFrom : background.gradientTo;
+
+      if (isRadial) {
         return `
           <defs>
             <radialGradient id="bgGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-              <stop offset="0%" stop-color="${background.gradientFrom}"/>
-              <stop offset="100%" stop-color="${background.gradientTo}"/>
+              <stop offset="0%" stop-color="${fromColor}"/>
+              <stop offset="100%" stop-color="${toColor}"/>
             </radialGradient>
           </defs>
           <rect width="${totalWidth}" height="${totalHeight}" rx="${borderRadius}" fill="url(#bgGradient)"/>`;

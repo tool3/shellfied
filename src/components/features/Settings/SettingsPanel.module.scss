@@ -159,6 +159,10 @@
   cursor: pointer;
   transition: all 0.15s ease;
 
+  svg {
+    transition: transform 0.15s ease;
+  }
+
   &:hover {
     border-color: var(--color-border-focus);
     color: var(--color-text-primary);
@@ -169,6 +173,15 @@
     border-color: var(--color-brand-primary);
     background-color: var(--color-accent-subtle);
     color: var(--color-brand-primary);
+  }
+
+  &.active.reversed {
+    background-color: transparent;
+    border-width: 2px;
+
+    svg {
+      transform: rotate(180deg);
+    }
   }
 
   &:focus-visible {

@@ -18,7 +18,12 @@ export type PaddingTuple = [number, number, number, number];
 
 export type BackgroundType = 'none' | 'solid' | 'gradient' | 'image';
 
-export type GradientDirection = 'to-right' | 'to-bottom' | 'to-bottom-right' | 'to-bottom-left' | 'radial';
+export type GradientDirection =
+  | 'to-right' | 'to-left'
+  | 'to-bottom' | 'to-top'
+  | 'to-bottom-right' | 'to-top-left'
+  | 'to-bottom-left' | 'to-top-right'
+  | 'radial' | 'radial-reverse';
 
 export type ImageAspectRatio = 'auto' | '1:1' | '4:3' | '3:2' | '16:9' | '9:16' | '3:4' | '2:3';
 
@@ -51,10 +56,13 @@ export interface FooterConfig {
   borderWidth: number;
 }
 
+export type WatermarkType = 'text' | 'markup';
+
 export interface WatermarkConfig {
+  type: WatermarkType;
   text: string;
-  color: string;
-  padding: PaddingTuple;
+  style: string; // CSS-like style string, e.g. "color: #888; padding: 8px"
+  markup: string; // SVG markup for markup mode
 }
 
 export interface CustomTheme {

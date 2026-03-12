@@ -4,7 +4,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { createEditorSlice } from './slices/editorSlice';
 import { createSettingsSlice } from './slices/settingsSlice';
 import { createUISlice } from './slices/uiSlice';
-import { DEFAULT_WATERMARK, DEFAULT_BACKGROUND } from '@/constants/defaults';
+import { DEFAULT_WATERMARK, DEFAULT_WATERMARK_STYLE, DEFAULT_WATERMARK_MARKUP, DEFAULT_BACKGROUND } from '@/constants/defaults';
 import type { AppStore } from './types';
 
 export const useStore = create<AppStore>()(
@@ -55,12 +55,29 @@ export const useStore = create<AppStore>()(
       merge: (persistedState, currentState) => {
         const persisted = persistedState as Partial<AppStore>;
 
-        // Handle watermark migration: old format was just a string
+        // Handle watermark migration: old format had color and padding fields
         let watermark = persisted.watermark;
         if (typeof watermark === 'string') {
-          watermark = { ...DEFAULT_WATERMARK, text: watermark };
-        } else if (watermark && !watermark.padding) {
-          watermark = { ...DEFAULT_WATERMARK, ...watermark };
+          // Very old format: just a string
+          watermark = { type: 'text', text: watermark, style: DEFAULT_WATERMARK_STYLE, markup: DEFAULT_WATERMARK_MARKUP };
+        } else if (watermark && 'color' in watermark && 'padding' in watermark) {
+          // Old format: { text, color, padding }
+          const oldWatermark = watermark as { text: string; color: string; padding: number[] };
+          const paddingStr = oldWatermark.padding.every((v: number) => v === oldWatermark.padding[0])
+            ? `${oldWatermark.padding[0]}px`
+            : `${oldWatermark.padding[0]}px ${oldWatermark.padding[1]}px ${oldWatermark.padding[2]}px ${oldWatermark.padding[3]}px`;
+          watermark = {
+            type: 'text',
+            text: oldWatermark.text,
+            style: `color: ${oldWatermark.color};\npadding: ${paddingStr};`,
+            markup: DEFAULT_WATERMARK_MARKUP,
+          };
+        } else if (watermark && !watermark.type) {
+          // Previous format without type field
+          watermark = { ...DEFAULT_WATERMARK, ...watermark, type: 'text' };
+        } else if (watermark && !watermark.markup) {
+          // Previous format without markup field
+          watermark = { ...watermark, markup: DEFAULT_WATERMARK_MARKUP };
         }
 
         // Handle background migration: might not exist in old data or missing new fields

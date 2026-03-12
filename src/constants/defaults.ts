@@ -33,10 +33,31 @@ export const DEFAULT_BACKGROUND: BackgroundConfig = {
 // Default monospace font stack for code rendering in SVG
 const DEFAULT_FONT_STACK = "'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace";
 
+export const DEFAULT_WATERMARK_STYLE = 'color: #888888;\npadding: 8px;';
+
+export const DEFAULT_WATERMARK_MARKUP = `<a href="https://github.com/tool3/shellfie">
+  <g transform="translate(-90, -5)">
+    <defs>
+      <clipPath id="wm-clip">
+        <rect width="100" height="15" rx="3" fill="#fff"/>
+      </clipPath>
+    </defs>
+    <g clip-path="url(#wm-clip)">
+      <rect width="60" height="15" fill="#555"/>
+      <rect x="60" width="40" height="15" fill="pink"/>
+    </g>
+    <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="110">
+      <text x="385" y="130" transform="scale(.08)" fill="#fff" textLength="650">powered by</text>
+      <text x="985" y="130" transform="scale(.08)" fill="#333" textLength="390">shellfie</text>
+    </g>
+  </g>
+</a>`;
+
 export const DEFAULT_WATERMARK: WatermarkConfig = {
+  type: 'text',
   text: '',
-  color: '#888888',
-  padding: [8, 8, 8, 8],
+  style: DEFAULT_WATERMARK_STYLE,
+  markup: DEFAULT_WATERMARK_MARKUP,
 };
 
 export const DEFAULT_SETTINGS: ShellfieSettings = {

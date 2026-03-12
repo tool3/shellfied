@@ -8,9 +8,14 @@ import styles from './Preview.module.scss';
 
 const GRADIENT_DIRECTIONS: Record<string, string> = {
   'to-right': 'to right',
+  'to-left': 'to left',
   'to-bottom': 'to bottom',
+  'to-top': 'to top',
   'to-bottom-right': '135deg',
+  'to-top-left': '315deg',
   'to-bottom-left': '225deg',
+  'to-top-right': '45deg',
+  'radial-reverse': 'radial', // handled specially
 };
 
 /**
@@ -172,14 +177,19 @@ export const Preview = memo(function Preview() {
           backgroundColor: background.color,
           borderRadius: 'var(--radius-lg)',
         };
-      case 'gradient':
+      case 'gradient': {
+        const isRadialReverse = background.gradientDirection === 'radial-reverse';
+        const isRadial = background.gradientDirection === 'radial' || isRadialReverse;
+        const fromColor = isRadialReverse ? background.gradientTo : background.gradientFrom;
+        const toColor = isRadialReverse ? background.gradientFrom : background.gradientTo;
         return {
           ...expandedStyle,
-          background: background.gradientDirection === 'radial'
-            ? `radial-gradient(circle, ${background.gradientFrom}, ${background.gradientTo})`
+          background: isRadial
+            ? `radial-gradient(circle, ${fromColor}, ${toColor})`
             : `linear-gradient(${GRADIENT_DIRECTIONS[background.gradientDirection]}, ${background.gradientFrom}, ${background.gradientTo})`,
           borderRadius: 'var(--radius-lg)',
         };
+      }
       case 'image':
         return background.image
           ? {
@@ -238,13 +248,18 @@ export const Preview = memo(function Preview() {
           ...expandedStyle,
           backgroundColor: background.color,
         };
-      case 'gradient':
+      case 'gradient': {
+        const isRadialReverse = background.gradientDirection === 'radial-reverse';
+        const isRadial = background.gradientDirection === 'radial' || isRadialReverse;
+        const fromColor = isRadialReverse ? background.gradientTo : background.gradientFrom;
+        const toColor = isRadialReverse ? background.gradientFrom : background.gradientTo;
         return {
           ...expandedStyle,
-          background: background.gradientDirection === 'radial'
-            ? `radial-gradient(circle, ${background.gradientFrom}, ${background.gradientTo})`
+          background: isRadial
+            ? `radial-gradient(circle, ${fromColor}, ${toColor})`
             : `linear-gradient(${GRADIENT_DIRECTIONS[background.gradientDirection]}, ${background.gradientFrom}, ${background.gradientTo})`,
         };
+      }
       case 'image':
         return background.image
           ? {

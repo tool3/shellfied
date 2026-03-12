@@ -1,4 +1,4 @@
-import { forwardRef, useId } from 'react';
+import { forwardRef, useId, useState, useEffect, useCallback } from 'react';
 import styles from './ColorPicker.module.scss';
 
 interface ColorPickerProps {
@@ -15,8 +15,25 @@ export const ColorPicker = forwardRef<HTMLInputElement, ColorPickerProps>(functi
   ref
 ) {
   const id = useId();
+  const [localColor, setLocalColor] = useState(value);
 
-  const displayValue = value || placeholder;
+  // Sync local state when prop changes externally
+  useEffect(() => {
+    setLocalColor(value);
+  }, [value]);
+
+  // Handle input during drag - only update local state, no store update
+  const handleColorInput = useCallback((newColor: string) => {
+    setLocalColor(newColor);
+  }, []);
+
+  // Handle final commit when picker closes (onChange event)
+  const handleColorCommit = useCallback((newColor: string) => {
+    setLocalColor(newColor);
+    onChange(newColor);
+  }, [onChange]);
+
+  const displayValue = localColor || placeholder;
   const isValidColor = /^#[0-9A-Fa-f]{6}$/.test(displayValue);
 
   return (
@@ -37,15 +54,16 @@ export const ColorPicker = forwardRef<HTMLInputElement, ColorPickerProps>(functi
             id={`${id}-picker`}
             className={styles.colorInput}
             value={isValidColor ? displayValue : '#000000'}
-            onChange={(e) => onChange(e.target.value)}
+            onInput={(e) => handleColorInput((e.target as HTMLInputElement).value)}
+            onChange={(e) => handleColorCommit(e.target.value)}
           />
         </div>
         <input
           type="text"
           id={id}
           className={styles.textInput}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
+          value={localColor}
+          onChange={(e) => handleColorCommit(e.target.value)}
           placeholder={placeholder}
         />
       </div>
