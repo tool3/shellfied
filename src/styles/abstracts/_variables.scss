@@ -13,9 +13,11 @@ $space-2xl: $space-unit * 6;     // 48px
 $space-3xl: $space-unit * 8;     // 64px
 
 // --- Typography Scale ---
-$font-family-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+// Outfit: geometric but warm - perfect for developer tools
+// Syne: distinctive display font with personality
+$font-family-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 $font-family-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
-$font-family-display: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+$font-family-display: 'Syne', 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
 
 $font-size-xs: 0.75rem;    // 12px
 $font-size-sm: 0.875rem;   // 14px
@@ -55,17 +57,19 @@ $transition-slower: 500ms ease;
 
 // --- Brand Colors ---
 // SINGLE SOURCE OF TRUTH: Change these to update brand colors globally
-// Dark theme brand (emerald green - classic terminal aesthetic)
-$brand-dark: #10B981;
-$brand-dark-hover: #059669;
-$brand-dark-active: #047857;
-$brand-dark-subtle: rgba(16, 185, 129, 0.15);
+// Warmer, more human palette - amber/coral undertones
 
-// Light theme brand (sky blue - clean and professional)
-$brand-light: #0EA5E9;
-$brand-light-hover: #0284c7;
-$brand-light-active: #0369a1;
-$brand-light-subtle: rgba(14, 165, 233, 0.1);
+// Dark theme brand (warm amber-tinted green - inviting, not clinical)
+$brand-dark: #34D399;
+$brand-dark-hover: #6EE7B7;
+$brand-dark-active: #10B981;
+$brand-dark-subtle: rgba(52, 211, 153, 0.12);
+
+// Light theme brand (warm coral-orange - energetic and approachable)
+$brand-light: #F97316;
+$brand-light-hover: #FB923C;
+$brand-light-active: #EA580C;
+$brand-light-subtle: rgba(249, 115, 22, 0.1);
 
 // --- Breakpoints ---
 $breakpoint-sm: 640px;

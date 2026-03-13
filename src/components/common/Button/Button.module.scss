@@ -1,6 +1,25 @@
 .button {
   @include button-base;
   gap: var(--space-sm);
+  position: relative;
+  overflow: hidden;
+  // Smooth spring-like transition
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.2s ease;
+
+  // Subtle lift on hover
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+
+  // Satisfying press effect
+  &:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+    transition-duration: 0.1s;
+  }
 
   &.fullWidth {
     width: 100%;
@@ -10,6 +29,12 @@
     aspect-ratio: 1;
     padding: var(--space-sm);
   }
+
+  // Focus ring with glow
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-bg-primary), 0 0 0 4px var(--color-brand-primary), var(--glow-brand);
+  }
 }
 
 // Sizes
@@ -17,6 +42,7 @@
   padding: 6px var(--space-sm);
   font-size: var(--font-size-xs);
   border-radius: var(--radius-sm);
+  letter-spacing: 0.01em;
 
   &.iconOnly {
     padding: 6px;
@@ -26,11 +52,13 @@
 .md {
   padding: var(--space-sm) var(--space-md);
   font-size: var(--font-size-sm);
+  letter-spacing: 0.01em;
 }
 
 .lg {
   padding: var(--space-md) var(--space-lg);
   font-size: var(--font-size-base);
+  letter-spacing: 0.01em;
 }
 
 // Variants
@@ -38,15 +66,18 @@
   color: var(--color-text-inverted);
   background-color: var(--color-brand-primary);
   border-color: transparent;
+  font-weight: 500;
 
   &:hover:not(:disabled) {
     background-color: var(--color-brand-primary-hover);
     border-color: transparent;
+    box-shadow: var(--shadow-md), var(--glow-brand);
   }
 
   &:active:not(:disabled) {
     background-color: var(--color-brand-primary-active);
     border-color: transparent;
+    box-shadow: var(--shadow-sm);
   }
 }
 
@@ -58,6 +89,11 @@
   &:hover:not(:disabled) {
     background-color: var(--color-bg-tertiary);
     border-color: var(--color-border-secondary);
+    box-shadow: var(--shadow-sm);
+  }
+
+  &:active:not(:disabled) {
+    background-color: var(--color-bg-secondary);
   }
 }
 
@@ -70,6 +106,23 @@
     color: var(--color-text-primary);
     background-color: var(--color-bg-hover);
   }
+
+  &:active:not(:disabled) {
+    background-color: var(--color-bg-active);
+  }
+
+  // Icon rotation on hover for ghost buttons
+  svg {
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  &:hover:not(:disabled) svg {
+    transform: rotate(8deg) scale(1.05);
+  }
+
+  &:active:not(:disabled) svg {
+    transform: rotate(0deg) scale(0.95);
+  }
 }
 
 .danger {
@@ -80,6 +133,12 @@
   &:hover:not(:disabled) {
     background-color: #dc2626;
     border-color: #dc2626;
+    box-shadow: var(--shadow-md), 0 0 20px rgba(239, 68, 68, 0.3);
+  }
+
+  &:active:not(:disabled) {
+    background-color: #b91c1c;
+    box-shadow: var(--shadow-sm);
   }
 }
 
@@ -93,7 +152,7 @@
   border: 2px solid currentColor;
   border-right-color: transparent;
   border-radius: 50%;
-  animation: spin 0.6s linear infinite;
+  animation: spin 0.8s cubic-bezier(0.5, 0, 0.5, 1) infinite;
 }
 
 @keyframes spin {
