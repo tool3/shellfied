@@ -1,7 +1,7 @@
 import { memo, useState, useCallback, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import { useStore } from '@/store';
 import { Input } from '@/components/common';
-import { DEFAULT_WATERMARK_STYLE, DEFAULT_WATERMARK_MARKUP } from '@/constants/defaults';
+import { DEFAULT_WATERMARK_STYLE, getDefaultWatermarkMarkup, BRAND_COLOR_DARK, BRAND_COLOR_LIGHT } from '@/constants/defaults';
 import type { WatermarkType } from '@/types';
 import styles from './WatermarkEditor.module.scss';
 
@@ -139,6 +139,7 @@ function updateColorInStyle(styleStr: string, newColor: string): string {
 export const WatermarkEditor = memo(function WatermarkEditor() {
   const watermark = useStore((s) => s.watermark);
   const setWatermark = useStore((s) => s.setWatermark);
+  const colorMode = useStore((s) => s.colorMode);
 
   const [localStyle, setLocalStyle] = useState(watermark.style);
   const [localMarkup, setLocalMarkup] = useState(watermark.markup);
@@ -166,6 +167,19 @@ export const WatermarkEditor = memo(function WatermarkEditor() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watermark.markup]);
+
+  // Swap brand color in markup when color mode changes
+  useEffect(() => {
+    const oldColor = colorMode === 'dark' ? BRAND_COLOR_LIGHT : BRAND_COLOR_DARK;
+    const newColor = colorMode === 'dark' ? BRAND_COLOR_DARK : BRAND_COLOR_LIGHT;
+
+    if (localMarkup.includes(oldColor)) {
+      const updatedMarkup = localMarkup.replace(new RegExp(oldColor, 'gi'), newColor);
+      setLocalMarkup(updatedMarkup);
+      setWatermark({ markup: updatedMarkup });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [colorMode]);
 
   // Extract current color from style for the color picker
   const currentColor = useMemo(() => extractColor(localStyle) || '#888888', [localStyle]);
@@ -268,9 +282,10 @@ export const WatermarkEditor = memo(function WatermarkEditor() {
   }, [setWatermark]);
 
   const handleResetMarkup = useCallback(() => {
-    setLocalMarkup(DEFAULT_WATERMARK_MARKUP);
-    setWatermark({ markup: DEFAULT_WATERMARK_MARKUP });
-  }, [setWatermark]);
+    const defaultMarkup = getDefaultWatermarkMarkup(colorMode);
+    setLocalMarkup(defaultMarkup);
+    setWatermark({ markup: defaultMarkup });
+  }, [setWatermark, colorMode]);
 
   return (
     <div className={styles.editor}>
