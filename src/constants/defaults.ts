@@ -35,7 +35,13 @@ const DEFAULT_FONT_STACK = "'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, 
 
 export const DEFAULT_WATERMARK_STYLE = 'color: #888888;\npadding: 8px;';
 
-export const DEFAULT_WATERMARK_MARKUP = `<a href="https://github.com/tool3/shellfie">
+// Brand colors for watermark - matches _variables.scss
+export const BRAND_COLOR_DARK = '#34D399';
+export const BRAND_COLOR_LIGHT = '#F97316';
+
+export const getDefaultWatermarkMarkup = (colorMode: 'dark' | 'light' = 'dark') => {
+  const brandColor = colorMode === 'dark' ? BRAND_COLOR_DARK : BRAND_COLOR_LIGHT;
+  return `<a href="https://github.com/tool3/shellfie">
   <g transform="translate(-90, -5)">
     <defs>
       <clipPath id="wm-clip">
@@ -44,7 +50,7 @@ export const DEFAULT_WATERMARK_MARKUP = `<a href="https://github.com/tool3/shell
     </defs>
     <g clip-path="url(#wm-clip)">
       <rect width="60" height="15" fill="#555"/>
-      <rect x="60" width="40" height="15" fill="pink"/>
+      <rect x="60" width="40" height="15" fill="${brandColor}"/>
     </g>
     <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="110">
       <text x="385" y="130" transform="scale(.08)" fill="#fff" textLength="650">powered by</text>
@@ -52,6 +58,10 @@ export const DEFAULT_WATERMARK_MARKUP = `<a href="https://github.com/tool3/shell
     </g>
   </g>
 </a>`;
+};
+
+// Default markup for backwards compatibility (uses dark mode)
+export const DEFAULT_WATERMARK_MARKUP = getDefaultWatermarkMarkup('dark');
 
 export const DEFAULT_WATERMARK: WatermarkConfig = {
   type: 'text',
