@@ -1,43 +1,47 @@
 [data-theme='dark'] {
-  // --- Background Colors (true black shades) ---
-  --color-bg-primary: #0a0a0a;
-  --color-bg-secondary: #141414;
-  --color-bg-tertiary: #1f1f1f;
-  --color-bg-elevated: #181818;
-  --color-bg-hover: rgba(255, 255, 255, 0.06);
-  --color-bg-active: rgba(255, 255, 255, 0.1);
+  // --- Background Colors (warm dark tones, not pure black) ---
+  --color-bg-primary: #0C0A09;
+  --color-bg-secondary: #1C1917;
+  --color-bg-tertiary: #292524;
+  --color-bg-elevated: #1C1917;
+  --color-bg-hover: rgba(255, 247, 237, 0.06);
+  --color-bg-active: rgba(255, 247, 237, 0.1);
 
-  // --- Text Colors (WCAG AA accessible) ---
-  --color-text-primary: #fafafa;
-  --color-text-secondary: #a3a3a3;
-  --color-text-tertiary: #8b8b8b;
-  --color-text-inverted: #ffffff;
+  // --- Text Colors (warm off-whites, WCAG AA compliant) ---
+  --color-text-primary: #FAFAF9;
+  --color-text-secondary: #A8A29E;
+  --color-text-tertiary: #8E8883;
+  --color-text-inverted: #0C0A09;
 
-  // --- Border Colors ---
-  --color-border-primary: rgba(255, 255, 255, 0.1);
-  --color-border-secondary: rgba(255, 255, 255, 0.2);
+  // --- Border Colors (warm tinted) ---
+  --color-border-primary: rgba(168, 162, 158, 0.15);
+  --color-border-secondary: rgba(168, 162, 158, 0.25);
   --color-border-focus: var(--color-brand-dark);
 
-  // --- Brand Colors (emerald green for dark mode) ---
+  // --- Brand Colors ---
   --color-brand: var(--color-brand-dark);
   --color-brand-primary: var(--color-brand-dark);
   --color-brand-primary-hover: var(--color-brand-dark-hover);
   --color-brand-primary-active: var(--color-brand-dark-active);
 
   // --- Semantic Colors ---
-  --color-success: #22c55e;
-  --color-warning: #eab308;
-  --color-error: #ef4444;
-  --color-info: #3b82f6;
+  --color-success: #4ADE80;
+  --color-warning: #FBBF24;
+  --color-error: #F87171;
+  --color-info: #60A5FA;
 
-  // --- Shadows ---
-  --shadow-color: rgba(0, 0, 0, 0.6);
-  --shadow-sm: 0 1px 2px var(--shadow-color);
-  --shadow-md: 0 4px 6px -1px var(--shadow-color);
-  --shadow-lg: 0 10px 15px -3px var(--shadow-color);
-  --shadow-xl: 0 20px 25px -5px var(--shadow-color);
+  // --- Shadows (warmer, more atmospheric) ---
+  --shadow-color: rgba(12, 10, 9, 0.5);
+  --shadow-sm: 0 1px 2px var(--shadow-color), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px var(--shadow-color), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px var(--shadow-color), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 20px 25px -5px var(--shadow-color), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
 
   // --- Accent ---
   --color-accent: var(--color-brand-dark);
   --color-accent-subtle: var(--color-brand-dark-subtle);
+
+  // --- Glow effects for micro-interactions ---
+  --glow-brand: 0 0 20px rgba(52, 211, 153, 0.3);
+  --glow-brand-intense: 0 0 30px rgba(52, 211, 153, 0.5);
 }
