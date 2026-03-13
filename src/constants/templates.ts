@@ -20,6 +20,6 @@ export const TEMPLATES: TemplateConfig[] = [
   {
     id: 'minimal',
     label: 'Minimal',
-    description: 'No chrome, content focused',
+    description: 'No header, no footer, content focused',
   },
 ];

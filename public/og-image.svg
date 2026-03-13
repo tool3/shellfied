@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <!-- Background gradient - warm dark tones -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0C0A09"/>
+      <stop offset="50%" stop-color="#1C1917"/>
+      <stop offset="100%" stop-color="#0C0A09"/>
+    </linearGradient>
+
+    <!-- Terminal line gradients - matching favicon -->
+    <linearGradient id="line1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#EC4899"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+    <linearGradient id="line2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#8c50c5"/>
+      <stop offset="100%" stop-color="#4ac9dd"/>
+    </linearGradient>
+    <linearGradient id="line3" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#d6345a"/>
+      <stop offset="100%" stop-color="#8e6ddb"/>
+    </linearGradient>
+
+    <!-- Glow effect -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="30" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <!-- Clip path for rounded corners -->
+    <clipPath id="roundedCorners">
+      <rect width="1200" height="630" rx="24" ry="24"/>
+    </clipPath>
+  </defs>
+
+  <!-- Apply rounded corners to entire content -->
+  <g clip-path="url(#roundedCorners)">
+    <!-- Background -->
+    <rect width="1200" height="630" fill="url(#bgGrad)"/>
+
+  <!-- Subtle grid pattern -->
+  <g opacity="0.03">
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#fff" stroke-width="0.5"/>
+    </pattern>
+    <rect width="1200" height="630" fill="url(#grid)"/>
+  </g>
+
+  <!-- Decorative gradient orbs -->
+  <circle cx="150" cy="100" r="250" fill="#EC4899" opacity="0.05" filter="url(#glow)"/>
+  <circle cx="1050" cy="530" r="300" fill="#06B6D4" opacity="0.04" filter="url(#glow)"/>
+  <circle cx="600" cy="315" r="180" fill="#8c50c5" opacity="0.03" filter="url(#glow)"/>
+
+  <!-- Centered Branding - Logo on left, text on right, same row -->
+  <g transform="translate(600, 315)">
+    <!-- Container centered at 600, 315 -->
+
+    <!-- Logo mark (140px tall) - positioned to left -->
+    <g transform="translate(-280, -70)">
+      <rect width="140" height="140" rx="16" fill="#18181c"/>
+      <rect width="140" height="24" rx="16" fill="#242526"/>
+      <rect y="14" width="140" height="12" fill="#242526"/>
+      <circle cx="20" cy="12" r="5" fill="#ff5f57"/>
+      <circle cx="36" cy="12" r="5" fill="#febc2e"/>
+      <circle cx="52" cy="12" r="5" fill="#28c840"/>
+      <rect x="16" y="46" width="84" height="14" rx="3" fill="url(#line1)"/>
+      <rect x="16" y="70" width="62" height="14" rx="3" fill="url(#line2)"/>
+      <rect x="16" y="94" width="108" height="14" rx="3" fill="url(#line3)"/>
+    </g>
+
+    <!-- Text block - positioned to right of logo, vertically centered -->
+    <g transform="translate(-115, 0)">
+      <!-- App name -->
+      <text x="0" y="-15" font-family="'Syne', system-ui, sans-serif" font-size="64" font-weight="700" fill="#FAFAF9">Shellfied</text>
+      <!-- Tagline -->
+      <text x="0" y="35" font-family="'Outfit', system-ui, sans-serif" font-size="22" fill="#8E8883">Beautiful code screenshots in seconds</text>
+    </g>
+  </g>
+
+    <!-- URL - bottom right -->
+    <text x="1160" y="590" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="14" fill="#8E8883" text-anchor="end">shellfied.vercel.app</text>
+  </g>
+</svg>
