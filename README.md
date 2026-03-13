@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="public/favicon.svg" width="80" height="80" alt="Shellfied Logo">
+  <img src="public/og-image.svg" alt="Shellfied Logo">
 </p>
 
 <h1 align="center">Shellfied</h1>
 
 <p align="center">
-  <strong>Beautiful terminal screenshots in seconds</strong>
+  <strong>Beautiful code screenshots in seconds</strong>
 </p>
 
 <p align="center">
@@ -22,17 +22,20 @@
 
 ## What is Shellfied?
 
-Shellfied is the go-to web application for creating beautiful terminal screenshots without any installation. Paste your code or terminal output, customize the appearance, and export as SVG or PNG — all from your browser.
+Shellfied is the go-to web application for creating beautiful code and terminal screenshots without any installation.   
+Paste your code or terminal output, customize the appearance, and export as SVG or PNG — all from your browser. 
 
-**Powered by [shellfie](https://github.com/tool3/shellfie)** — the same engine that powers the CLI tool used by developers worldwide.
+**Powered by [shellfie](https://github.com/tool3/shellfie)** — the same 0 dependencies engine that powers the CLI tool.
 
 ## Features
 
-- **Real-time Preview** — See your terminal screenshot update as you type
+- **Real-time Preview** — Every update is visible in milliseconds
+- **Compare mode** — Compare 2 code/terminal outputs side by side.
 - **Syntax Highlighting** — Automatic highlighting for Bash, JavaScript, TypeScript, Python, and JSON
-- **15 Terminal Themes** — Including Dracula, Nord, Tokyo Night, One Dark, Monokai, and more
+- **35 Terminal Themes** — Including Dracula, Dracula Pro ;),  Nord, Tokyo Night, One Dark, Monokai, and more
 - **3 Window Styles** — macOS, Windows, or minimal
 - **Full Customization** — Control font size, line height, padding, title, and watermark
+- **Social posts** — Control background color, gradient, image with preset image ratios.
 - **Export Options** — Download as SVG or PNG (1x, 2x, 3x scale)
 - **PWA Support** — Install as a native app, works offline
 - **Dark/Light Mode** — Matches your system preference
