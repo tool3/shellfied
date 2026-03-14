@@ -23,20 +23,16 @@ export const HeaderSection = memo(function HeaderSection() {
     return TERMINAL_THEMES[terminalTheme]?.theme.background ?? '#242526';
   };
 
+  // Display color: show theme background when no explicit color is set
+  const themeBackground = getThemeBackground();
+
   return (
     <section className={styles.section}>
       <div className={styles.sectionHeader}>
         <h3 className={styles.sectionTitle}>Header</h3>
         <Toggle
           checked={header.enabled}
-          onChange={(enabled) => {
-            // Set default background color when enabling header (use theme's background)
-            if (enabled && !header.backgroundColor) {
-              setHeader({ enabled, backgroundColor: getThemeBackground() });
-            } else {
-              setHeader({ enabled });
-            }
-          }}
+          onChange={(enabled) => setHeader({ enabled })}
         />
       </div>
       {header.enabled && (
@@ -44,9 +40,9 @@ export const HeaderSection = memo(function HeaderSection() {
           <div className={styles.fields}>
             <ColorPicker
               label="Background Color"
-              value={header.backgroundColor}
+              value={header.backgroundColor || themeBackground}
               onChange={(value) => setHeader({ backgroundColor: value })}
-              placeholder="#333333"
+              placeholder={themeBackground}
               fullWidth
             />
             <Slider

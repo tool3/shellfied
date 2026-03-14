@@ -3,7 +3,7 @@ import { useStore, useStaticOutput } from '@/store';
 import { useShellfie, useShellfieCompare, useShellfieSync } from '@/hooks/useShellfie';
 import { useExport } from '@/hooks/useExport';
 import { Button, Logo, Icon } from '@/components/common';
-import { svgToRasterBlob } from '@/services/exportService';
+import { svgToRasterBlob, wrapSvgWithBackground } from '@/services/exportService';
 import { generateStaticUrl } from '@/utils/urlParams';
 import type { ImageAspectRatio, OutputFormat, ExportFormat } from '@/types';
 import styles from './ViewMode.module.scss';
@@ -87,8 +87,9 @@ const StaticImageView = memo(function StaticImageView({
         }
 
         if (format === 'svg') {
-          // For SVG, create a blob URL directly
-          const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+          // For SVG, wrap with background and create a blob URL
+          const wrappedSvg = wrapSvgWithBackground(svg, background);
+          const blob = new Blob([wrappedSvg], { type: 'image/svg+xml;charset=utf-8' });
           const url = URL.createObjectURL(blob);
           setImageUrl(url);
         } else {
@@ -145,6 +146,7 @@ export const ViewMode = memo(function ViewMode() {
   const compareLabelConfig = useStore((s) => s.compareLabelConfig);
   const exitViewMode = useStore((s) => s.exitViewMode);
   const colorMode = useStore((s) => s.colorMode);
+  const brand = useStore((s) => s.brand);
   const staticOutput = useStaticOutput();
 
   const { svg, error, hasContent } = useShellfie();
@@ -165,7 +167,6 @@ export const ViewMode = memo(function ViewMode() {
   const [svgDimensions, setSvgDimensions] = useState({ width: 0, height: 0 });
   const [compareDimensions, setCompareDimensions] = useState({ width: 0, height: 0 });
   const [showStaticMenu, setShowStaticMenu] = useState(false);
-  const [copiedStatic, setCopiedStatic] = useState(false);
   const staticMenuRef = useRef<HTMLDivElement>(null);
 
   // Close static menu when clicking outside
@@ -181,17 +182,11 @@ export const ViewMode = memo(function ViewMode() {
     }
   }, [showStaticMenu]);
 
-  const handleCopyStaticUrl = useCallback(async (format: ExportFormat) => {
+  const handleOpenStaticUrl = useCallback((format: ExportFormat) => {
     const state = useStore.getState();
     const url = generateStaticUrl(state, format);
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopiedStatic(true);
-      setTimeout(() => setCopiedStatic(false), 2000);
-      setShowStaticMenu(false);
-    } catch (err) {
-      console.error('Failed to copy static URL:', err);
-    }
+    window.open(url, '_blank');
+    setShowStaticMenu(false);
   }, []);
 
   useEffect(() => {
@@ -485,28 +480,28 @@ export const ViewMode = memo(function ViewMode() {
           <div className={styles.staticWrapper} ref={staticMenuRef}>
             <Button
               variant="secondary"
-              icon={copiedStatic ? 'check' : 'externalLink'}
+              icon="externalLink"
               onClick={() => setShowStaticMenu(!showStaticMenu)}
             >
-              {copiedStatic ? 'Copied!' : 'Static'}
+              Static
             </Button>
             {showStaticMenu && (
               <div className={styles.staticMenu}>
-                <button onClick={() => handleCopyStaticUrl('svg')}>
+                <button onClick={() => handleOpenStaticUrl('svg')}>
                   <span>SVG</span>
-                  <Icon name="copy" size={14} />
+                  <Icon name="externalLink" size={14} />
                 </button>
-                <button onClick={() => handleCopyStaticUrl('png')}>
+                <button onClick={() => handleOpenStaticUrl('png')}>
                   <span>PNG</span>
-                  <Icon name="copy" size={14} />
+                  <Icon name="externalLink" size={14} />
                 </button>
-                <button onClick={() => handleCopyStaticUrl('webp')}>
+                <button onClick={() => handleOpenStaticUrl('webp')}>
                   <span>WebP</span>
-                  <Icon name="copy" size={14} />
+                  <Icon name="externalLink" size={14} />
                 </button>
-                <button onClick={() => handleCopyStaticUrl('jpeg')}>
+                <button onClick={() => handleOpenStaticUrl('jpeg')}>
                   <span>JPEG</span>
-                  <Icon name="copy" size={14} />
+                  <Icon name="externalLink" size={14} />
                 </button>
               </div>
             )}
@@ -517,10 +512,10 @@ export const ViewMode = memo(function ViewMode() {
         </div>
 
         <footer className={styles.footer}>
-          <span>Created with </span>
-          <a href="https://shellfied.dev" target="_blank" rel="noopener noreferrer">
-            <Logo size={16} />
-            <span>Shellfied</span>
+          <span>{brand.enabled ? brand.text : 'Created with'} </span>
+          <a href={brand.enabled ? brand.url : '/'} rel="noopener noreferrer">
+            {(!brand.enabled || brand.showIcon) && <Logo size={16} />}
+            <span>{brand.enabled ? brand.name : 'Shellfied'}</span>
           </a>
         </footer>
       </div>

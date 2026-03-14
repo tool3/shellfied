@@ -68,6 +68,14 @@ export interface WatermarkConfig {
   markup: string; // SVG markup for markup mode
 }
 
+export interface BrandConfig {
+  enabled: boolean;
+  text: string; // Custom text to replace "Created with"
+  name: string; // Brand name (replaces "Shellfied")
+  url: string; // Custom URL
+  showIcon: boolean; // Whether to show logo icon
+}
+
 export interface CustomTheme {
   id: string;
   name: string;

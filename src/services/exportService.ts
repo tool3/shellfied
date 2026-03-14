@@ -915,6 +915,40 @@ export async function copyCompareToClipboard(
 }
 
 /**
+ * Wraps an SVG with a background (for static SVG output)
+ */
+export function wrapSvgWithBackground(
+  svgContent: string,
+  background: BackgroundConfig
+): string {
+  if (background.type === 'none') {
+    return svgContent;
+  }
+
+  const { width: svgWidth, height: svgHeight } = getSvgDimensions(svgContent);
+  const padding = background.padding ?? 0;
+  const aspectRatio = background.imageAspectRatio ?? 'auto';
+  const { totalWidth, totalHeight, offsetX, offsetY } = calculateAspectRatioDimensions(
+    svgWidth,
+    svgHeight,
+    aspectRatio,
+    padding
+  );
+
+  const backgroundSvg = generateSvgBackground(background, totalWidth, totalHeight);
+  const innerContent = extractSvgContent(svgContent);
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}">
+  ${backgroundSvg}
+  <g transform="translate(${offsetX}, ${offsetY})">
+    <svg width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}">
+      ${innerContent}
+    </svg>
+  </g>
+</svg>`;
+}
+
+/**
  * Escapes XML special characters
  */
 function escapeXml(str: string): string {

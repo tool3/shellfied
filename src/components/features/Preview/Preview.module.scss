@@ -91,9 +91,6 @@
 
 .backgroundWrapper {
   display: block;
-  // Use box-shadow instead of filter: drop-shadow for better mobile performance
-  // drop-shadow causes repaint on every frame during pan/zoom
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   border-radius: var(--radius-lg);
 }
 
@@ -168,8 +165,6 @@
   justify-content: center;
   padding: var(--space-lg);
   border-radius: var(--radius-lg);
-  // Use box-shadow instead of filter: drop-shadow for better mobile performance
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
 .comparePanes {

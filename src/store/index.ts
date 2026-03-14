@@ -47,6 +47,7 @@ export const useStore = create<AppStore>()(
         exportScale: state.exportScale,
         jpegQuality: state.jpegQuality,
         colorMode: state.colorMode,
+        brand: state.brand,
         // Compare mode
         compareMode: state.compareMode,
         beforeContent: state.beforeContent,

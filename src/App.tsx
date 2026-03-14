@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { useTheme } from '@/hooks/useTheme';
-import { useIsViewMode } from '@/store';
+import { useIsViewMode, useStore } from '@/store';
+import { rehydrateCompressedContent } from '@/utils/urlParams';
 import { Header } from '@/components/layout';
 import { Editor, Preview, SettingsPanel, ExportPanel, ViewMode } from '@/components/features';
 import styles from './App.module.scss';
@@ -7,6 +9,17 @@ import styles from './App.module.scss';
 function App() {
   useTheme();
   const isViewMode = useIsViewMode();
+
+  // Rehydrate compressed URL content after initial mount
+  useEffect(() => {
+    rehydrateCompressedContent().then((updates) => {
+      if (updates) {
+        if (updates.content) useStore.getState().setContent(updates.content);
+        if (updates.beforeContent) useStore.getState().setBeforeContent(updates.beforeContent);
+        if (updates.afterContent) useStore.getState().setAfterContent(updates.afterContent);
+      }
+    });
+  }, []);
 
   // Render view-only mode for shared links
   if (isViewMode) {
@@ -24,7 +37,7 @@ function App() {
           </div>
           <div className={styles.previewPane}>
             <Preview />
-            <div className={styles.exportPane}>
+            <div className={styles.exportPane} data-export-pane>
               <ExportPanel />
             </div>
           </div>

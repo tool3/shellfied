@@ -10,6 +10,7 @@ import type {
   FooterConfig,
   BackgroundConfig,
   WatermarkConfig,
+  BrandConfig,
   CustomTheme,
   CompareLabelConfig,
 } from '@/types';
@@ -58,6 +59,7 @@ export interface SettingsState {
   exportFormat: ExportFormat;
   exportScale: ExportScale;
   jpegQuality: number;
+  brand: BrandConfig;
 
   setTemplate: (template: TemplateType) => void;
   setTerminalTheme: (theme: TerminalThemeName) => void;
@@ -80,6 +82,7 @@ export interface SettingsState {
   setExportFormat: (format: ExportFormat) => void;
   setExportScale: (scale: ExportScale) => void;
   setJpegQuality: (quality: number) => void;
+  setBrand: (brand: Partial<BrandConfig>) => void;
   resetSettings: () => void;
 }
 

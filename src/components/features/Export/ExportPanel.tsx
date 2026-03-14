@@ -3,7 +3,7 @@ import { useStore, useContent } from '@/store';
 import { useExport } from '@/hooks/useExport';
 import { Button, Select, Slider } from '@/components/common';
 import { ShareModal } from '@/components/features/Share';
-import { generateShareUrl } from '@/utils/urlParams';
+import { generateShareUrlCompressed } from '@/utils/urlParams';
 import type { ExportFormat, ExportScale } from '@/types';
 import styles from './ExportPanel.module.scss';
 
@@ -38,12 +38,21 @@ export const ExportPanel = memo(function ExportPanel() {
   const isRasterFormat = exportFormat !== 'svg';
   const isJpeg = exportFormat === 'jpeg';
 
-  const handleShare = useCallback(() => {
-    const state = useStore.getState();
-    const viewUrl = generateShareUrl(state, 'view');
-    const editUrl = generateShareUrl(state, 'edit');
-    setShareUrls({ viewUrl, editUrl });
-    setShowShareModal(true);
+  const [isGeneratingUrls, setIsGeneratingUrls] = useState(false);
+
+  const handleShare = useCallback(async () => {
+    setIsGeneratingUrls(true);
+    try {
+      const state = useStore.getState();
+      const [viewUrl, editUrl] = await Promise.all([
+        generateShareUrlCompressed(state, 'view'),
+        generateShareUrlCompressed(state, 'edit'),
+      ]);
+      setShareUrls({ viewUrl, editUrl });
+      setShowShareModal(true);
+    } finally {
+      setIsGeneratingUrls(false);
+    }
   }, []);
 
   const handleFormatChange = (value: string) => {
@@ -98,7 +107,8 @@ export const ExportPanel = memo(function ExportPanel() {
             variant="primary"
             icon="share"
             onClick={handleShare}
-            disabled={!hasContent}
+            disabled={!hasContent || isGeneratingUrls}
+            isLoading={isGeneratingUrls}
             fullWidth
           >
             Share

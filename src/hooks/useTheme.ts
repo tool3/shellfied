@@ -5,7 +5,7 @@ export function useTheme() {
   const colorMode = useColorMode();
   const setColorMode = useStore((s) => s.setColorMode);
 
-  // Apply theme to document and update favicon
+  // Apply theme to document, update favicon and Safari theme-color
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', colorMode);
 
@@ -13,6 +13,13 @@ export function useTheme() {
     const faviconLink = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
     if (faviconLink) {
       faviconLink.href = colorMode === 'light' ? '/favicon-light.svg' : '/favicon-dark.svg';
+    }
+
+    // Update Safari/mobile theme-color to match navbar background
+    const themeColorMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    if (themeColorMeta) {
+      // Matches --color-bg-elevated from themes
+      themeColorMeta.content = colorMode === 'light' ? '#FFFFFF' : '#1C1917';
     }
   }, [colorMode]);
 
