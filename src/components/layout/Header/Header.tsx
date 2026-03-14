@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 import { useStore } from '@/store';
 import { Button, Icon, Logo } from '@/components/common';
 import styles from './Header.module.scss';
@@ -8,6 +8,13 @@ export const Header = memo(function Header() {
   const toggleColorMode = useStore((s) => s.toggleColorMode);
   const isSettingsPanelOpen = useStore((s) => s.isSettingsPanelOpen);
   const setSettingsPanelOpen = useStore((s) => s.setSettingsPanelOpen);
+
+  const scrollToExport = useCallback(() => {
+    const exportPane = document.querySelector('[data-export-pane]');
+    if (exportPane) {
+      exportPane.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, []);
 
   return (
     <header className={styles.header}>
@@ -20,6 +27,14 @@ export const Header = memo(function Header() {
       </div>
 
       <nav className={styles.nav}>
+        <Button
+          variant="ghost"
+          icon="share"
+          onClick={scrollToExport}
+          aria-label="Share"
+          className={styles.mobileShare}
+        />
+
         <a
           href="https://github.com/tool3/shellfied"
           target="_blank"

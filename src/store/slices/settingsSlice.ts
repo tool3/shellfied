@@ -5,6 +5,7 @@ import {
   DEFAULT_EXPORT_FORMAT,
   DEFAULT_EXPORT_SCALE,
   DEFAULT_JPEG_QUALITY,
+  DEFAULT_BRAND,
 } from '@/constants/defaults';
 
 export const createSettingsSlice: StateCreator<AppStore, [], [], SettingsState> = (set, get) => ({
@@ -13,6 +14,7 @@ export const createSettingsSlice: StateCreator<AppStore, [], [], SettingsState> 
   exportFormat: DEFAULT_EXPORT_FORMAT,
   exportScale: DEFAULT_EXPORT_SCALE,
   jpegQuality: DEFAULT_JPEG_QUALITY,
+  brand: DEFAULT_BRAND,
 
   setTemplate: (template) => set({ template }),
   setTerminalTheme: (terminalTheme) => set({ terminalTheme }),
@@ -43,6 +45,7 @@ export const createSettingsSlice: StateCreator<AppStore, [], [], SettingsState> 
   setExportFormat: (exportFormat) => set({ exportFormat }),
   setExportScale: (exportScale) => set({ exportScale }),
   setJpegQuality: (jpegQuality) => set({ jpegQuality }),
+  setBrand: (brandUpdate) => set({ brand: { ...get().brand, ...brandUpdate } }),
   resetSettings: () =>
     set({
       ...DEFAULT_SETTINGS,

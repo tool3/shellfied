@@ -1,4 +1,4 @@
-import type { ShellfieSettings, ColorMode, ExportFormat, ExportScale, HeaderConfig, FooterConfig, BackgroundConfig, WatermarkConfig } from '@/types';
+import type { ShellfieSettings, ColorMode, ExportFormat, ExportScale, HeaderConfig, FooterConfig, BackgroundConfig, WatermarkConfig, BrandConfig } from '@/types';
 import { SAMPLE_CODES } from './sampleCode';
 
 export const DEFAULT_HEADER: HeaderConfig = {
@@ -68,6 +68,14 @@ export const DEFAULT_WATERMARK: WatermarkConfig = {
   text: '',
   style: DEFAULT_WATERMARK_STYLE,
   markup: DEFAULT_WATERMARK_MARKUP,
+};
+
+export const DEFAULT_BRAND: BrandConfig = {
+  enabled: false,
+  text: 'Created with',
+  name: 'Shellfied',
+  url: '/',
+  showIcon: true,
 };
 
 export const DEFAULT_SETTINGS: ShellfieSettings = {

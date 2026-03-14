@@ -73,7 +73,7 @@
       <!-- App name -->
       <text x="0" y="-15" font-family="'Syne', system-ui, sans-serif" font-size="64" font-weight="700" fill="#FAFAF9">Shellfied</text>
       <!-- Tagline -->
-      <text x="0" y="35" font-family="'Outfit', system-ui, sans-serif" font-size="22" fill="#8E8883">Beautiful code screenshots in seconds</text>
+      <text x="0" y="35" font-family="'Outfit', system-ui, sans-serif" font-size="22" fill="#8E8883">Share beautiful code</text>
     </g>
   </g>
 

@@ -23,20 +23,16 @@ export const FooterSection = memo(function FooterSection() {
     return TERMINAL_THEMES[terminalTheme]?.theme.background ?? '#242526';
   };
 
+  // Display color: show theme background when no explicit color is set
+  const themeBackground = getThemeBackground();
+
   return (
     <section className={styles.section}>
       <div className={styles.sectionHeader}>
         <h3 className={styles.sectionTitle}>Footer</h3>
         <Toggle
           checked={footer.enabled}
-          onChange={(enabled) => {
-            // Set default background color when enabling footer (use theme's background)
-            if (enabled && !footer.backgroundColor) {
-              setFooter({ enabled, backgroundColor: getThemeBackground() });
-            } else {
-              setFooter({ enabled });
-            }
-          }}
+          onChange={(enabled) => setFooter({ enabled })}
         />
       </div>
       {footer.enabled && (
@@ -44,9 +40,9 @@ export const FooterSection = memo(function FooterSection() {
           <div className={styles.fields}>
             <ColorPicker
               label="Background Color"
-              value={footer.backgroundColor}
+              value={footer.backgroundColor || themeBackground}
               onChange={(value) => setFooter({ backgroundColor: value })}
-              placeholder="#333333"
+              placeholder={themeBackground}
               fullWidth
             />
             <Slider

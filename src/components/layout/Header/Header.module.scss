@@ -130,3 +130,10 @@
   );
   margin: 0 var(--space-xs);
 }
+
+// Mobile-only share button
+.mobileShare {
+  @include breakpoint('lg') {
+    display: none;
+  }
+}

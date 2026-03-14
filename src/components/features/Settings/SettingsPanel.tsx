@@ -7,6 +7,7 @@ import { WatermarkEditor } from './WatermarkEditor';
 import { BackgroundSection } from './BackgroundSection';
 import { HeaderSection } from './HeaderSection';
 import { FooterSection } from './FooterSection';
+import { BrandSection } from './BrandSection';
 import { ExportPanel } from '../Export';
 import {
   FONT_SIZE_MIN,
@@ -214,6 +215,9 @@ export const SettingsPanel = memo(function SettingsPanel() {
 
         {/* Background Section */}
         <BackgroundSection />
+
+        {/* Brand Section */}
+        <BrandSection />
 
         {/* Export Section - Desktop only */}
         <div className={styles.exportSection}>
