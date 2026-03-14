@@ -96,6 +96,16 @@ export const ExportPanel = memo(function ExportPanel() {
         <div className={styles.buttons}>
           <Button
             variant="primary"
+            icon="share"
+            onClick={handleShare}
+            disabled={!hasContent}
+            fullWidth
+          >
+            Share
+          </Button>
+
+          <Button
+            variant="primary"
             icon={isDownloadSuccess ? 'check' : 'download'}
             onClick={() => download()}
             disabled={!hasContent || isExporting}
@@ -113,16 +123,6 @@ export const ExportPanel = memo(function ExportPanel() {
             fullWidth
           >
             {isCopySuccess ? 'Copied!' : 'Copy to Clipboard'}
-          </Button>
-
-          <Button
-            variant="ghost"
-            icon="share"
-            onClick={handleShare}
-            disabled={!hasContent}
-            fullWidth
-          >
-            Share
           </Button>
         </div>
       </div>

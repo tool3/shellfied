@@ -7,11 +7,21 @@ import {
   BORDER_WIDTH_MIN,
   BORDER_WIDTH_MAX,
 } from '@/constants/defaults';
+import { TERMINAL_THEMES } from '@/constants/themes';
 import styles from './SettingsPanel.module.scss';
 
 export const HeaderSection = memo(function HeaderSection() {
   const header = useStore((s) => s.header);
   const setHeader = useStore((s) => s.setHeader);
+  const terminalTheme = useStore((s) => s.terminalTheme);
+  const customThemes = useStore((s) => s.customThemes);
+
+  // Get the current theme's background color
+  const getThemeBackground = () => {
+    const customTheme = customThemes.find((t) => t.id === terminalTheme);
+    if (customTheme) return customTheme.background;
+    return TERMINAL_THEMES[terminalTheme]?.theme.background ?? '#242526';
+  };
 
   return (
     <section className={styles.section}>
@@ -20,9 +30,9 @@ export const HeaderSection = memo(function HeaderSection() {
         <Toggle
           checked={header.enabled}
           onChange={(enabled) => {
-            // Set default background color when enabling header
+            // Set default background color when enabling header (use theme's background)
             if (enabled && !header.backgroundColor) {
-              setHeader({ enabled, backgroundColor: '#242526' });
+              setHeader({ enabled, backgroundColor: getThemeBackground() });
             } else {
               setHeader({ enabled });
             }

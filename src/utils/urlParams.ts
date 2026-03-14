@@ -29,6 +29,7 @@ import {
 export const URL_PARAM_MAP = {
   // Mode
   mode: 'm',
+  output: 'o', // 'svg' | 'png' | 'webp' | 'jpeg' - serves static image in view mode
 
   // Core settings
   template: 'tp',
@@ -153,6 +154,9 @@ export function decodeBool(str: string | null, defaultValue: boolean = false): b
 // Share mode type
 export type ShareMode = 'view' | 'edit';
 
+// Output type for static image serving
+export type OutputFormat = 'svg' | 'png' | 'webp' | 'jpeg';
+
 // Get share mode from URL
 export function getShareMode(): ShareMode | null {
   const params = new URLSearchParams(window.location.search);
@@ -163,6 +167,18 @@ export function getShareMode(): ShareMode | null {
 
   // If there are URL params but no mode, default to view
   if (params.size > 0) return 'view';
+
+  return null;
+}
+
+// Get output format from URL (for static image serving in view mode)
+export function getOutputFormat(): OutputFormat | null {
+  const params = new URLSearchParams(window.location.search);
+  const output = params.get(URL_PARAM_MAP.output) || params.get('output');
+
+  if (output && ['svg', 'png', 'webp', 'jpeg'].includes(output)) {
+    return output as OutputFormat;
+  }
 
   return null;
 }
@@ -390,6 +406,21 @@ export function generateShareUrl(state: UrlState, mode: ShareMode = 'view'): str
   const queryString = params.toString();
 
   return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+}
+
+// Generate static image URL (serves raw image without UI)
+export function generateStaticUrl(
+  state: UrlState,
+  format: 'svg' | 'png' | 'webp' | 'jpeg'
+): string {
+  // Start with the view mode URL
+  const viewUrl = generateShareUrl(state, 'view');
+  const url = new URL(viewUrl);
+
+  // Add the output format parameter
+  url.searchParams.set(URL_PARAM_MAP.output, format);
+
+  return url.toString();
 }
 
 // Parse URL parameters into state

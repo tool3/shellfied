@@ -479,6 +479,59 @@ async function loadSvgAsImage(svgContent: string): Promise<HTMLImageElement> {
 }
 
 /**
+ * Converts SVG to a raster blob (for static image serving)
+ */
+export async function svgToRasterBlob(
+  svgContent: string,
+  format: Exclude<ExportFormat, 'svg'>,
+  options: RasterExportOptions = {}
+): Promise<Blob> {
+  const { scale = 2, quality = 1.0, background } = options;
+  const { width: svgWidth, height: svgHeight } = getSvgDimensions(svgContent);
+
+  const padding = background?.type !== 'none' ? (background?.padding ?? 0) : 0;
+  const aspectRatio = background?.type !== 'none' ? (background?.imageAspectRatio ?? 'auto') : 'auto';
+  const { totalWidth, totalHeight, offsetX, offsetY } = calculateAspectRatioDimensions(
+    svgWidth,
+    svgHeight,
+    aspectRatio,
+    padding
+  );
+
+  const canvas = document.createElement('canvas');
+  canvas.width = totalWidth * scale;
+  canvas.height = totalHeight * scale;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas context not available');
+
+  ctx.scale(scale, scale);
+
+  if (background && background.type !== 'none') {
+    await drawBackground(ctx, background, totalWidth, totalHeight);
+  }
+
+  const img = await loadSvgAsImage(svgContent);
+  ctx.drawImage(img, offsetX, offsetY);
+
+  const mimeType = getMimeType(format);
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error(`Failed to create ${format.toUpperCase()} blob`));
+          return;
+        }
+        resolve(blob);
+      },
+      mimeType,
+      quality
+    );
+  });
+}
+
+/**
  * Downloads a compare mode image (two SVGs side by side with labels)
  */
 export async function downloadCompareRaster(

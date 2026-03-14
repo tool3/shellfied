@@ -7,11 +7,21 @@ import {
   BORDER_WIDTH_MIN,
   BORDER_WIDTH_MAX,
 } from '@/constants/defaults';
+import { TERMINAL_THEMES } from '@/constants/themes';
 import styles from './SettingsPanel.module.scss';
 
 export const FooterSection = memo(function FooterSection() {
   const footer = useStore((s) => s.footer);
   const setFooter = useStore((s) => s.setFooter);
+  const terminalTheme = useStore((s) => s.terminalTheme);
+  const customThemes = useStore((s) => s.customThemes);
+
+  // Get the current theme's background color
+  const getThemeBackground = () => {
+    const customTheme = customThemes.find((t) => t.id === terminalTheme);
+    if (customTheme) return customTheme.background;
+    return TERMINAL_THEMES[terminalTheme]?.theme.background ?? '#242526';
+  };
 
   return (
     <section className={styles.section}>
@@ -20,9 +30,9 @@ export const FooterSection = memo(function FooterSection() {
         <Toggle
           checked={footer.enabled}
           onChange={(enabled) => {
-            // Set default background color when enabling footer
+            // Set default background color when enabling footer (use theme's background)
             if (enabled && !footer.backgroundColor) {
-              setFooter({ enabled, backgroundColor: '#242526' });
+              setFooter({ enabled, backgroundColor: getThemeBackground() });
             } else {
               setFooter({ enabled });
             }

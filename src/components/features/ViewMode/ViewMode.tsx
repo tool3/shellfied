@@ -1,9 +1,11 @@
-import { memo, useMemo, useRef, useState, useEffect } from 'react';
-import { useStore } from '@/store';
-import { useShellfie, useShellfieCompare } from '@/hooks/useShellfie';
+import { memo, useMemo, useRef, useState, useEffect, useCallback } from 'react';
+import { useStore, useStaticOutput } from '@/store';
+import { useShellfie, useShellfieCompare, useShellfieSync } from '@/hooks/useShellfie';
 import { useExport } from '@/hooks/useExport';
-import { Button, Logo } from '@/components/common';
-import type { ImageAspectRatio } from '@/types';
+import { Button, Logo, Icon } from '@/components/common';
+import { svgToRasterBlob } from '@/services/exportService';
+import { generateStaticUrl } from '@/utils/urlParams';
+import type { ImageAspectRatio, OutputFormat, ExportFormat } from '@/types';
 import styles from './ViewMode.module.scss';
 
 const GRADIENT_DIRECTIONS: Record<string, string> = {
@@ -55,12 +57,95 @@ function calculateExpandedDimensions(
   return { width: totalWidth, height: totalHeight, paddingX, paddingY };
 }
 
+// Static image component - serves raw image without UI
+const StaticImageView = memo(function StaticImageView({
+  format,
+}: {
+  format: Exclude<OutputFormat, null>;
+}) {
+  const background = useStore((s) => s.background);
+  const exportScale = useStore((s) => s.exportScale);
+  const jpegQuality = useStore((s) => s.jpegQuality);
+  const compareMode = useStore((s) => s.compareMode);
+  const { generate } = useShellfieSync();
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const createImage = async () => {
+      try {
+        // TODO: Support compare mode for static images
+        if (compareMode) {
+          setError('Compare mode not yet supported for static images');
+          return;
+        }
+
+        const svg = generate();
+        if (!svg) {
+          setError('No content to display');
+          return;
+        }
+
+        if (format === 'svg') {
+          // For SVG, create a blob URL directly
+          const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          setImageUrl(url);
+        } else {
+          // For raster formats, convert to blob
+          const quality = format === 'jpeg' ? jpegQuality : 1.0;
+          const blob = await svgToRasterBlob(svg, format, {
+            scale: exportScale,
+            quality,
+            background,
+          });
+          const url = URL.createObjectURL(blob);
+          setImageUrl(url);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to generate image');
+      }
+    };
+
+    createImage();
+
+    return () => {
+      if (imageUrl) {
+        URL.revokeObjectURL(imageUrl);
+      }
+    };
+  }, [format, generate, background, exportScale, jpegQuality, compareMode]);
+
+  if (error) {
+    return (
+      <div className={styles.staticError}>
+        <p>{error}</p>
+      </div>
+    );
+  }
+
+  if (!imageUrl) {
+    return (
+      <div className={styles.staticLoading}>
+        <div className={styles.spinner} />
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.staticImage}>
+      <img src={imageUrl} alt="Shellfie" />
+    </div>
+  );
+});
+
 export const ViewMode = memo(function ViewMode() {
   const background = useStore((s) => s.background);
   const compareMode = useStore((s) => s.compareMode);
   const compareLabelConfig = useStore((s) => s.compareLabelConfig);
   const exitViewMode = useStore((s) => s.exitViewMode);
   const colorMode = useStore((s) => s.colorMode);
+  const staticOutput = useStaticOutput();
 
   const { svg, error, hasContent } = useShellfie();
   const {
@@ -79,6 +164,35 @@ export const ViewMode = memo(function ViewMode() {
   const compareWrapperRef = useRef<HTMLDivElement>(null);
   const [svgDimensions, setSvgDimensions] = useState({ width: 0, height: 0 });
   const [compareDimensions, setCompareDimensions] = useState({ width: 0, height: 0 });
+  const [showStaticMenu, setShowStaticMenu] = useState(false);
+  const [copiedStatic, setCopiedStatic] = useState(false);
+  const staticMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close static menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (staticMenuRef.current && !staticMenuRef.current.contains(e.target as Node)) {
+        setShowStaticMenu(false);
+      }
+    };
+    if (showStaticMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showStaticMenu]);
+
+  const handleCopyStaticUrl = useCallback(async (format: ExportFormat) => {
+    const state = useStore.getState();
+    const url = generateStaticUrl(state, format);
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedStatic(true);
+      setTimeout(() => setCopiedStatic(false), 2000);
+      setShowStaticMenu(false);
+    } catch (err) {
+      console.error('Failed to copy static URL:', err);
+    }
+  }, []);
 
   useEffect(() => {
     if (svgWrapperRef.current && svg) {
@@ -238,6 +352,11 @@ export const ViewMode = memo(function ViewMode() {
     exitViewMode();
   };
 
+  // If static output is requested, render just the image without UI
+  if (staticOutput) {
+    return <StaticImageView format={staticOutput} />;
+  }
+
   const displayError = error || compareError;
 
   if (displayError) {
@@ -363,6 +482,35 @@ export const ViewMode = memo(function ViewMode() {
           >
             {isCopySuccess ? 'Copied!' : 'Copy'}
           </Button>
+          <div className={styles.staticWrapper} ref={staticMenuRef}>
+            <Button
+              variant="secondary"
+              icon={copiedStatic ? 'check' : 'externalLink'}
+              onClick={() => setShowStaticMenu(!showStaticMenu)}
+            >
+              {copiedStatic ? 'Copied!' : 'Static'}
+            </Button>
+            {showStaticMenu && (
+              <div className={styles.staticMenu}>
+                <button onClick={() => handleCopyStaticUrl('svg')}>
+                  <span>SVG</span>
+                  <Icon name="copy" size={14} />
+                </button>
+                <button onClick={() => handleCopyStaticUrl('png')}>
+                  <span>PNG</span>
+                  <Icon name="copy" size={14} />
+                </button>
+                <button onClick={() => handleCopyStaticUrl('webp')}>
+                  <span>WebP</span>
+                  <Icon name="copy" size={14} />
+                </button>
+                <button onClick={() => handleCopyStaticUrl('jpeg')}>
+                  <span>JPEG</span>
+                  <Icon name="copy" size={14} />
+                </button>
+              </div>
+            )}
+          </div>
           <Button variant="ghost" icon="edit" onClick={handleEdit}>
             Edit
           </Button>
