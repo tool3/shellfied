@@ -5,12 +5,13 @@ import { createEditorSlice } from './slices/editorSlice';
 import { createSettingsSlice } from './slices/settingsSlice';
 import { createUISlice } from './slices/uiSlice';
 import { DEFAULT_WATERMARK, DEFAULT_WATERMARK_STYLE, DEFAULT_WATERMARK_MARKUP, DEFAULT_BACKGROUND } from '@/constants/defaults';
-import { parseUrlParams, getShareMode, type UrlState } from '@/utils/urlParams';
+import { parseUrlParams, getShareMode, getOutputFormat, type UrlState } from '@/utils/urlParams';
 import type { AppStore } from './types';
 
 // Parse URL params once at module load
 const initialUrlState = typeof window !== 'undefined' ? parseUrlParams() : null;
 const initialShareMode = typeof window !== 'undefined' ? getShareMode() : null;
+const initialOutputFormat = typeof window !== 'undefined' ? getOutputFormat() : null;
 
 export const useStore = create<AppStore>()(
   persist(
@@ -103,7 +104,7 @@ export const useStore = create<AppStore>()(
 
         // Apply URL params if present (they take precedence)
         if (initialUrlState) {
-          return applyUrlState(mergedState, initialUrlState, initialShareMode);
+          return applyUrlState(mergedState, initialUrlState, initialShareMode, initialOutputFormat);
         }
 
         return mergedState;
@@ -116,7 +117,8 @@ export const useStore = create<AppStore>()(
 function applyUrlState(
   state: AppStore,
   urlState: UrlState,
-  shareMode: 'view' | 'edit' | null
+  shareMode: 'view' | 'edit' | null,
+  outputFormat: 'svg' | 'png' | 'webp' | 'jpeg' | null
 ): AppStore {
   const result = { ...state };
 
@@ -124,6 +126,11 @@ function applyUrlState(
   if (shareMode) {
     result.shareMode = shareMode;
     result.isViewMode = shareMode === 'view';
+  }
+
+  // Static output format (for serving images directly)
+  if (outputFormat) {
+    result.staticOutput = outputFormat;
   }
 
   // Core settings
@@ -194,6 +201,7 @@ export const useExportScale = () => useStore((s) => s.exportScale);
 export const useCompareMode = () => useStore((s) => s.compareMode);
 export const useShareMode = () => useStore((s) => s.shareMode);
 export const useIsViewMode = () => useStore((s) => s.isViewMode);
+export const useStaticOutput = () => useStore((s) => s.staticOutput);
 
 export const useShellfieOptions = () =>
   useStore(

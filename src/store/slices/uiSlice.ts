@@ -15,6 +15,7 @@ export const createUISlice: StateCreator<AppStore, [], [], UIState> = (set, get)
   compareMode: false,
   shareMode: null,
   isViewMode: false,
+  staticOutput: null,
 
   toggleColorMode: () =>
     set({
@@ -31,6 +32,6 @@ export const createUISlice: StateCreator<AppStore, [], [], UIState> = (set, get)
     }),
   exitViewMode: () => {
     switchToEditMode();
-    set({ shareMode: 'edit', isViewMode: false });
+    set({ shareMode: 'edit', isViewMode: false, staticOutput: null });
   },
 });

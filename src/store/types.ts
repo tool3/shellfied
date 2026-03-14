@@ -84,6 +84,7 @@ export interface SettingsState {
 }
 
 export type ShareMode = 'view' | 'edit';
+export type OutputFormat = 'svg' | 'png' | 'webp' | 'jpeg';
 
 export interface UIState {
   colorMode: ColorMode;
@@ -92,6 +93,7 @@ export interface UIState {
   compareMode: boolean;
   shareMode: ShareMode | null;
   isViewMode: boolean;
+  staticOutput: OutputFormat | null; // For serving static images in view mode
 
   toggleColorMode: () => void;
   setColorMode: (mode: ColorMode) => void;
