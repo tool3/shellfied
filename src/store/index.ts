@@ -5,7 +5,12 @@ import { createEditorSlice } from './slices/editorSlice';
 import { createSettingsSlice } from './slices/settingsSlice';
 import { createUISlice } from './slices/uiSlice';
 import { DEFAULT_WATERMARK, DEFAULT_WATERMARK_STYLE, DEFAULT_WATERMARK_MARKUP, DEFAULT_BACKGROUND } from '@/constants/defaults';
+import { parseUrlParams, getShareMode, type UrlState } from '@/utils/urlParams';
 import type { AppStore } from './types';
+
+// Parse URL params once at module load
+const initialUrlState = typeof window !== 'undefined' ? parseUrlParams() : null;
+const initialShareMode = typeof window !== 'undefined' ? getShareMode() : null;
 
 export const useStore = create<AppStore>()(
   persist(
@@ -87,17 +92,97 @@ export const useStore = create<AppStore>()(
           background = { ...background, imageAspectRatio: 'auto' };
         }
 
-        return {
+        // Base merged state from persistence
+        const mergedState = {
           ...currentState,
           ...persisted,
           watermark: watermark || DEFAULT_WATERMARK,
           background,
           customThemes: persisted.customThemes || [],
         };
+
+        // Apply URL params if present (they take precedence)
+        if (initialUrlState) {
+          return applyUrlState(mergedState, initialUrlState, initialShareMode);
+        }
+
+        return mergedState;
       },
     }
   )
 );
+
+// Apply URL state to store state
+function applyUrlState(
+  state: AppStore,
+  urlState: UrlState,
+  shareMode: 'view' | 'edit' | null
+): AppStore {
+  const result = { ...state };
+
+  // Share mode
+  if (shareMode) {
+    result.shareMode = shareMode;
+    result.isViewMode = shareMode === 'view';
+  }
+
+  // Core settings
+  if (urlState.template !== undefined) result.template = urlState.template;
+  if (urlState.terminalTheme !== undefined) result.terminalTheme = urlState.terminalTheme;
+  if (urlState.fontSize !== undefined) result.fontSize = urlState.fontSize;
+  if (urlState.lineHeight !== undefined) result.lineHeight = urlState.lineHeight;
+  if (urlState.padding !== undefined) result.padding = urlState.padding;
+  if (urlState.title !== undefined) result.title = urlState.title;
+  if (urlState.showControls !== undefined) result.showControls = urlState.showControls;
+  if (urlState.controlsPosition !== undefined) result.controlsPosition = urlState.controlsPosition;
+  if (urlState.borderRadius !== undefined) result.borderRadius = urlState.borderRadius;
+  if (urlState.width !== undefined) result.width = urlState.width;
+  if (urlState.fontFamily !== undefined) result.fontFamily = urlState.fontFamily;
+
+  // Export settings
+  if (urlState.exportFormat !== undefined) result.exportFormat = urlState.exportFormat;
+  if (urlState.exportScale !== undefined) result.exportScale = urlState.exportScale;
+  if (urlState.jpegQuality !== undefined) result.jpegQuality = urlState.jpegQuality;
+
+  // Editor content
+  if (urlState.content !== undefined) result.content = urlState.content;
+  if (urlState.language !== undefined) result.language = urlState.language;
+  if (urlState.colorMode !== undefined) result.colorMode = urlState.colorMode;
+
+  // Compare mode
+  if (urlState.compareMode !== undefined) result.compareMode = urlState.compareMode;
+  if (urlState.beforeContent !== undefined) result.beforeContent = urlState.beforeContent;
+  if (urlState.afterContent !== undefined) result.afterContent = urlState.afterContent;
+  if (urlState.beforeLabel !== undefined) result.beforeLabel = urlState.beforeLabel;
+  if (urlState.afterLabel !== undefined) result.afterLabel = urlState.afterLabel;
+  if (urlState.beforeLanguage !== undefined) result.beforeLanguage = urlState.beforeLanguage;
+  if (urlState.afterLanguage !== undefined) result.afterLanguage = urlState.afterLanguage;
+  if (urlState.compareLabelConfig) {
+    result.compareLabelConfig = { ...result.compareLabelConfig, ...urlState.compareLabelConfig };
+  }
+
+  // Watermark
+  if (urlState.watermark) {
+    result.watermark = { ...result.watermark, ...urlState.watermark };
+  }
+
+  // Header
+  if (urlState.header) {
+    result.header = { ...result.header, ...urlState.header };
+  }
+
+  // Footer
+  if (urlState.footer) {
+    result.footer = { ...result.footer, ...urlState.footer };
+  }
+
+  // Background
+  if (urlState.background) {
+    result.background = { ...result.background, ...urlState.background };
+  }
+
+  return result;
+}
 
 // Selectors for optimized re-renders
 export const useContent = () => useStore((s) => s.content);
@@ -107,6 +192,8 @@ export const useTerminalTheme = () => useStore((s) => s.terminalTheme);
 export const useTemplate = () => useStore((s) => s.template);
 export const useExportScale = () => useStore((s) => s.exportScale);
 export const useCompareMode = () => useStore((s) => s.compareMode);
+export const useShareMode = () => useStore((s) => s.shareMode);
+export const useIsViewMode = () => useStore((s) => s.isViewMode);
 
 export const useShellfieOptions = () =>
   useStore(

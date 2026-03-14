@@ -83,17 +83,23 @@ export interface SettingsState {
   resetSettings: () => void;
 }
 
+export type ShareMode = 'view' | 'edit';
+
 export interface UIState {
   colorMode: ColorMode;
   isSettingsPanelOpen: boolean;
   previewZoom: number;
   compareMode: boolean;
+  shareMode: ShareMode | null;
+  isViewMode: boolean;
 
   toggleColorMode: () => void;
   setColorMode: (mode: ColorMode) => void;
   setSettingsPanelOpen: (open: boolean) => void;
   setPreviewZoom: (zoom: number) => void;
   setCompareMode: (enabled: boolean) => void;
+  setShareMode: (mode: ShareMode | null) => void;
+  exitViewMode: () => void;
 }
 
 export type AppStore = EditorState & SettingsState & UIState;

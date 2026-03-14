@@ -1,11 +1,19 @@
 import { useTheme } from '@/hooks/useTheme';
+import { useIsViewMode } from '@/store';
 import { Header } from '@/components/layout';
-import { Editor, Preview, SettingsPanel, ExportPanel } from '@/components/features';
+import { Editor, Preview, SettingsPanel, ExportPanel, ViewMode } from '@/components/features';
 import styles from './App.module.scss';
 
 function App() {
   useTheme();
+  const isViewMode = useIsViewMode();
 
+  // Render view-only mode for shared links
+  if (isViewMode) {
+    return <ViewMode />;
+  }
+
+  // Render full editor
   return (
     <div className={styles.app}>
       <Header />

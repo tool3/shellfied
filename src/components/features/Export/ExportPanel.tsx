@@ -1,7 +1,9 @@
-import { memo } from 'react';
+import { memo, useState, useCallback } from 'react';
 import { useStore, useContent } from '@/store';
 import { useExport } from '@/hooks/useExport';
 import { Button, Select, Slider } from '@/components/common';
+import { ShareModal } from '@/components/features/Share';
+import { generateShareUrl } from '@/utils/urlParams';
 import type { ExportFormat, ExportScale } from '@/types';
 import styles from './ExportPanel.module.scss';
 
@@ -29,9 +31,20 @@ export const ExportPanel = memo(function ExportPanel() {
 
   const { download, copyToClipboard, isExporting, isDownloadSuccess, isCopySuccess } = useExport();
 
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareUrls, setShareUrls] = useState({ viewUrl: '', editUrl: '' });
+
   const hasContent = Boolean(content.trim());
   const isRasterFormat = exportFormat !== 'svg';
   const isJpeg = exportFormat === 'jpeg';
+
+  const handleShare = useCallback(() => {
+    const state = useStore.getState();
+    const viewUrl = generateShareUrl(state, 'view');
+    const editUrl = generateShareUrl(state, 'edit');
+    setShareUrls({ viewUrl, editUrl });
+    setShowShareModal(true);
+  }, []);
 
   const handleFormatChange = (value: string) => {
     setExportFormat(value as ExportFormat);
@@ -101,8 +114,26 @@ export const ExportPanel = memo(function ExportPanel() {
           >
             {isCopySuccess ? 'Copied!' : 'Copy to Clipboard'}
           </Button>
+
+          <Button
+            variant="ghost"
+            icon="share"
+            onClick={handleShare}
+            disabled={!hasContent}
+            fullWidth
+          >
+            Share
+          </Button>
         </div>
       </div>
+
+      {showShareModal && (
+        <ShareModal
+          viewUrl={shareUrls.viewUrl}
+          editUrl={shareUrls.editUrl}
+          onClose={() => setShowShareModal(false)}
+        />
+      )}
     </div>
   );
 });
