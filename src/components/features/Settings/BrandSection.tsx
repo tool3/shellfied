@@ -22,21 +22,21 @@ export const BrandSection = memo(function BrandSection() {
             <Input
               label="Text"
               value={brand.text}
-              onChange={(value) => setBrand({ text: value })}
+              onChange={(e) => setBrand({ text: e.target.value })}
               placeholder="Created with"
               fullWidth
             />
             <Input
               label="Name"
               value={brand.name}
-              onChange={(value) => setBrand({ name: value })}
+              onChange={(e) => setBrand({ name: e.target.value })}
               placeholder="Your Brand"
               fullWidth
             />
             <Input
               label="URL"
               value={brand.url}
-              onChange={(value) => setBrand({ url: value })}
+              onChange={(e) => setBrand({ url: e.target.value })}
               placeholder="https://yourbrand.com"
               fullWidth
             />

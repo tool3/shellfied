@@ -120,7 +120,7 @@ async function compressString(str: string): Promise<Uint8Array> {
 async function decompressData(data: Uint8Array): Promise<string> {
   const stream = new DecompressionStream('gzip');
   const writer = stream.writable.getWriter();
-  writer.write(data);
+  writer.write(data as ArrayBufferView<ArrayBuffer>);
   writer.close();
   const decompressed = await new Response(stream.readable).arrayBuffer();
   const decoder = new TextDecoder();

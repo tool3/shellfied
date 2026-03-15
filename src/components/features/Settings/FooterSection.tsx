@@ -7,24 +7,11 @@ import {
   BORDER_WIDTH_MIN,
   BORDER_WIDTH_MAX,
 } from '@/constants/defaults';
-import { TERMINAL_THEMES } from '@/constants/themes';
 import styles from './SettingsPanel.module.scss';
 
 export const FooterSection = memo(function FooterSection() {
   const footer = useStore((s) => s.footer);
   const setFooter = useStore((s) => s.setFooter);
-  const terminalTheme = useStore((s) => s.terminalTheme);
-  const customThemes = useStore((s) => s.customThemes);
-
-  // Get the current theme's background color
-  const getThemeBackground = () => {
-    const customTheme = customThemes.find((t) => t.id === terminalTheme);
-    if (customTheme) return customTheme.background;
-    return TERMINAL_THEMES[terminalTheme]?.theme.background ?? '#242526';
-  };
-
-  // Display color: show theme background when no explicit color is set
-  const themeBackground = getThemeBackground();
 
   return (
     <section className={styles.section}>
@@ -40,9 +27,9 @@ export const FooterSection = memo(function FooterSection() {
           <div className={styles.fields}>
             <ColorPicker
               label="Background Color"
-              value={footer.backgroundColor || themeBackground}
+              value={footer.backgroundColor}
               onChange={(value) => setFooter({ backgroundColor: value })}
-              placeholder={themeBackground}
+              placeholder="#242526"
               fullWidth
             />
             <Slider

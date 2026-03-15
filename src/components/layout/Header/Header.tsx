@@ -22,7 +22,7 @@ export const Header = memo(function Header() {
         <Logo size={32} />
         <div className={styles.title}>
           <h1>Shellfied</h1>
-          <span className={styles.tagline}>Create beautiful SVGs from your code and terminal output</span>
+          <span className={styles.tagline}>Create and share beautiful code</span>
         </div>
       </div>
 
