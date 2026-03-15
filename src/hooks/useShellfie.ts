@@ -229,11 +229,10 @@ function getTheme(themeName: string, customThemes: CustomTheme[]) {
 }
 
 // Build header/footer options for shellfie
-function buildHeaderOptions(header: HeaderConfig, themeBackground?: string) {
+function buildHeaderOptions(header: HeaderConfig) {
   if (!header.enabled) return undefined;
   return {
-    // Use header's background if set, otherwise fallback to theme's background
-    backgroundColor: header.backgroundColor || themeBackground || undefined,
+    backgroundColor: header.backgroundColor || undefined,
     height: header.height,
     border: header.border,
     borderColor: header.borderColor || undefined,
@@ -241,11 +240,10 @@ function buildHeaderOptions(header: HeaderConfig, themeBackground?: string) {
   };
 }
 
-function buildFooterOptions(footer: FooterConfig, themeBackground?: string) {
+function buildFooterOptions(footer: FooterConfig) {
   if (!footer.enabled) return undefined;
   return {
-    // Use footer's background if set, otherwise fallback to theme's background
-    backgroundColor: footer.backgroundColor || themeBackground || undefined,
+    backgroundColor: footer.backgroundColor || undefined,
     height: footer.height,
     border: footer.border,
     borderColor: footer.borderColor || undefined,
@@ -293,8 +291,7 @@ export function useShellfie() {
       const highlightedContent = highlightWithAnsi(debouncedContent, effectiveLanguage);
       const theme = getTheme(terminalTheme, customThemes);
 
-      const themeBackground = theme?.background;
-      const result = shellfie(highlightedContent, {
+            const result = shellfie(highlightedContent, {
         template: buildTemplate(template, controlsPosition, borderRadius),
         theme,
         title: title || undefined,
@@ -305,8 +302,8 @@ export function useShellfie() {
         watermark: buildWatermarkConfig(watermark),
         width: width || undefined,
         fontFamily: fontFamily || undefined,
-        header: buildHeaderOptions(header, themeBackground),
-        footer: buildFooterOptions(footer, themeBackground),
+        header: buildHeaderOptions(header),
+        footer: buildFooterOptions(footer),
       });
       return { svg: result, error: null };
     } catch (err) {
@@ -373,8 +370,7 @@ export function useShellfieCompare() {
       try {
         const highlightedContent = highlightWithAnsi(content, effectiveLanguage);
         const theme = getTheme(terminalTheme, customThemes);
-        const themeBackground = theme?.background;
-
+        
         return shellfie(highlightedContent, {
           template: buildTemplate(template, controlsPosition, borderRadius),
           theme,
@@ -385,8 +381,8 @@ export function useShellfieCompare() {
           fontFamily: fontFamily || undefined,
           width: width || undefined,
           watermark: buildWatermarkConfig(watermark),
-          header: buildHeaderOptions(header, themeBackground),
-          footer: buildFooterOptions(footer, themeBackground),
+          header: buildHeaderOptions(header),
+          footer: buildFooterOptions(footer),
         });
       } catch {
         return '';
@@ -474,8 +470,7 @@ export function useShellfieCompareSync() {
         const effectiveLang = language === 'auto' ? detectLanguage(content) : language;
         const highlightedContent = highlightWithAnsi(content, effectiveLang);
         const theme = getTheme(terminalTheme, customThemes);
-        const themeBackground = theme?.background;
-
+        
         return shellfie(highlightedContent, {
           template: buildTemplate(template, controlsPosition, borderRadius),
           theme,
@@ -486,8 +481,8 @@ export function useShellfieCompareSync() {
           fontFamily: fontFamily || undefined,
           width: width || undefined,
           watermark: buildWatermarkConfig(watermark),
-          header: buildHeaderOptions(header, themeBackground),
-          footer: buildFooterOptions(footer, themeBackground),
+          header: buildHeaderOptions(header),
+          footer: buildFooterOptions(footer),
         });
       } catch {
         return '';
@@ -560,8 +555,7 @@ export function useShellfieSync() {
       // Apply syntax highlighting with ANSI codes
       const highlightedContent = highlightWithAnsi(content, effectiveLang);
       const theme = getTheme(terminalTheme, customThemes);
-      const themeBackground = theme?.background;
-
+      
       return shellfie(highlightedContent, {
         template: buildTemplate(template, controlsPosition, borderRadius),
         theme,
@@ -573,8 +567,8 @@ export function useShellfieSync() {
         watermark: buildWatermarkConfig(watermark),
         width: width || undefined,
         fontFamily: fontFamily || undefined,
-        header: buildHeaderOptions(header, themeBackground),
-        footer: buildFooterOptions(footer, themeBackground),
+        header: buildHeaderOptions(header),
+        footer: buildFooterOptions(footer),
       });
     } catch {
       return '';
