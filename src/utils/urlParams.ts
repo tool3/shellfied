@@ -731,6 +731,13 @@ function buildCompactState(state: UrlState, mode: ShareMode, includeContent: boo
   return compact;
 }
 
+// Generate compressed data only (for URL shortener)
+export function generateCompressedData(state: UrlState, mode: ShareMode = 'view'): string {
+  const compact = buildCompactState(state, mode, true); // Always include content
+  const json = JSON.stringify(compact);
+  return LZString.compressToEncodedURIComponent(json);
+}
+
 // Generate share URL with LZ-string compression
 export function generateShareUrlLZ(state: UrlState, mode: ShareMode = 'view'): string {
   const compact = buildCompactState(state, mode);
