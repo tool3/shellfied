@@ -733,4 +733,202 @@ export function wrapSvgWithBackground(
 </svg>`;
 }
 
+/**
+ * Escapes XML special characters
+ */
+function escapeXml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+/**
+ * Map font family to Google Fonts URL for embedding in SVG
+ */
+function getFontImportUrl(fontFamily: string): string | null {
+  const fontMap: Record<string, string> = {
+    'Inter': 'Inter:wght@400;500;600;700',
+    'Roboto': 'Roboto:wght@400;500;700',
+    'Poppins': 'Poppins:wght@400;500;600;700',
+    'Montserrat': 'Montserrat:wght@400;500;600;700',
+    'Open Sans': 'Open+Sans:wght@400;500;600;700',
+    'Lato': 'Lato:wght@400;700',
+    'Oswald': 'Oswald:wght@400;500;600;700',
+    'Raleway': 'Raleway:wght@400;500;600;700',
+    'Nunito': 'Nunito:wght@400;500;600;700',
+    'Ubuntu': 'Ubuntu:wght@400;500;700',
+    'Rubik': 'Rubik:wght@400;500;600;700',
+    'Work Sans': 'Work+Sans:wght@400;500;600;700',
+    'Quicksand': 'Quicksand:wght@400;500;600;700',
+    'Bebas Neue': 'Bebas+Neue',
+    'Playfair Display': 'Playfair+Display:wght@400;500;600;700',
+    'Merriweather': 'Merriweather:wght@400;700',
+    'JetBrains Mono': 'JetBrains+Mono:wght@400;500;600;700',
+  };
+
+  // Extract the primary font name from the font-family or font shorthand string
+  // Handle both "Inter, sans-serif" and "600 16px Inter, sans-serif"
+  const fontFamilyPart = fontFamily.includes('px ')
+    ? fontFamily.split('px ')[1]
+    : fontFamily;
+  const primaryFont = fontFamilyPart.split(',')[0].trim().replace(/['"]/g, '');
+
+  if (fontMap[primaryFont]) {
+    // Use &amp; for XML/SVG compatibility
+    return `https://fonts.googleapis.com/css2?family=${fontMap[primaryFont]}&amp;display=swap`;
+  }
+  return null;
+}
+
+export interface CompareLabelConfig {
+  fontSize: number;
+  fontFamily: string;
+  fontWeight: number;
+  color: string;
+  alignment: 'left' | 'center' | 'right';
+}
+
+export interface GenerateCompareSvgOptions extends Omit<GenerateSvgOptions, 'content' | 'title'> {
+  beforeContent: string;
+  afterContent: string;
+  beforeLabel: string;
+  afterLabel: string;
+  beforeTitle?: string;
+  afterTitle?: string;
+  beforeLanguage?: string;
+  afterLanguage?: string;
+  compareLabelConfig: CompareLabelConfig;
+  background?: BackgroundConfig;
+}
+
+/**
+ * Generate a combined compare mode SVG with two terminals side by side
+ */
+export function generateCompareSvg(options: GenerateCompareSvgOptions): string {
+  const {
+    beforeContent,
+    afterContent,
+    beforeLabel,
+    afterLabel,
+    beforeTitle = 'Terminal',
+    afterTitle = 'Terminal',
+    beforeLanguage = 'auto',
+    afterLanguage = 'auto',
+    compareLabelConfig,
+    background,
+    ...sharedOptions
+  } = options;
+
+  // Generate individual SVGs
+  const beforeSvg = beforeContent
+    ? generateSvg({ content: beforeContent, language: beforeLanguage, title: beforeTitle, ...sharedOptions })
+    : '';
+  const afterSvg = afterContent
+    ? generateSvg({ content: afterContent, language: afterLanguage, title: afterTitle, ...sharedOptions })
+    : '';
+
+  if (!beforeSvg && !afterSvg) {
+    return '';
+  }
+
+  // Get dimensions and match widths
+  const beforeDims = beforeSvg ? getSvgDimensions(beforeSvg) : { width: 400, height: 300 };
+  const afterDims = afterSvg ? getSvgDimensions(afterSvg) : { width: 400, height: 300 };
+  const maxWidth = Math.max(beforeDims.width, afterDims.width);
+
+  // Regenerate with matched widths if needed
+  let finalBeforeSvg = beforeSvg;
+  let finalAfterSvg = afterSvg;
+
+  if (beforeSvg && beforeDims.width < maxWidth) {
+    finalBeforeSvg = generateSvg({
+      content: beforeContent,
+      language: beforeLanguage,
+      title: beforeTitle,
+      ...sharedOptions,
+      width: maxWidth,
+    });
+  }
+  if (afterSvg && afterDims.width < maxWidth) {
+    finalAfterSvg = generateSvg({
+      content: afterContent,
+      language: afterLanguage,
+      title: afterTitle,
+      ...sharedOptions,
+      width: maxWidth,
+    });
+  }
+
+  // Get final dimensions
+  const finalBeforeDims = finalBeforeSvg ? getSvgDimensions(finalBeforeSvg) : beforeDims;
+  const finalAfterDims = finalAfterSvg ? getSvgDimensions(finalAfterSvg) : afterDims;
+
+  // Layout constants
+  const gap = 32;
+  const labelHeight = compareLabelConfig.fontSize + 24;
+  const padding = background && background.type !== 'none' ? (background.padding ?? 32) : 32;
+  const maxHeight = Math.max(finalBeforeDims.height, finalAfterDims.height);
+  const totalWidth = finalBeforeDims.width + gap + finalAfterDims.width + padding * 2;
+  const totalHeight = maxHeight + labelHeight + padding * 2;
+
+  // Build label font string
+  const labelFont = `${compareLabelConfig.fontWeight} ${compareLabelConfig.fontSize}px ${compareLabelConfig.fontFamily}`;
+
+  // Calculate label positions based on alignment
+  let beforeLabelX = padding;
+  let afterLabelX = padding + finalBeforeDims.width + gap;
+  let textAnchor = 'start';
+
+  if (compareLabelConfig.alignment === 'center') {
+    beforeLabelX = padding + finalBeforeDims.width / 2;
+    afterLabelX = padding + finalBeforeDims.width + gap + finalAfterDims.width / 2;
+    textAnchor = 'middle';
+  } else if (compareLabelConfig.alignment === 'right') {
+    beforeLabelX = padding + finalBeforeDims.width;
+    afterLabelX = padding + finalBeforeDims.width + gap + finalAfterDims.width;
+    textAnchor = 'end';
+  }
+
+  // Generate background SVG element
+  const backgroundSvg = background ? generateSvgBackground(background, totalWidth, totalHeight) : '';
+
+  // Get font import URL if using a Google Font
+  const fontImportUrl = getFontImportUrl(labelFont);
+  const fontImportStyle = fontImportUrl ? `@import url('${fontImportUrl}');` : '';
+
+  // Create combined SVG
+  const combinedSvg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}">
+  <defs>
+    <style>
+      ${fontImportStyle}
+      .label { font: ${labelFont}; fill: ${compareLabelConfig.color}; text-anchor: ${textAnchor}; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  ${backgroundSvg}
+
+  <!-- Before label -->
+  <text x="${beforeLabelX}" y="${padding + compareLabelConfig.fontSize}" class="label">${escapeXml(beforeLabel)}</text>
+
+  <!-- After label -->
+  <text x="${afterLabelX}" y="${padding + compareLabelConfig.fontSize}" class="label">${escapeXml(afterLabel)}</text>
+
+  <!-- Before SVG -->
+  <g transform="translate(${padding}, ${padding + labelHeight})">
+    ${finalBeforeSvg ? extractSvgContent(finalBeforeSvg) : `<rect width="${finalBeforeDims.width}" height="${finalBeforeDims.height}" fill="rgba(255,255,255,0.1)"/>`}
+  </g>
+
+  <!-- After SVG -->
+  <g transform="translate(${padding + finalBeforeDims.width + gap}, ${padding + labelHeight})">
+    ${finalAfterSvg ? extractSvgContent(finalAfterSvg) : `<rect width="${finalAfterDims.width}" height="${finalAfterDims.height}" fill="rgba(255,255,255,0.1)"/>`}
+  </g>
+</svg>`;
+
+  return combinedSvg;
+}
+
 export type { BackgroundConfig, BackgroundType, GradientDirection, ImageAspectRatio };

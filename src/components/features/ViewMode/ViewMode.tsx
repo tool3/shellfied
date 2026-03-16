@@ -1,11 +1,11 @@
 import { memo, useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import { useStore, useStaticOutput } from '@/store';
-import { useShellfie, useShellfieCompare, useShellfieSync } from '@/hooks/useShellfie';
+import { useShellfie, useShellfieCompare, useShellfieSync, useShellfieCompareSync } from '@/hooks/useShellfie';
 import { useExport } from '@/hooks/useExport';
-import { Button, Logo, Icon } from '@/components/common';
-import { svgToRasterBlob, wrapSvgWithBackground } from '@/services/exportService';
+import { Button, Logo, Select, Slider } from '@/components/common';
+import { svgToRasterBlob, wrapSvgWithBackground, compareToRasterBlob, createCompareSvg } from '@/services/exportService';
 import { generateStaticUrl } from '@/utils/urlParams';
-import type { ImageAspectRatio, OutputFormat, ExportFormat } from '@/types';
+import type { ImageAspectRatio, OutputFormat, ExportFormat, ExportScale } from '@/types';
 import styles from './ViewMode.module.scss';
 
 const GRADIENT_DIRECTIONS: Record<string, string> = {
@@ -79,41 +79,84 @@ const StaticImageView = memo(function StaticImageView({
   const exportScale = useStore((s) => s.exportScale);
   const jpegQuality = useStore((s) => s.jpegQuality);
   const compareMode = useStore((s) => s.compareMode);
+  const compareLabelConfig = useStore((s) => s.compareLabelConfig);
   const { generate } = useShellfieSync();
+  const { generate: generateCompare } = useShellfieCompareSync();
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const createImage = async () => {
       try {
-        // TODO: Support compare mode for static images
         if (compareMode) {
-          setError('Compare mode not yet supported for static images');
-          return;
-        }
+          // Handle compare mode
+          const { beforeSvg, afterSvg, beforeLabel, afterLabel } = generateCompare();
+          if (!beforeSvg && !afterSvg) {
+            setError('No content to display');
+            return;
+          }
 
-        const svg = generate();
-        if (!svg) {
-          setError('No content to display');
-          return;
-        }
-
-        if (format === 'svg') {
-          // For SVG, wrap with background and create a blob URL
-          const wrappedSvg = wrapSvgWithBackground(svg, background);
-          const blob = new Blob([wrappedSvg], { type: 'image/svg+xml;charset=utf-8' });
-          const url = URL.createObjectURL(blob);
-          setImageUrl(url);
-        } else {
-          // For raster formats, convert to blob
-          const quality = format === 'jpeg' ? jpegQuality : 1.0;
-          const blob = await svgToRasterBlob(svg, format, {
+          const compareOptions = {
             scale: exportScale,
-            quality,
+            quality: format === 'jpeg' ? jpegQuality : 1.0,
             background,
-          });
-          const url = URL.createObjectURL(blob);
-          setImageUrl(url);
+            gap: 32,
+            labelHeight: compareLabelConfig.fontSize + 24,
+            labelColor: compareLabelConfig.color,
+            labelFont: `${compareLabelConfig.fontWeight} ${compareLabelConfig.fontSize}px ${compareLabelConfig.fontFamily}`,
+            labelAlignment: compareLabelConfig.alignment,
+          };
+
+          if (format === 'svg') {
+            // Create combined SVG
+            const combinedSvg = createCompareSvg(
+              beforeSvg,
+              afterSvg,
+              beforeLabel,
+              afterLabel,
+              compareOptions
+            );
+            const blob = new Blob([combinedSvg], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            setImageUrl(url);
+          } else {
+            // Convert to raster blob
+            const blob = await compareToRasterBlob(
+              beforeSvg,
+              afterSvg,
+              beforeLabel,
+              afterLabel,
+              format,
+              compareOptions
+            );
+            const url = URL.createObjectURL(blob);
+            setImageUrl(url);
+          }
+        } else {
+          // Handle single mode
+          const svg = generate();
+          if (!svg) {
+            setError('No content to display');
+            return;
+          }
+
+          if (format === 'svg') {
+            // For SVG, wrap with background and create a blob URL
+            const wrappedSvg = wrapSvgWithBackground(svg, background);
+            const blob = new Blob([wrappedSvg], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            setImageUrl(url);
+          } else {
+            // For raster formats, convert to blob
+            const quality = format === 'jpeg' ? jpegQuality : 1.0;
+            const blob = await svgToRasterBlob(svg, format, {
+              scale: exportScale,
+              quality,
+              background,
+            });
+            const url = URL.createObjectURL(blob);
+            setImageUrl(url);
+          }
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to generate image');
@@ -127,7 +170,7 @@ const StaticImageView = memo(function StaticImageView({
         URL.revokeObjectURL(imageUrl);
       }
     };
-  }, [format, generate, background, exportScale, jpegQuality, compareMode]);
+  }, [format, generate, generateCompare, background, exportScale, jpegQuality, compareMode, compareLabelConfig]);
 
   if (error) {
     return (
@@ -152,6 +195,19 @@ const StaticImageView = memo(function StaticImageView({
   );
 });
 
+const FORMAT_OPTIONS = [
+  { value: 'svg', label: 'SVG' },
+  { value: 'png', label: 'PNG' },
+  { value: 'webp', label: 'WebP' },
+  { value: 'jpeg', label: 'JPEG' },
+];
+
+const SCALE_OPTIONS = [
+  { value: '1', label: '1x' },
+  { value: '2', label: '2x' },
+  { value: '3', label: '3x' },
+];
+
 export const ViewMode = memo(function ViewMode() {
   const background = useStore((s) => s.background);
   const compareMode = useStore((s) => s.compareMode);
@@ -159,6 +215,12 @@ export const ViewMode = memo(function ViewMode() {
   const exitViewMode = useStore((s) => s.exitViewMode);
   const colorMode = useStore((s) => s.colorMode);
   const brand = useStore((s) => s.brand);
+  const exportFormat = useStore((s) => s.exportFormat);
+  const setExportFormat = useStore((s) => s.setExportFormat);
+  const exportScale = useStore((s) => s.exportScale);
+  const setExportScale = useStore((s) => s.setExportScale);
+  const jpegQuality = useStore((s) => s.jpegQuality);
+  const setJpegQuality = useStore((s) => s.setJpegQuality);
   const staticOutput = useStaticOutput();
 
   const { svg, error, hasContent } = useShellfie();
@@ -172,33 +234,25 @@ export const ViewMode = memo(function ViewMode() {
     sharedWidth,
   } = useShellfieCompare();
 
+  // Sync generators for static image generation (used when background has an image)
+  const { generate } = useShellfieSync();
+  const { generate: generateCompare } = useShellfieCompareSync();
+
   const { download, copyToClipboard, isExporting, isCopySuccess } = useExport();
 
   const svgWrapperRef = useRef<HTMLDivElement>(null);
   const compareWrapperRef = useRef<HTMLDivElement>(null);
   const [svgDimensions, setSvgDimensions] = useState({ width: 0, height: 0 });
   const [compareDimensions, setCompareDimensions] = useState({ width: 0, height: 0 });
-  const [showStaticMenu, setShowStaticMenu] = useState(false);
-  const staticMenuRef = useRef<HTMLDivElement>(null);
 
-  // Close static menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (staticMenuRef.current && !staticMenuRef.current.contains(e.target as Node)) {
-        setShowStaticMenu(false);
-      }
-    };
-    if (showStaticMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [showStaticMenu]);
+  // Check if static URL is available (not available for image backgrounds)
+  const hasImageBackground = background.type === 'image' && !!background.image;
 
-  const handleOpenStaticUrl = useCallback((format: ExportFormat) => {
+  const handleOpenStaticUrl = useCallback(() => {
     const state = useStore.getState();
+    const format = state.exportFormat;
     const url = generateStaticUrl(state, format);
     window.open(url, '_blank');
-    setShowStaticMenu(false);
   }, []);
 
   useEffect(() => {
@@ -410,6 +464,7 @@ export const ViewMode = memo(function ViewMode() {
     const labelStyle: React.CSSProperties = {
       fontSize: compareLabelConfig.fontSize,
       fontFamily: compareLabelConfig.fontFamily,
+      fontWeight: compareLabelConfig.fontWeight,
       color: compareLabelConfig.color,
       textAlign: compareLabelConfig.alignment,
     };
@@ -473,60 +528,79 @@ export const ViewMode = memo(function ViewMode() {
         </div>
 
         <div className={styles.actions}>
-          <Button
-            variant="primary"
-            icon="download"
-            onClick={() => download()}
-            disabled={isExporting}
-          >
-            {isExporting ? 'Downloading...' : 'Download'}
-          </Button>
-          <Button
-            variant="secondary"
-            icon={isCopySuccess ? 'check' : 'copy'}
-            onClick={copyToClipboard}
-            disabled={isExporting}
-          >
-            {isCopySuccess ? 'Copied!' : 'Copy'}
-          </Button>
-          <div className={styles.staticWrapper} ref={staticMenuRef}>
+          <div className={styles.buttonRow}>
+            <Button
+              variant="primary"
+              icon="download"
+              onClick={() => download()}
+              disabled={isExporting}
+            >
+              {isExporting ? 'Downloading...' : 'Download'}
+            </Button>
+            <Button
+              variant="secondary"
+              icon={isCopySuccess ? 'check' : 'copy'}
+              onClick={copyToClipboard}
+              disabled={isExporting}
+            >
+              {isCopySuccess ? 'Copied!' : 'Copy'}
+            </Button>
             <Button
               variant="secondary"
               icon="externalLink"
-              onClick={() => setShowStaticMenu(!showStaticMenu)}
+              onClick={handleOpenStaticUrl}
+              disabled={hasImageBackground}
+              title={hasImageBackground ? 'Static URLs not available for image backgrounds' : 'Open as static image'}
             >
               Static
             </Button>
-            {showStaticMenu && (
-              <div className={styles.staticMenu}>
-                <button onClick={() => handleOpenStaticUrl('svg')}>
-                  <span>SVG</span>
-                  <Icon name="externalLink" size={14} />
-                </button>
-                <button onClick={() => handleOpenStaticUrl('png')}>
-                  <span>PNG</span>
-                  <Icon name="externalLink" size={14} />
-                </button>
-                <button onClick={() => handleOpenStaticUrl('webp')}>
-                  <span>WebP</span>
-                  <Icon name="externalLink" size={14} />
-                </button>
-                <button onClick={() => handleOpenStaticUrl('jpeg')}>
-                  <span>JPEG</span>
-                  <Icon name="externalLink" size={14} />
-                </button>
-              </div>
+            <Button variant="ghost" icon="edit" onClick={handleEdit}>
+              Edit
+            </Button>
+          </div>
+          <div className={styles.optionsRow}>
+            <Select
+              label="Format"
+              options={FORMAT_OPTIONS}
+              value={exportFormat}
+              onChange={(value) => setExportFormat(value as ExportFormat)}
+              className={styles.formatSelect}
+            />
+            {exportFormat !== 'svg' && (
+              <Select
+                label="Scale"
+                options={SCALE_OPTIONS}
+                value={String(exportScale)}
+                onChange={(value) => setExportScale(Number(value) as ExportScale)}
+                className={styles.scaleSelect}
+              />
+            )}
+            {exportFormat === 'jpeg' && (
+              <Slider
+                label="Quality"
+                value={jpegQuality}
+                onChange={setJpegQuality}
+                min={0.6}
+                max={1.0}
+                step={0.1}
+                formatValue={(v) => `${Math.round(v * 100)}%`}
+                className={styles.qualitySlider}
+              />
             )}
           </div>
-          <Button variant="ghost" icon="edit" onClick={handleEdit}>
-            Edit
-          </Button>
         </div>
 
         <footer className={styles.footer}>
           <span>{brand.enabled ? brand.text : 'Created with'} </span>
           <a href={brand.enabled ? brand.url : '/'} rel="noopener noreferrer">
-            {(!brand.enabled || brand.showIcon) && <Logo size={16} />}
+            {!brand.enabled && <Logo size={16} />}
+            {brand.enabled && brand.showIcon && (
+              brand.iconUrl ? (
+                <img src={brand.iconUrl} alt="" className={styles.brandIcon} />
+              ) : (
+                <Logo size={16} />
+              )
+            )}
             <span>{brand.enabled ? brand.name : 'Shellfied'}</span>
           </a>
         </footer>

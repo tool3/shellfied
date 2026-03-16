@@ -3,7 +3,7 @@ import styles from './ColorPicker.module.scss';
 
 interface ColorPickerProps {
   label?: string;
-  value: string;
+  value?: string;
   onChange: (value: string) => void;
   placeholder?: string;
   fullWidth?: boolean;
@@ -15,12 +15,14 @@ export const ColorPicker = forwardRef<HTMLInputElement, ColorPickerProps>(functi
   ref
 ) {
   const id = useId();
-  const [localColor, setLocalColor] = useState(value);
+  // Ensure value is never undefined to prevent uncontrolled->controlled switch
+  const safeValue = value ?? '';
+  const [localColor, setLocalColor] = useState(safeValue);
 
   // Sync local state when prop changes externally
   useEffect(() => {
-    setLocalColor(value);
-  }, [value]);
+    setLocalColor(safeValue);
+  }, [safeValue]);
 
   // Handle input during drag - only update local state, no store update
   const handleColorInput = useCallback((newColor: string) => {

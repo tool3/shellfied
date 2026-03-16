@@ -60,6 +60,18 @@
   gap: var(--space-sm);
 }
 
+// First row: Format + Scale side by side
+.optionsRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+}
+
+// Quality slider gets its own row
+.qualityRow {
+  margin-top: var(--space-xs);
+}
+
 .buttons {
   display: flex;
   flex-direction: column;

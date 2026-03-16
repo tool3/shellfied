@@ -9,7 +9,7 @@ interface SelectOption {
 
 interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'onChange'> {
   options: SelectOption[];
-  value: string;
+  value?: string;
   onChange: (value: string) => void;
   label?: string;
   fullWidth?: boolean;
@@ -23,6 +23,9 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
   const generatedId = useId();
   const selectId = id || generatedId;
 
+  // Ensure value is never undefined to prevent uncontrolled->controlled switch
+  const safeValue = value ?? '';
+
   return (
     <div className={`${styles.wrapper} ${fullWidth ? styles.fullWidth : ''} ${className}`}>
       {label && (
@@ -35,7 +38,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
           ref={ref}
           id={selectId}
           className={styles.select}
-          value={value}
+          value={safeValue}
           onChange={(e) => onChange(e.target.value)}
           {...props}
         >

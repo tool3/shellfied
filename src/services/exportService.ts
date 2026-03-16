@@ -92,6 +92,106 @@ async function shareFile(blob: Blob, filename: string, mimeType: string): Promis
 }
 
 /**
+ * Map font family to Google Fonts URL for preloading
+ */
+const GOOGLE_FONTS: Record<string, string> = {
+  'Inter': 'Inter',
+  'Roboto': 'Roboto',
+  'Poppins': 'Poppins',
+  'Montserrat': 'Montserrat',
+  'Open Sans': 'Open Sans',
+  'Lato': 'Lato',
+  'Oswald': 'Oswald',
+  'Raleway': 'Raleway',
+  'Nunito': 'Nunito',
+  'Ubuntu': 'Ubuntu',
+  'Rubik': 'Rubik',
+  'Work Sans': 'Work Sans',
+  'Quicksand': 'Quicksand',
+  'Bebas Neue': 'Bebas Neue',
+  'Playfair Display': 'Playfair Display',
+  'Merriweather': 'Merriweather',
+  'JetBrains Mono': 'JetBrains Mono',
+};
+
+/**
+ * Preload a font for Canvas rendering using CSS Font Loading API
+ */
+async function preloadFont(fontString: string): Promise<void> {
+  // Parse the font string to extract family - format is "weight size family, fallback"
+  // e.g., "600 16px Inter, sans-serif"
+  const fontFamilyPart = fontString.includes('px ')
+    ? fontString.split('px ')[1]
+    : fontString;
+  const primaryFont = fontFamilyPart.split(',')[0].trim().replace(/['"]/g, '');
+
+  // Check if it's a Google Font
+  if (!GOOGLE_FONTS[primaryFont]) {
+    return; // System font, no need to preload
+  }
+
+  // Check if font is already loaded
+  if (document.fonts.check(fontString)) {
+    return;
+  }
+
+  // Parse weight from font string
+  const weightMatch = fontString.match(/^(\d+)\s/);
+  const weight = weightMatch ? weightMatch[1] : '400';
+
+  // Load via CSS Font Loading API
+  try {
+    const fontFace = new FontFace(
+      primaryFont,
+      `url(https://fonts.gstatic.com/s/${primaryFont.toLowerCase().replace(/\s+/g, '')}/v30/regular.woff2)`,
+      { weight }
+    );
+
+    // Try to load the font - fall back to loading via link element if this fails
+    await Promise.race([
+      fontFace.load().then(() => document.fonts.add(fontFace)),
+      loadFontViaStylesheet(primaryFont, weight),
+    ]);
+
+    // Wait for font to be ready
+    await document.fonts.ready;
+  } catch {
+    // Fallback: try loading via stylesheet
+    await loadFontViaStylesheet(primaryFont, weight);
+  }
+}
+
+/**
+ * Load font via dynamically injected stylesheet link
+ */
+async function loadFontViaStylesheet(fontFamily: string, weight: string): Promise<void> {
+  const fontName = fontFamily.replace(/\s+/g, '+');
+  const linkId = `google-font-${fontFamily.replace(/\s+/g, '-').toLowerCase()}`;
+
+  // Check if already loaded
+  if (document.getElementById(linkId)) {
+    await document.fonts.ready;
+    return;
+  }
+
+  return new Promise((resolve) => {
+    const link = document.createElement('link');
+    link.id = linkId;
+    link.rel = 'stylesheet';
+    link.href = `https://fonts.googleapis.com/css2?family=${fontName}:wght@${weight}&display=swap`;
+    link.onload = async () => {
+      await document.fonts.ready;
+      resolve();
+    };
+    link.onerror = () => resolve(); // Don't fail, just use fallback font
+    document.head.appendChild(link);
+
+    // Timeout fallback
+    setTimeout(resolve, 2000);
+  });
+}
+
+/**
  * Downloads an SVG string as a file
  */
 export function downloadSvg(svgContent: string, filename: string): void {
@@ -179,6 +279,11 @@ async function drawBackground(
       if (!background.image) return;
 
       const img = new Image();
+      // Only set crossOrigin for non-data URLs to avoid CORS issues with data URLs
+      if (!background.image.startsWith('data:')) {
+        img.crossOrigin = 'anonymous';
+      }
+
       await new Promise<void>((resolve, reject) => {
         img.onload = () => resolve();
         img.onerror = () => reject(new Error('Failed to load background image'));
@@ -203,11 +308,15 @@ async function drawBackground(
         drawY = (totalHeight - drawHeight) / 2;
       }
 
+      // Save context state before clipping
+      ctx.save();
       // Clip to rounded rectangle
       ctx.beginPath();
       ctx.roundRect(0, 0, totalWidth, totalHeight, 12);
       ctx.clip();
       ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+      // Restore context to remove clip path for subsequent operations
+      ctx.restore();
       break;
     }
   }
@@ -543,6 +652,203 @@ export async function svgToRasterBlob(
 }
 
 /**
+ * Converts compare mode SVGs to a raster blob (for static image serving)
+ */
+export async function compareToRasterBlob(
+  beforeSvg: string,
+  afterSvg: string,
+  beforeLabel: string,
+  afterLabel: string,
+  format: Exclude<ExportFormat, 'svg'>,
+  options: CompareExportOptions
+): Promise<Blob> {
+  const {
+    scale = 2,
+    quality = 1.0,
+    background,
+    gap = 32,
+    labelHeight = 40,
+    labelColor = '#ffffff',
+    labelFont = '600 16px system-ui, -apple-system, sans-serif',
+    labelAlignment = 'left',
+  } = options;
+
+  // Preload font before drawing to ensure it's available for Canvas
+  await preloadFont(labelFont);
+
+  // Get dimensions for both SVGs
+  const beforeDims = beforeSvg ? getSvgDimensions(beforeSvg) : { width: 400, height: 300 };
+  const afterDims = afterSvg ? getSvgDimensions(afterSvg) : { width: 400, height: 300 };
+
+  // Calculate total canvas size
+  const maxHeight = Math.max(beforeDims.height, afterDims.height);
+  const padding = background?.type !== 'none' ? (background?.padding ?? 32) : 32;
+  const totalWidth = beforeDims.width + gap + afterDims.width + padding * 2;
+  const totalHeight = maxHeight + labelHeight + padding * 2;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = totalWidth * scale;
+  canvas.height = totalHeight * scale;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas context not available');
+
+  ctx.scale(scale, scale);
+
+  // Draw background
+  if (background && background.type !== 'none') {
+    await drawBackground(ctx, background, totalWidth, totalHeight);
+  }
+
+  // Draw labels with alignment
+  ctx.font = labelFont;
+  ctx.fillStyle = labelColor;
+  ctx.textBaseline = 'top';
+
+  // Calculate label x positions based on alignment
+  let beforeLabelX = padding;
+  let afterLabelX = padding + beforeDims.width + gap;
+
+  if (labelAlignment === 'center') {
+    ctx.textAlign = 'center';
+    beforeLabelX = padding + beforeDims.width / 2;
+    afterLabelX = padding + beforeDims.width + gap + afterDims.width / 2;
+  } else if (labelAlignment === 'right') {
+    ctx.textAlign = 'right';
+    beforeLabelX = padding + beforeDims.width;
+    afterLabelX = padding + beforeDims.width + gap + afterDims.width;
+  } else {
+    ctx.textAlign = 'left';
+  }
+
+  ctx.fillText(beforeLabel, beforeLabelX, padding);
+  ctx.fillText(afterLabel, afterLabelX, padding);
+
+  // Reset text align for any future operations
+  ctx.textAlign = 'left';
+
+  // Draw before SVG
+  if (beforeSvg) {
+    const beforeImg = await loadSvgAsImage(beforeSvg);
+    ctx.drawImage(beforeImg, padding, padding + labelHeight);
+  } else {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.fillRect(padding, padding + labelHeight, beforeDims.width, beforeDims.height);
+  }
+
+  // Draw after SVG
+  if (afterSvg) {
+    const afterImg = await loadSvgAsImage(afterSvg);
+    ctx.drawImage(afterImg, padding + beforeDims.width + gap, padding + labelHeight);
+  } else {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.fillRect(padding + beforeDims.width + gap, padding + labelHeight, afterDims.width, afterDims.height);
+  }
+
+  const mimeType = getMimeType(format);
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error(`Failed to create ${format.toUpperCase()} blob`));
+          return;
+        }
+        resolve(blob);
+      },
+      mimeType,
+      quality
+    );
+  });
+}
+
+/**
+ * Creates a combined compare mode SVG string
+ */
+export function createCompareSvg(
+  beforeSvg: string,
+  afterSvg: string,
+  beforeLabel: string,
+  afterLabel: string,
+  options: Pick<CompareExportOptions, 'gap' | 'labelHeight' | 'labelColor' | 'labelFont' | 'labelAlignment' | 'background'>
+): string {
+  const {
+    gap = 32,
+    labelHeight = 40,
+    labelColor = '#ffffff',
+    labelFont = '600 16px system-ui',
+    labelAlignment = 'left',
+    background,
+  } = options;
+
+  // Get dimensions for both SVGs
+  const beforeDims = beforeSvg ? getSvgDimensions(beforeSvg) : { width: 400, height: 300 };
+  const afterDims = afterSvg ? getSvgDimensions(afterSvg) : { width: 400, height: 300 };
+
+  const maxHeight = Math.max(beforeDims.height, afterDims.height);
+  const padding = background?.type !== 'none' ? (background?.padding ?? 32) : 32;
+  const totalWidth = beforeDims.width + gap + afterDims.width + padding * 2;
+  const totalHeight = maxHeight + labelHeight + padding * 2;
+
+  // Parse the font to extract size
+  const fontSizeMatch = labelFont.match(/(\d+)px/);
+  const fontSize = fontSizeMatch ? fontSizeMatch[1] : '16';
+
+  // Calculate label positions based on alignment
+  let beforeLabelX = padding;
+  let afterLabelX = padding + beforeDims.width + gap;
+  let textAnchor = 'start';
+
+  if (labelAlignment === 'center') {
+    beforeLabelX = padding + beforeDims.width / 2;
+    afterLabelX = padding + beforeDims.width + gap + afterDims.width / 2;
+    textAnchor = 'middle';
+  } else if (labelAlignment === 'right') {
+    beforeLabelX = padding + beforeDims.width;
+    afterLabelX = padding + beforeDims.width + gap + afterDims.width;
+    textAnchor = 'end';
+  }
+
+  // Generate background SVG element
+  const backgroundSvg = generateSvgBackground(background, totalWidth, totalHeight);
+
+  // Get font import URL if using a Google Font
+  const fontImportUrl = getFontImportUrl(labelFont);
+  const fontImportStyle = fontImportUrl
+    ? `@import url('${fontImportUrl}');`
+    : '';
+
+  // Create combined SVG
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}">
+  <defs>
+    <style>
+      ${fontImportStyle}
+      .label { font: ${labelFont}; fill: ${labelColor}; text-anchor: ${textAnchor}; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  ${backgroundSvg}
+
+  <!-- Before label -->
+  <text x="${beforeLabelX}" y="${padding + parseInt(fontSize)}" class="label">${escapeXml(beforeLabel)}</text>
+
+  <!-- After label -->
+  <text x="${afterLabelX}" y="${padding + parseInt(fontSize)}" class="label">${escapeXml(afterLabel)}</text>
+
+  <!-- Before SVG -->
+  <g transform="translate(${padding}, ${padding + labelHeight})">
+    ${beforeSvg ? extractSvgContent(beforeSvg) : `<rect width="${beforeDims.width}" height="${beforeDims.height}" fill="rgba(255,255,255,0.1)"/>`}
+  </g>
+
+  <!-- After SVG -->
+  <g transform="translate(${padding + beforeDims.width + gap}, ${padding + labelHeight})">
+    ${afterSvg ? extractSvgContent(afterSvg) : `<rect width="${afterDims.width}" height="${afterDims.height}" fill="rgba(255,255,255,0.1)"/>`}
+  </g>
+</svg>`;
+}
+
+/**
  * Downloads a compare mode image (two SVGs side by side with labels)
  */
 export async function downloadCompareRaster(
@@ -564,6 +870,9 @@ export async function downloadCompareRaster(
     labelFont = '600 16px system-ui, -apple-system, sans-serif',
     labelAlignment = 'left',
   } = options;
+
+  // Preload font before drawing to ensure it's available for Canvas
+  await preloadFont(labelFont);
 
   // Get dimensions for both SVGs
   const beforeDims = beforeSvg ? getSvgDimensions(beforeSvg) : { width: 400, height: 300 };
@@ -795,10 +1104,17 @@ export function downloadCompareSvg(
   // Generate background SVG element
   const backgroundSvg = generateSvgBackground(background, totalWidth, totalHeight);
 
+  // Get font import URL if using a Google Font
+  const fontImportUrl = getFontImportUrl(labelFont);
+  const fontImportStyle = fontImportUrl
+    ? `@import url('${fontImportUrl}');`
+    : '';
+
   // Create combined SVG
   const combinedSvg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}">
   <defs>
     <style>
+      ${fontImportStyle}
       .label { font: ${labelFont}; fill: ${labelColor}; text-anchor: ${textAnchor}; }
     </style>
   </defs>
@@ -845,6 +1161,9 @@ export async function copyCompareToClipboard(
     labelFont = '600 16px system-ui, -apple-system, sans-serif',
     labelAlignment = 'left',
   } = options;
+
+  // Preload font before drawing to ensure it's available for Canvas
+  await preloadFont(labelFont);
 
   // Get dimensions for both SVGs
   const beforeDims = beforeSvg ? getSvgDimensions(beforeSvg) : { width: 400, height: 300 };
@@ -969,6 +1288,44 @@ function escapeXml(str: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
+}
+
+/**
+ * Map font family to Google Fonts URL for embedding in SVG
+ */
+function getFontImportUrl(fontFamily: string): string | null {
+  const fontMap: Record<string, string> = {
+    'Inter': 'Inter:wght@400;500;600;700',
+    'Roboto': 'Roboto:wght@400;500;700',
+    'Poppins': 'Poppins:wght@400;500;600;700',
+    'Montserrat': 'Montserrat:wght@400;500;600;700',
+    'Open Sans': 'Open+Sans:wght@400;500;600;700',
+    'Lato': 'Lato:wght@400;700',
+    'Oswald': 'Oswald:wght@400;500;600;700',
+    'Raleway': 'Raleway:wght@400;500;600;700',
+    'Nunito': 'Nunito:wght@400;500;600;700',
+    'Ubuntu': 'Ubuntu:wght@400;500;700',
+    'Rubik': 'Rubik:wght@400;500;600;700',
+    'Work Sans': 'Work+Sans:wght@400;500;600;700',
+    'Quicksand': 'Quicksand:wght@400;500;600;700',
+    'Bebas Neue': 'Bebas+Neue',
+    'Playfair Display': 'Playfair+Display:wght@400;500;600;700',
+    'Merriweather': 'Merriweather:wght@400;700',
+    'JetBrains Mono': 'JetBrains+Mono:wght@400;500;600;700',
+  };
+
+  // Extract the primary font name from the font-family or font shorthand string
+  // Handle both "Inter, sans-serif" and "600 16px Inter, sans-serif"
+  const fontFamilyPart = fontFamily.includes('px ')
+    ? fontFamily.split('px ')[1]
+    : fontFamily;
+  const primaryFont = fontFamilyPart.split(',')[0].trim().replace(/['"]/g, '');
+
+  if (fontMap[primaryFont]) {
+    // Use &amp; for XML/SVG compatibility
+    return `https://fonts.googleapis.com/css2?family=${fontMap[primaryFont]}&amp;display=swap`;
+  }
+  return null;
 }
 
 /**

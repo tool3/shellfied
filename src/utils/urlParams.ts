@@ -61,10 +61,13 @@ export const URL_PARAM_MAP = {
   afterContent: 'ac',
   beforeLabel: 'bl',
   afterLabel: 'al',
+  beforeTitle: 'bti',
+  afterTitle: 'ati',
   beforeLanguage: 'blg',
   afterLanguage: 'alg',
   compareLabelFontSize: 'clf',
   compareLabelFontFamily: 'clff',
+  compareLabelFontWeight: 'clfw',
   compareLabelColor: 'clc',
   compareLabelAlignment: 'cla',
 
@@ -328,11 +331,14 @@ export interface UrlState {
   afterContent?: string;
   beforeLabel?: string;
   afterLabel?: string;
+  beforeTitle?: string;
+  afterTitle?: string;
   beforeLanguage?: string;
   afterLanguage?: string;
   compareLabelConfig?: {
     fontSize?: number;
     fontFamily?: string;
+    fontWeight?: number;
     color?: string;
     alignment?: CompareLabelAlignment;
   };
@@ -454,6 +460,7 @@ function buildShareUrlParams(
       if (state.compareLabelConfig.fontFamily && state.compareLabelConfig.fontFamily !== 'system-ui, -apple-system, sans-serif') {
         params.set(URL_PARAM_MAP.compareLabelFontFamily, encodeBase64(state.compareLabelConfig.fontFamily));
       }
+      addIfChanged('compareLabelFontWeight', state.compareLabelConfig.fontWeight, 600);
       addIfChanged('compareLabelColor', state.compareLabelConfig.color, '#ffffff');
       addIfChanged('compareLabelAlignment', state.compareLabelConfig.alignment, 'left');
     }
@@ -594,10 +601,13 @@ interface CompactState {
   ac?: string; // afterContent
   bl?: string; // beforeLabel
   al?: string; // afterLabel
+  bti?: string; // beforeTitle
+  ati?: string; // afterTitle
   blg?: string; // beforeLanguage
   alg?: string; // afterLanguage
   clf?: number; // compareLabelFontSize
   clff?: string; // compareLabelFontFamily
+  clfw?: number; // compareLabelFontWeight
   clc?: string; // compareLabelColor
   cla?: string; // compareLabelAlignment
   wt?: string; // watermarkType
@@ -669,12 +679,17 @@ function buildCompactState(state: UrlState, mode: ShareMode, includeContent: boo
     if (state.afterContent) compact.ac = state.afterContent;
     if (state.beforeLabel && state.beforeLabel !== 'Before') compact.bl = state.beforeLabel;
     if (state.afterLabel && state.afterLabel !== 'After') compact.al = state.afterLabel;
+    if (state.beforeTitle && state.beforeTitle !== DEFAULT_SETTINGS.title) compact.bti = state.beforeTitle;
+    if (state.afterTitle && state.afterTitle !== DEFAULT_SETTINGS.title) compact.ati = state.afterTitle;
     if (state.beforeLanguage && state.beforeLanguage !== 'auto') compact.blg = state.beforeLanguage;
     if (state.afterLanguage && state.afterLanguage !== 'auto') compact.alg = state.afterLanguage;
     if (state.compareLabelConfig) {
       if (state.compareLabelConfig.fontSize !== 16) compact.clf = state.compareLabelConfig.fontSize;
       if (state.compareLabelConfig.fontFamily && state.compareLabelConfig.fontFamily !== 'system-ui, -apple-system, sans-serif') {
         compact.clff = state.compareLabelConfig.fontFamily;
+      }
+      if (state.compareLabelConfig.fontWeight !== undefined && state.compareLabelConfig.fontWeight !== 600) {
+        compact.clfw = state.compareLabelConfig.fontWeight;
       }
       if (state.compareLabelConfig.color !== '#ffffff') compact.clc = state.compareLabelConfig.color;
       if (state.compareLabelConfig.alignment !== 'left') compact.cla = state.compareLabelConfig.alignment;
@@ -799,12 +814,15 @@ function parseCompactState(compact: CompactState): UrlState {
     if (compact.ac) state.afterContent = compact.ac;
     if (compact.bl) state.beforeLabel = compact.bl;
     if (compact.al) state.afterLabel = compact.al;
+    if (compact.bti) state.beforeTitle = compact.bti;
+    if (compact.ati) state.afterTitle = compact.ati;
     if (compact.blg) state.beforeLanguage = compact.blg;
     if (compact.alg) state.afterLanguage = compact.alg;
-    if (compact.clf || compact.clff || compact.clc || compact.cla) {
+    if (compact.clf || compact.clff || compact.clfw || compact.clc || compact.cla) {
       state.compareLabelConfig = {
         fontSize: compact.clf,
         fontFamily: compact.clff,
+        fontWeight: compact.clfw,
         color: compact.clc,
         alignment: compact.cla as CompareLabelAlignment,
       };
@@ -1047,10 +1065,11 @@ export function parseUrlParams(): UrlState | null {
   // Compare label config
   const compareLabelFontSize = getParam('compareLabelFontSize');
   const compareLabelFontFamily = getParam('compareLabelFontFamily');
+  const compareLabelFontWeight = getParam('compareLabelFontWeight');
   const compareLabelColor = getParam('compareLabelColor');
   const compareLabelAlignment = getParam('compareLabelAlignment');
 
-  if (compareLabelFontSize || compareLabelFontFamily || compareLabelColor || compareLabelAlignment) {
+  if (compareLabelFontSize || compareLabelFontFamily || compareLabelFontWeight || compareLabelColor || compareLabelAlignment) {
     state.compareLabelConfig = {};
     if (compareLabelFontSize) {
       const num = Number(compareLabelFontSize);
@@ -1062,6 +1081,12 @@ export function parseUrlParams(): UrlState | null {
       const decoded = decodeBase64(compareLabelFontFamily);
       if (decoded) {
         state.compareLabelConfig.fontFamily = decoded;
+      }
+    }
+    if (compareLabelFontWeight) {
+      const num = Number(compareLabelFontWeight);
+      if (!isNaN(num) && [400, 500, 600, 700].includes(num)) {
+        state.compareLabelConfig.fontWeight = num;
       }
     }
     if (compareLabelColor) {

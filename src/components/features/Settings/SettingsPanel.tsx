@@ -30,6 +30,11 @@ export const SettingsPanel = memo(function SettingsPanel() {
   const template = useStore((s) => s.template);
   const title = useStore((s) => s.title);
   const setTitle = useStore((s) => s.setTitle);
+  const compareMode = useStore((s) => s.compareMode);
+  const beforeTitle = useStore((s) => s.beforeTitle);
+  const setBeforeTitle = useStore((s) => s.setBeforeTitle);
+  const afterTitle = useStore((s) => s.afterTitle);
+  const setAfterTitle = useStore((s) => s.setAfterTitle);
   const showControls = useStore((s) => s.showControls);
   const setShowControls = useStore((s) => s.setShowControls);
   const controlsPosition = useStore((s) => s.controlsPosition);
@@ -94,13 +99,32 @@ export const SettingsPanel = memo(function SettingsPanel() {
           </div>
           <div className={styles.sectionContent}>
             <div className={styles.fields}>
-              <Input
-                label="Title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Terminal"
-                fullWidth
-              />
+              {compareMode ? (
+                <>
+                  <Input
+                    label="Title #1"
+                    value={beforeTitle}
+                    onChange={(e) => setBeforeTitle(e.target.value)}
+                    placeholder="Terminal"
+                    fullWidth
+                  />
+                  <Input
+                    label="Title #2"
+                    value={afterTitle}
+                    onChange={(e) => setAfterTitle(e.target.value)}
+                    placeholder="Terminal"
+                    fullWidth
+                  />
+                </>
+              ) : (
+                <Input
+                  label="Title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Terminal"
+                  fullWidth
+                />
+              )}
               <Toggle
                 checked={showControls}
                 onChange={setShowControls}

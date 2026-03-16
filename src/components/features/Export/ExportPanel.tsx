@@ -1,5 +1,5 @@
 import { memo, useState, useCallback } from 'react';
-import { useStore, useContent } from '@/store';
+import { useStore } from '@/store';
 import { useExport } from '@/hooks/useExport';
 import { Button, Select, Slider } from '@/components/common';
 import { ShareModal } from '@/components/features/Share';
@@ -21,7 +21,10 @@ const SCALE_OPTIONS = [
 ];
 
 export const ExportPanel = memo(function ExportPanel() {
-  const content = useContent();
+  const content = useStore((s) => s.content);
+  const compareMode = useStore((s) => s.compareMode);
+  const beforeContent = useStore((s) => s.beforeContent);
+  const afterContent = useStore((s) => s.afterContent);
   const exportFormat = useStore((s) => s.exportFormat);
   const setExportFormat = useStore((s) => s.setExportFormat);
   const exportScale = useStore((s) => s.exportScale);
@@ -34,7 +37,10 @@ export const ExportPanel = memo(function ExportPanel() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareUrls, setShareUrls] = useState({ viewUrl: '', editUrl: '', compressedData: '' });
 
-  const hasContent = Boolean(content.trim());
+  // Check for content based on current mode
+  const hasContent = compareMode
+    ? Boolean(beforeContent.trim() || afterContent.trim())
+    : Boolean(content.trim());
   const isRasterFormat = exportFormat !== 'svg';
   const isJpeg = exportFormat === 'jpeg';
 
@@ -71,34 +77,38 @@ export const ExportPanel = memo(function ExportPanel() {
 
       <div className={styles.content}>
         <div className={styles.options}>
-          <Select
-            label="Format"
-            options={FORMAT_OPTIONS}
-            value={exportFormat}
-            onChange={handleFormatChange}
-            fullWidth
-          />
-
-          {isRasterFormat && (
+          {/* Format & Scale in a row */}
+          <div className={styles.optionsRow}>
             <Select
-              label="Scale"
-              options={SCALE_OPTIONS}
-              value={String(exportScale)}
-              onChange={handleScaleChange}
-              fullWidth
+              label="Format"
+              options={FORMAT_OPTIONS}
+              value={exportFormat}
+              onChange={handleFormatChange}
             />
-          )}
 
+            {isRasterFormat && (
+              <Select
+                label="Scale"
+                options={SCALE_OPTIONS}
+                value={String(exportScale)}
+                onChange={handleScaleChange}
+              />
+            )}
+          </div>
+
+          {/* Quality slider on its own row */}
           {isJpeg && (
-            <Slider
-              label="Quality"
-              value={jpegQuality}
-              onChange={setJpegQuality}
-              min={0.6}
-              max={1.0}
-              step={0.1}
-              formatValue={(v) => `${Math.round(v * 100)}%`}
-            />
+            <div className={styles.qualityRow}>
+              <Slider
+                label="Quality"
+                value={jpegQuality}
+                onChange={setJpegQuality}
+                min={0.6}
+                max={1.0}
+                step={0.1}
+                formatValue={(v) => `${Math.round(v * 100)}%`}
+              />
+            </div>
           )}
         </div>
 

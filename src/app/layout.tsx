@@ -1,5 +1,32 @@
 import type { Metadata, Viewport } from 'next';
-import { Outfit, Syne, JetBrains_Mono, Fira_Code, Source_Code_Pro, IBM_Plex_Mono, Roboto_Mono, Ubuntu_Mono, Space_Mono } from 'next/font/google';
+import {
+  Outfit,
+  Syne,
+  JetBrains_Mono,
+  Fira_Code,
+  Source_Code_Pro,
+  IBM_Plex_Mono,
+  Roboto_Mono,
+  Ubuntu_Mono,
+  Space_Mono,
+  // Label fonts for compare mode
+  Inter,
+  Roboto,
+  Poppins,
+  Montserrat,
+  Open_Sans,
+  Lato,
+  Oswald,
+  Raleway,
+  Nunito,
+  Ubuntu,
+  Rubik,
+  Work_Sans,
+  Quicksand,
+  Bebas_Neue,
+  Playfair_Display,
+  Merriweather,
+} from 'next/font/google';
 import Script from 'next/script';
 import '@/styles/main.scss';
 
@@ -67,6 +94,119 @@ const spaceMono = Space_Mono({
   display: 'swap',
 });
 
+// Label fonts for compare mode
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-inter',
+  display: 'swap',
+});
+
+const roboto = Roboto({
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+  variable: '--font-roboto',
+  display: 'swap',
+});
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-poppins',
+  display: 'swap',
+});
+
+const montserrat = Montserrat({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-montserrat',
+  display: 'swap',
+});
+
+const openSans = Open_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-open-sans',
+  display: 'swap',
+});
+
+const lato = Lato({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-lato',
+  display: 'swap',
+});
+
+const oswald = Oswald({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-oswald',
+  display: 'swap',
+});
+
+const raleway = Raleway({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-raleway',
+  display: 'swap',
+});
+
+const nunito = Nunito({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-nunito',
+  display: 'swap',
+});
+
+const ubuntu = Ubuntu({
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+  variable: '--font-ubuntu',
+  display: 'swap',
+});
+
+const rubik = Rubik({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-rubik',
+  display: 'swap',
+});
+
+const workSans = Work_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-work-sans',
+  display: 'swap',
+});
+
+const quicksand = Quicksand({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-quicksand',
+  display: 'swap',
+});
+
+const bebasNeue = Bebas_Neue({
+  subsets: ['latin'],
+  weight: ['400'],
+  variable: '--font-bebas-neue',
+  display: 'swap',
+});
+
+const playfairDisplay = Playfair_Display({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-playfair',
+  display: 'swap',
+});
+
+const merriweather = Merriweather({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-merriweather',
+  display: 'swap',
+});
+
 export const metadata: Metadata = {
   metadataBase: new URL('https://shellfied.vercel.app'),
   title: 'Shellfied - beautiful code',
@@ -110,7 +250,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${outfit.variable} ${syne.variable} ${jetbrainsMono.variable} ${firaCode.variable} ${sourceCodePro.variable} ${ibmPlexMono.variable} ${robotoMono.variable} ${ubuntuMono.variable} ${spaceMono.variable}`}>
+    <html lang="en" className={`${outfit.variable} ${syne.variable} ${jetbrainsMono.variable} ${firaCode.variable} ${sourceCodePro.variable} ${ibmPlexMono.variable} ${robotoMono.variable} ${ubuntuMono.variable} ${spaceMono.variable} ${inter.variable} ${roboto.variable} ${poppins.variable} ${montserrat.variable} ${openSans.variable} ${lato.variable} ${oswald.variable} ${raleway.variable} ${nunito.variable} ${ubuntu.variable} ${rubik.variable} ${workSans.variable} ${quicksand.variable} ${bebasNeue.variable} ${playfairDisplay.variable} ${merriweather.variable}`}>
       <head>
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-V5WTZ111PR"

@@ -76,6 +76,15 @@ export const DEFAULT_BRAND: BrandConfig = {
   name: 'Shellfied',
   url: '/',
   showIcon: true,
+  iconUrl: '',
+};
+
+export const DEFAULT_COMPARE_LABEL_CONFIG = {
+  fontSize: 18,
+  fontFamily: 'system-ui, -apple-system, sans-serif',
+  fontWeight: 600 as const,
+  color: '#ffffff',
+  alignment: 'left' as const,
 };
 
 export const DEFAULT_SETTINGS: ShellfieSettings = {

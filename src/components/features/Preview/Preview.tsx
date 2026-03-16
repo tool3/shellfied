@@ -315,6 +315,7 @@ export const Preview = memo(function Preview() {
       const labelStyle: React.CSSProperties = {
         fontSize: compareLabelConfig.fontSize,
         fontFamily: compareLabelConfig.fontFamily,
+        fontWeight: compareLabelConfig.fontWeight,
         color: compareLabelConfig.color,
         textAlign: compareLabelConfig.alignment,
       };
@@ -328,7 +329,7 @@ export const Preview = memo(function Preview() {
             <div className={styles.comparePane}>
               <span className={styles.compareLabel} style={labelStyle}>{beforeLabel}</span>
               {beforeSvg ? (
-                <div className={styles.svgWrapper} dangerouslySetInnerHTML={{ __html: beforeSvg }} />
+                <div className={styles.svgWrapper} dangerouslySetInnerHTML={{ __html: beforeSvg }} suppressHydrationWarning />
               ) : (
                 <div className={styles.emptyPane} style={emptyPaneStyle}>
                   <p>No content</p>
@@ -338,7 +339,7 @@ export const Preview = memo(function Preview() {
             <div className={styles.comparePane}>
               <span className={styles.compareLabel} style={labelStyle}>{afterLabel}</span>
               {afterSvg ? (
-                <div className={styles.svgWrapper} dangerouslySetInnerHTML={{ __html: afterSvg }} />
+                <div className={styles.svgWrapper} dangerouslySetInnerHTML={{ __html: afterSvg }} suppressHydrationWarning />
               ) : (
                 <div className={styles.emptyPane} style={emptyPaneStyle}>
                   <p>No content</p>
@@ -380,7 +381,7 @@ export const Preview = memo(function Preview() {
     if (svg) {
       return (
         <div className={styles.backgroundWrapper} style={backgroundStyle}>
-          <div ref={svgWrapperRef} className={styles.svgWrapper} dangerouslySetInnerHTML={{ __html: svg }} />
+          <div ref={svgWrapperRef} className={styles.svgWrapper} dangerouslySetInnerHTML={{ __html: svg }} suppressHydrationWarning />
         </div>
       );
     }
