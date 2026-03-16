@@ -2,6 +2,7 @@ import type { ExportFormat, BackgroundConfig, CompareExportOptions, ImageAspectR
 
 /**
  * Calculate dimensions with aspect ratio constraint for image backgrounds
+ * Content is always centered within the expanded dimensions
  */
 function calculateAspectRatioDimensions(
   contentWidth: number,
@@ -12,33 +13,43 @@ function calculateAspectRatioDimensions(
   const baseWidth = contentWidth + padding * 2;
   const baseHeight = contentHeight + padding * 2;
 
-  if (aspectRatio === 'auto') {
+  // Handle auto or invalid aspect ratio
+  if (!aspectRatio || aspectRatio === 'auto') {
+    return { totalWidth: baseWidth, totalHeight: baseHeight, offsetX: padding, offsetY: padding };
+  }
+
+  // Validate aspect ratio format
+  if (!aspectRatio.includes(':')) {
     return { totalWidth: baseWidth, totalHeight: baseHeight, offsetX: padding, offsetY: padding };
   }
 
   // Parse aspect ratio string (e.g., "16:9" -> 16/9)
   const [w, h] = aspectRatio.split(':').map(Number);
+
+  // Validate parsed values
+  if (!w || !h || isNaN(w) || isNaN(h)) {
+    return { totalWidth: baseWidth, totalHeight: baseHeight, offsetX: padding, offsetY: padding };
+  }
+
   const targetRatio = w / h;
   const currentRatio = baseWidth / baseHeight;
 
   let totalWidth: number;
   let totalHeight: number;
-  let offsetX: number;
-  let offsetY: number;
 
   if (currentRatio > targetRatio) {
-    // Content is wider than target ratio - expand height
+    // Content is wider than target ratio - expand height to match
     totalWidth = baseWidth;
     totalHeight = baseWidth / targetRatio;
-    offsetX = padding;
-    offsetY = (totalHeight - contentHeight) / 2;
   } else {
-    // Content is taller than target ratio - expand width
+    // Content is taller than target ratio - expand width to match
     totalHeight = baseHeight;
     totalWidth = baseHeight * targetRatio;
-    offsetX = (totalWidth - contentWidth) / 2;
-    offsetY = padding;
   }
+
+  // Always center the content within the expanded dimensions
+  const offsetX = (totalWidth - contentWidth) / 2;
+  const offsetY = (totalHeight - contentHeight) / 2;
 
   return { totalWidth, totalHeight, offsetX, offsetY };
 }

@@ -102,6 +102,11 @@
   }
 }
 
+.urlActions {
+  display: flex;
+  gap: var(--space-xs);
+}
+
 .hint {
   font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);

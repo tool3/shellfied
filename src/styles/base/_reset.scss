@@ -1,3 +1,56 @@
+@use '../abstracts/variables' as v;
+
+// ========================================
+// CSS Custom Properties (Runtime Theming)
+// ========================================
+:root {
+  // Spacing
+  --space-unit: #{v.$space-unit};
+  --space-xs: #{v.$space-xs};
+  --space-sm: #{v.$space-sm};
+  --space-md: #{v.$space-md};
+  --space-lg: #{v.$space-lg};
+  --space-xl: #{v.$space-xl};
+  --space-2xl: #{v.$space-2xl};
+  --space-3xl: #{v.$space-3xl};
+
+  // Border radius
+  --radius-sm: #{v.$radius-sm};
+  --radius-md: #{v.$radius-md};
+  --radius-lg: #{v.$radius-lg};
+  --radius-xl: #{v.$radius-xl};
+  --radius-full: #{v.$radius-full};
+
+  // Transitions
+  --transition-fast: #{v.$transition-fast};
+  --transition-base: #{v.$transition-base};
+  --transition-slow: #{v.$transition-slow};
+
+  // Typography
+  --font-family-sans: #{v.$font-family-sans};
+  --font-family-mono: #{v.$font-family-mono};
+  --font-family-display: #{v.$font-family-display};
+
+  // Font sizes
+  --font-size-xs: #{v.$font-size-xs};
+  --font-size-sm: #{v.$font-size-sm};
+  --font-size-base: #{v.$font-size-base};
+  --font-size-lg: #{v.$font-size-lg};
+  --font-size-xl: #{v.$font-size-xl};
+  --font-size-2xl: #{v.$font-size-2xl};
+  --font-size-3xl: #{v.$font-size-3xl};
+
+  // Brand Colors
+  --color-brand-dark: #{v.$brand-dark};
+  --color-brand-dark-hover: #{v.$brand-dark-hover};
+  --color-brand-dark-active: #{v.$brand-dark-active};
+  --color-brand-dark-subtle: #{v.$brand-dark-subtle};
+  --color-brand-light: #{v.$brand-light};
+  --color-brand-light-hover: #{v.$brand-light-hover};
+  --color-brand-light-active: #{v.$brand-light-active};
+  --color-brand-light-subtle: #{v.$brand-light-subtle};
+}
+
 *,
 *::before,
 *::after {

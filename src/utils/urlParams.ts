@@ -1,3 +1,4 @@
+import LZString from 'lz-string';
 import type {
   TemplateType,
   ControlsPosition,
@@ -260,6 +261,19 @@ export type OutputFormat = 'svg' | 'png' | 'webp' | 'jpeg';
 // Get share mode from URL
 export function getShareMode(): ShareMode | null {
   const params = new URLSearchParams(window.location.search);
+
+  // Check for LZ-compressed data first
+  const compressedData = params.get('d');
+  if (compressedData) {
+    const compact = decompressLZData(compressedData);
+    if (compact?.m) {
+      return compact.m;
+    }
+    // If compressed but no mode, default to view
+    return 'view';
+  }
+
+  // Fall back to legacy mode parameter
   const mode = params.get(URL_PARAM_MAP.mode) || params.get('mode');
 
   if (mode === 'view') return 'view';
@@ -546,19 +560,297 @@ export async function generateShareUrlCompressed(state: UrlState, mode: ShareMod
   return queryString ? `${baseUrl}?${queryString}` : baseUrl;
 }
 
-// Generate static image URL (serves raw image without UI)
+// Generate static image URL (serves raw image without UI via API route)
 export function generateStaticUrl(
   state: UrlState,
   format: 'svg' | 'png' | 'webp' | 'jpeg'
 ): string {
-  // Start with the view mode URL
-  const viewUrl = generateShareUrl(state, 'view');
-  const url = new URL(viewUrl);
+  // Use LZ compression for API route
+  return generateStaticUrlLZ(state, format);
+}
 
-  // Add the output format parameter
-  url.searchParams.set(URL_PARAM_MAP.output, format);
+// Compact state object for LZ compression
+interface CompactState {
+  m?: ShareMode; // mode
+  tp?: string; // template
+  th?: string; // terminalTheme
+  fs?: number; // fontSize
+  lh?: number; // lineHeight
+  pd?: PaddingTuple; // padding
+  ti?: string; // title
+  sc?: boolean; // showControls
+  cp?: string; // controlsPosition
+  br?: number; // borderRadius
+  wd?: number | null; // width
+  ff?: string; // fontFamily
+  ef?: string; // exportFormat
+  es?: number; // exportScale
+  jq?: number; // jpegQuality
+  c?: string; // content
+  lg?: string; // language
+  cm?: string; // colorMode
+  cmp?: boolean; // compareMode
+  bc?: string; // beforeContent
+  ac?: string; // afterContent
+  bl?: string; // beforeLabel
+  al?: string; // afterLabel
+  blg?: string; // beforeLanguage
+  alg?: string; // afterLanguage
+  clf?: number; // compareLabelFontSize
+  clff?: string; // compareLabelFontFamily
+  clc?: string; // compareLabelColor
+  cla?: string; // compareLabelAlignment
+  wt?: string; // watermarkType
+  wtx?: string; // watermarkText
+  wst?: string; // watermarkStyle
+  wmk?: string; // watermarkMarkup
+  he?: boolean; // headerEnabled
+  hbg?: string; // headerBgColor
+  hh?: number; // headerHeight
+  hbd?: boolean; // headerBorder
+  hbc?: string; // headerBorderColor
+  hbw?: number; // headerBorderWidth
+  fe?: boolean; // footerEnabled
+  fbg?: string; // footerBgColor
+  fh?: number; // footerHeight
+  fbd?: boolean; // footerBorder
+  fbc?: string; // footerBorderColor
+  fbw?: number; // footerBorderWidth
+  bt?: string; // bgType
+  bgc?: string; // bgColor
+  bgf?: string; // bgGradientFrom
+  bgt?: string; // bgGradientTo
+  bgd?: string; // bgGradientDirection
+  bgp?: number; // bgPadding
+  bga?: string; // bgImageAspectRatio
+}
 
-  return url.toString();
+// Build compact state for LZ compression
+// includeContent: when true, always include content even if it matches default (needed for static API URLs)
+function buildCompactState(state: UrlState, mode: ShareMode, includeContent: boolean = false): CompactState {
+  const compact: CompactState = { m: mode };
+
+  const add = <K extends keyof CompactState, T>(key: K, value: T | undefined, defaultValue: T) => {
+    if (value !== undefined && value !== defaultValue) {
+      compact[key] = value as CompactState[K];
+    }
+  };
+
+  add('tp', state.template, DEFAULT_SETTINGS.template);
+  add('th', state.terminalTheme, DEFAULT_SETTINGS.terminalTheme);
+  add('fs', state.fontSize, DEFAULT_SETTINGS.fontSize);
+  add('lh', state.lineHeight, DEFAULT_SETTINGS.lineHeight);
+  add('ti', state.title, DEFAULT_SETTINGS.title);
+  add('sc', state.showControls, DEFAULT_SETTINGS.showControls);
+  add('cp', state.controlsPosition, DEFAULT_SETTINGS.controlsPosition);
+  add('br', state.borderRadius, DEFAULT_SETTINGS.borderRadius);
+  add('wd', state.width, DEFAULT_SETTINGS.width);
+
+  if (state.padding && JSON.stringify(state.padding) !== JSON.stringify(DEFAULT_SETTINGS.padding)) {
+    compact.pd = state.padding;
+  }
+  if (state.fontFamily && state.fontFamily !== DEFAULT_SETTINGS.fontFamily) {
+    compact.ff = state.fontFamily;
+  }
+
+  add('ef', state.exportFormat, DEFAULT_EXPORT_FORMAT);
+  add('es', state.exportScale, DEFAULT_EXPORT_SCALE);
+  add('jq', state.jpegQuality, DEFAULT_JPEG_QUALITY);
+
+  if (state.content && (includeContent || state.content !== DEFAULT_CONTENT)) {
+    compact.c = state.content;
+  }
+  add('lg', state.language, DEFAULT_LANGUAGE);
+  add('cm', state.colorMode, DEFAULT_COLOR_MODE);
+
+  if (state.compareMode) {
+    compact.cmp = true;
+    if (state.beforeContent) compact.bc = state.beforeContent;
+    if (state.afterContent) compact.ac = state.afterContent;
+    if (state.beforeLabel && state.beforeLabel !== 'Before') compact.bl = state.beforeLabel;
+    if (state.afterLabel && state.afterLabel !== 'After') compact.al = state.afterLabel;
+    if (state.beforeLanguage && state.beforeLanguage !== 'auto') compact.blg = state.beforeLanguage;
+    if (state.afterLanguage && state.afterLanguage !== 'auto') compact.alg = state.afterLanguage;
+    if (state.compareLabelConfig) {
+      if (state.compareLabelConfig.fontSize !== 16) compact.clf = state.compareLabelConfig.fontSize;
+      if (state.compareLabelConfig.fontFamily && state.compareLabelConfig.fontFamily !== 'system-ui, -apple-system, sans-serif') {
+        compact.clff = state.compareLabelConfig.fontFamily;
+      }
+      if (state.compareLabelConfig.color !== '#ffffff') compact.clc = state.compareLabelConfig.color;
+      if (state.compareLabelConfig.alignment !== 'left') compact.cla = state.compareLabelConfig.alignment;
+    }
+  }
+
+  if (state.watermark) {
+    add('wt', state.watermark.type, DEFAULT_WATERMARK.type);
+    if (state.watermark.text) compact.wtx = state.watermark.text;
+    if (state.watermark.style && state.watermark.style !== DEFAULT_WATERMARK.style) {
+      compact.wst = state.watermark.style;
+    }
+    if (state.watermark.markup && state.watermark.markup !== DEFAULT_WATERMARK.markup) {
+      compact.wmk = state.watermark.markup;
+    }
+  }
+
+  if (state.header?.enabled) {
+    compact.he = true;
+    if (state.header.backgroundColor) compact.hbg = state.header.backgroundColor;
+    add('hh', state.header.height, DEFAULT_HEADER.height);
+    if (state.header.border) {
+      compact.hbd = true;
+      add('hbc', state.header.borderColor, DEFAULT_HEADER.borderColor);
+      add('hbw', state.header.borderWidth, DEFAULT_HEADER.borderWidth);
+    }
+  }
+
+  if (state.footer?.enabled) {
+    compact.fe = true;
+    if (state.footer.backgroundColor) compact.fbg = state.footer.backgroundColor;
+    add('fh', state.footer.height, DEFAULT_FOOTER.height);
+    if (state.footer.border) {
+      compact.fbd = true;
+      add('fbc', state.footer.borderColor, DEFAULT_FOOTER.borderColor);
+      add('fbw', state.footer.borderWidth, DEFAULT_FOOTER.borderWidth);
+    }
+  }
+
+  if (state.background && state.background.type !== 'none') {
+    compact.bt = state.background.type;
+    if (state.background.type === 'solid') {
+      add('bgc', state.background.color, DEFAULT_BACKGROUND.color);
+    }
+    if (state.background.type === 'gradient') {
+      add('bgf', state.background.gradientFrom, DEFAULT_BACKGROUND.gradientFrom);
+      add('bgt', state.background.gradientTo, DEFAULT_BACKGROUND.gradientTo);
+      add('bgd', state.background.gradientDirection, DEFAULT_BACKGROUND.gradientDirection);
+    }
+    add('bgp', state.background.padding, DEFAULT_BACKGROUND.padding);
+    add('bga', state.background.imageAspectRatio, DEFAULT_BACKGROUND.imageAspectRatio);
+  }
+
+  return compact;
+}
+
+// Generate share URL with LZ-string compression
+export function generateShareUrlLZ(state: UrlState, mode: ShareMode = 'view'): string {
+  const compact = buildCompactState(state, mode);
+  const json = JSON.stringify(compact);
+  const compressed = LZString.compressToEncodedURIComponent(json);
+  const baseUrl = `${window.location.origin}${window.location.pathname}`;
+  return `${baseUrl}?d=${compressed}`;
+}
+
+// Generate static image URL with LZ-string compression
+export function generateStaticUrlLZ(state: UrlState, format: 'svg' | 'png' | 'webp' | 'jpeg'): string {
+  // Always include content for static URLs (API needs content to generate image)
+  const compact = buildCompactState(state, 'view', true);
+  (compact as CompactState & { o?: string }).o = format;
+  const json = JSON.stringify(compact);
+  const compressed = LZString.compressToEncodedURIComponent(json);
+  // Encode + as %2B for markdown compatibility (some parsers interpret + as space)
+  const encodedCompressed = compressed.replace(/\+/g, '%2B');
+  const baseUrl = `${window.location.origin}/api/image`;
+  return `${baseUrl}?d=${encodedCompressed}`;
+}
+
+// Decompress LZ-string data
+export function decompressLZData(compressed: string): CompactState | null {
+  try {
+    const json = LZString.decompressFromEncodedURIComponent(compressed);
+    if (!json) return null;
+    return JSON.parse(json) as CompactState;
+  } catch {
+    return null;
+  }
+}
+
+// Parse compact state back to UrlState
+function parseCompactState(compact: CompactState): UrlState {
+  const state: UrlState = {};
+
+  if (compact.tp) state.template = compact.tp as TemplateType;
+  if (compact.th) state.terminalTheme = compact.th;
+  if (compact.fs !== undefined) state.fontSize = compact.fs;
+  if (compact.lh !== undefined) state.lineHeight = compact.lh;
+  if (compact.pd) state.padding = compact.pd;
+  if (compact.ti !== undefined) state.title = compact.ti;
+  if (compact.sc !== undefined) state.showControls = compact.sc;
+  if (compact.cp) state.controlsPosition = compact.cp as ControlsPosition;
+  if (compact.br !== undefined) state.borderRadius = compact.br;
+  if (compact.wd !== undefined) state.width = compact.wd;
+  if (compact.ff) state.fontFamily = compact.ff;
+  if (compact.ef) state.exportFormat = compact.ef as ExportFormat;
+  if (compact.es !== undefined) state.exportScale = compact.es as ExportScale;
+  if (compact.jq !== undefined) state.jpegQuality = compact.jq;
+  if (compact.c) state.content = compact.c;
+  if (compact.lg) state.language = compact.lg;
+  if (compact.cm) state.colorMode = compact.cm as ColorMode;
+
+  if (compact.cmp) {
+    state.compareMode = true;
+    if (compact.bc) state.beforeContent = compact.bc;
+    if (compact.ac) state.afterContent = compact.ac;
+    if (compact.bl) state.beforeLabel = compact.bl;
+    if (compact.al) state.afterLabel = compact.al;
+    if (compact.blg) state.beforeLanguage = compact.blg;
+    if (compact.alg) state.afterLanguage = compact.alg;
+    if (compact.clf || compact.clff || compact.clc || compact.cla) {
+      state.compareLabelConfig = {
+        fontSize: compact.clf,
+        fontFamily: compact.clff,
+        color: compact.clc,
+        alignment: compact.cla as CompareLabelAlignment,
+      };
+    }
+  }
+
+  if (compact.wt || compact.wtx || compact.wst || compact.wmk) {
+    state.watermark = {
+      type: compact.wt as WatermarkType,
+    };
+    // Only include properties that are defined to avoid overwriting defaults with undefined
+    if (compact.wtx !== undefined) state.watermark.text = compact.wtx;
+    if (compact.wst !== undefined) state.watermark.style = compact.wst;
+    if (compact.wmk !== undefined) state.watermark.markup = compact.wmk;
+  }
+
+  if (compact.he) {
+    state.header = { enabled: true };
+    // Only include properties that are defined to avoid overwriting defaults with undefined
+    if (compact.hbg !== undefined) state.header.backgroundColor = compact.hbg;
+    if (compact.hh !== undefined) state.header.height = compact.hh;
+    if (compact.hbd !== undefined) state.header.border = compact.hbd;
+    if (compact.hbc !== undefined) state.header.borderColor = compact.hbc;
+    if (compact.hbw !== undefined) state.header.borderWidth = compact.hbw;
+  }
+
+  if (compact.fe) {
+    state.footer = { enabled: true };
+    // Only include properties that are defined to avoid overwriting defaults with undefined
+    if (compact.fbg !== undefined) state.footer.backgroundColor = compact.fbg;
+    if (compact.fh !== undefined) state.footer.height = compact.fh;
+    if (compact.fbd !== undefined) state.footer.border = compact.fbd;
+    if (compact.fbc !== undefined) state.footer.borderColor = compact.fbc;
+    if (compact.fbw !== undefined) state.footer.borderWidth = compact.fbw;
+  }
+
+  if (compact.bt && compact.bt !== 'none') {
+    state.background = {
+      type: compact.bt as BackgroundType,
+    };
+    // Only include properties that are defined to avoid overwriting with undefined
+    if (compact.bgc !== undefined) state.background.color = compact.bgc;
+    if (compact.bt === 'gradient') {
+      // For gradients, always include colors (use defaults if not specified)
+      state.background.gradientFrom = compact.bgf ?? DEFAULT_BACKGROUND.gradientFrom;
+      state.background.gradientTo = compact.bgt ?? DEFAULT_BACKGROUND.gradientTo;
+      state.background.gradientDirection = (compact.bgd ?? DEFAULT_BACKGROUND.gradientDirection) as GradientDirection;
+    }
+    if (compact.bgp !== undefined) state.background.padding = compact.bgp;
+    if (compact.bga !== undefined) state.background.imageAspectRatio = compact.bga as ImageAspectRatio;
+  }
+
+  return state;
 }
 
 // Parse URL parameters into state
@@ -567,6 +859,16 @@ export function parseUrlParams(): UrlState | null {
 
   if (params.size === 0) return null;
 
+  // Check for LZ-compressed data first
+  const compressedData = params.get('d');
+  if (compressedData) {
+    const compact = decompressLZData(compressedData);
+    if (compact) {
+      return parseCompactState(compact);
+    }
+  }
+
+  // Fall back to legacy parameter parsing
   const state: UrlState = {};
 
   // Helper to get and parse param

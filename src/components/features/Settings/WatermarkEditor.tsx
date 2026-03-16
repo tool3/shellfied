@@ -103,7 +103,8 @@ const NAMED_COLOR_TO_HEX: Record<string, string> = {
 };
 
 // Extract color value from style string
-function extractColor(styleStr: string): string | null {
+function extractColor(styleStr: string | undefined): string | null {
+  if (!styleStr) return null;
   const match = styleStr.match(/color\s*:\s*([^;\n]+)/i);
   if (match) {
     const value = match[1].trim().toLowerCase();
@@ -123,13 +124,14 @@ function extractColor(styleStr: string): string | null {
 }
 
 // Update color in style string
-function updateColorInStyle(styleStr: string, newColor: string): string {
+function updateColorInStyle(styleStr: string | undefined, newColor: string): string {
+  const str = styleStr || '';
   const colorRegex = /color\s*:\s*[^;\n]+/i;
-  if (colorRegex.test(styleStr)) {
-    return styleStr.replace(colorRegex, `color: ${newColor}`);
+  if (colorRegex.test(str)) {
+    return str.replace(colorRegex, `color: ${newColor}`);
   }
   // Add color if not present
-  const trimmed = styleStr.trim();
+  const trimmed = str.trim();
   if (trimmed && !trimmed.endsWith(';') && !trimmed.endsWith('\n')) {
     return `${trimmed};\ncolor: ${newColor};`;
   }
@@ -141,8 +143,8 @@ export const WatermarkEditor = memo(function WatermarkEditor() {
   const setWatermark = useStore((s) => s.setWatermark);
   const colorMode = useStore((s) => s.colorMode);
 
-  const [localStyle, setLocalStyle] = useState(watermark.style);
-  const [localMarkup, setLocalMarkup] = useState(watermark.markup);
+  const [localStyle, setLocalStyle] = useState(watermark.style || DEFAULT_WATERMARK_STYLE);
+  const [localMarkup, setLocalMarkup] = useState(watermark.markup || getDefaultWatermarkMarkup(colorMode));
   const [isValid, setIsValid] = useState(true);
   const colorInputRef = useRef<HTMLInputElement>(null);
   const colorSwatchRef = useRef<HTMLSpanElement>(null);

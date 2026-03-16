@@ -1,0 +1,412 @@
+/**
+ * API Route: /api/image
+ *
+ * Generates static SVG images from URL parameters.
+ * This enables embedding shellfied images directly in markdown, GitHub READMEs, etc.
+ *
+ * Usage:
+ *   /api/image?c=<base64-content>&tp=macos&th=dracula
+ *
+ * Parameters:
+ *   - c (content): Base64-encoded code content
+ *   - All other URL parameters from urlParams.ts are supported
+ *
+ * Note: Currently only SVG output is supported server-side.
+ * PNG/WebP/JPEG conversion requires native modules that need special setup.
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
+import LZString from 'lz-string';
+import { generateSvg, wrapSvgWithBackground } from '@/lib/generateSvg';
+import { DEFAULT_BACKGROUND, DEFAULT_SETTINGS, DEFAULT_HEADER, DEFAULT_FOOTER, DEFAULT_WATERMARK } from '@/constants/defaults';
+import type { TemplateType, ControlsPosition, PaddingTuple, BackgroundType, GradientDirection, ImageAspectRatio } from '@/types';
+
+// Compact state interface (matching urlParams.ts)
+interface CompactState {
+  c?: string; // content
+  tp?: string; // template
+  th?: string; // terminalTheme
+  fs?: number; // fontSize
+  lh?: number; // lineHeight
+  pd?: PaddingTuple; // padding
+  ti?: string; // title
+  sc?: boolean; // showControls
+  cp?: string; // controlsPosition
+  br?: number; // borderRadius
+  wd?: number | null; // width
+  ff?: string; // fontFamily
+  lg?: string; // language
+  // Watermark
+  wt?: string; // watermarkType
+  wtx?: string; // watermarkText
+  wst?: string; // watermarkStyle
+  wmk?: string; // watermarkMarkup
+  // Header
+  he?: boolean; // headerEnabled
+  hbg?: string; // headerBgColor
+  hh?: number; // headerHeight
+  hbd?: boolean; // headerBorder
+  hbc?: string; // headerBorderColor
+  hbw?: number; // headerBorderWidth
+  // Footer
+  fe?: boolean; // footerEnabled
+  fbg?: string; // footerBgColor
+  fh?: number; // footerHeight
+  fbd?: boolean; // footerBorder
+  fbc?: string; // footerBorderColor
+  fbw?: number; // footerBorderWidth
+  // Background
+  bt?: string; // bgType
+  bgc?: string; // bgColor
+  bgf?: string; // bgGradientFrom
+  bgt?: string; // bgGradientTo
+  bgd?: string; // bgGradientDirection
+  bgp?: number; // bgPadding
+  bga?: string; // bgImageAspectRatio
+}
+
+// Decompress LZ-string data
+function decompressLZData(compressed: string): CompactState | null {
+  try {
+    const json = LZString.decompressFromEncodedURIComponent(compressed);
+    if (!json) return null;
+    return JSON.parse(json) as CompactState;
+  } catch {
+    return null;
+  }
+}
+
+// URL parameter short names (matching urlParams.ts)
+const URL_PARAM_MAP = {
+  content: 'c',
+  language: 'lg',
+  template: 'tp',
+  terminalTheme: 'th',
+  fontSize: 'fs',
+  lineHeight: 'lh',
+  padding: 'pd',
+  title: 'ti',
+  showControls: 'sc',
+  controlsPosition: 'cp',
+  borderRadius: 'br',
+  width: 'wd',
+  fontFamily: 'ff',
+  watermarkType: 'wt',
+  watermarkText: 'wtx',
+  watermarkStyle: 'wst',
+  watermarkMarkup: 'wmk',
+  headerEnabled: 'he',
+  headerBgColor: 'hbg',
+  headerHeight: 'hh',
+  headerBorder: 'hbd',
+  headerBorderColor: 'hbc',
+  headerBorderWidth: 'hbw',
+  footerEnabled: 'fe',
+  footerBgColor: 'fbg',
+  footerHeight: 'fh',
+  footerBorder: 'fbd',
+  footerBorderColor: 'fbc',
+  footerBorderWidth: 'fbw',
+  bgType: 'bt',
+  bgColor: 'bgc',
+  bgGradientFrom: 'bgf',
+  bgGradientTo: 'bgt',
+  bgGradientDirection: 'bgd',
+  bgPadding: 'bgp',
+  bgImageAspectRatio: 'bga',
+} as const;
+
+// URL-safe Base64 decoding
+function decodeBase64(str: string): string {
+  try {
+    const base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64 + '==='.slice(0, (4 - (base64.length % 4)) % 4);
+    return decodeURIComponent(escape(atob(padded)));
+  } catch {
+    return '';
+  }
+}
+
+// Decode padding tuple
+function decodePadding(str: string): PaddingTuple | null {
+  const parts = str.split(',').map(Number);
+  if (parts.length === 4 && parts.every((n) => !isNaN(n) && n >= 0)) {
+    return parts as PaddingTuple;
+  }
+  return null;
+}
+
+// Decode boolean
+function decodeBool(str: string | null, defaultValue: boolean = false): boolean {
+  if (str === '1') return true;
+  if (str === '0') return false;
+  return defaultValue;
+}
+
+// Get param value (check both short and full names)
+function getParam(params: URLSearchParams, key: keyof typeof URL_PARAM_MAP): string | null {
+  return params.get(URL_PARAM_MAP[key]) ?? params.get(key);
+}
+
+// Parse compressed state into generation options
+function parseCompressedState(compact: CompactState) {
+  return {
+    content: compact.c || '',
+    language: compact.lg || 'auto',
+    template: (compact.tp || DEFAULT_SETTINGS.template) as TemplateType,
+    terminalTheme: compact.th || DEFAULT_SETTINGS.terminalTheme,
+    fontSize: compact.fs ?? DEFAULT_SETTINGS.fontSize,
+    lineHeight: compact.lh ?? DEFAULT_SETTINGS.lineHeight,
+    padding: compact.pd || DEFAULT_SETTINGS.padding,
+    title: compact.ti ?? DEFAULT_SETTINGS.title,
+    showControls: compact.sc ?? DEFAULT_SETTINGS.showControls,
+    controlsPosition: (compact.cp || DEFAULT_SETTINGS.controlsPosition) as ControlsPosition,
+    borderRadius: compact.br ?? DEFAULT_SETTINGS.borderRadius,
+    width: compact.wd ?? DEFAULT_SETTINGS.width,
+    fontFamily: compact.ff || DEFAULT_SETTINGS.fontFamily,
+    watermark: (compact.wt || compact.wtx || compact.wmk) ? {
+      type: (compact.wt || 'text') as 'text' | 'markup',
+      text: compact.wtx || '',
+      style: compact.wst || DEFAULT_WATERMARK.style,
+      markup: compact.wmk || '',
+    } : undefined,
+    header: compact.he ? {
+      enabled: true,
+      backgroundColor: compact.hbg || '',
+      height: compact.hh ?? DEFAULT_HEADER.height,
+      border: compact.hbd ?? false,
+      borderColor: compact.hbc || DEFAULT_HEADER.borderColor,
+      borderWidth: compact.hbw ?? DEFAULT_HEADER.borderWidth,
+    } : undefined,
+    footer: compact.fe ? {
+      enabled: true,
+      backgroundColor: compact.fbg || '',
+      height: compact.fh ?? DEFAULT_FOOTER.height,
+      border: compact.fbd ?? false,
+      borderColor: compact.fbc || DEFAULT_FOOTER.borderColor,
+      borderWidth: compact.fbw ?? DEFAULT_FOOTER.borderWidth,
+    } : undefined,
+    background: {
+      type: (compact.bt || 'none') as BackgroundType,
+      color: compact.bgc || DEFAULT_BACKGROUND.color,
+      gradientFrom: compact.bgf || DEFAULT_BACKGROUND.gradientFrom,
+      gradientTo: compact.bgt || DEFAULT_BACKGROUND.gradientTo,
+      gradientDirection: (compact.bgd || DEFAULT_BACKGROUND.gradientDirection) as GradientDirection,
+      padding: compact.bgp ?? DEFAULT_BACKGROUND.padding,
+      imageAspectRatio: (compact.bga || DEFAULT_BACKGROUND.imageAspectRatio) as ImageAspectRatio,
+      image: null,
+    },
+  };
+}
+
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+
+  // Check for LZ-compressed data first
+  const compressedData = searchParams.get('d');
+  if (compressedData) {
+    const compact = decompressLZData(compressedData);
+    if (compact) {
+      const opts = parseCompressedState(compact);
+
+      if (!opts.content) {
+        return new NextResponse('Missing content in compressed data', { status: 400 });
+      }
+
+      try {
+        let svg = generateSvg({
+          content: opts.content,
+          language: opts.language,
+          template: opts.template,
+          terminalTheme: opts.terminalTheme,
+          fontSize: opts.fontSize,
+          lineHeight: opts.lineHeight,
+          padding: opts.padding as PaddingTuple,
+          title: opts.title,
+          showControls: opts.showControls,
+          controlsPosition: opts.controlsPosition,
+          borderRadius: opts.borderRadius,
+          width: opts.width,
+          fontFamily: opts.fontFamily,
+          header: opts.header,
+          footer: opts.footer,
+          watermark: opts.watermark,
+        });
+
+        if (!svg) {
+          return new NextResponse('Failed to generate SVG', { status: 500 });
+        }
+
+        if (opts.background.type !== 'none') {
+          svg = wrapSvgWithBackground(svg, opts.background);
+        }
+
+        return new NextResponse(svg, {
+          headers: {
+            'Content-Type': 'image/svg+xml',
+            'Cache-Control': 'public, max-age=31536000, immutable',
+            'Access-Control-Allow-Origin': '*',
+          },
+        });
+      } catch (error) {
+        console.error('Error generating image:', error);
+        return new NextResponse('Internal server error', { status: 500 });
+      }
+    }
+  }
+
+  // Fall back to legacy parameter parsing
+  const encodedContent = getParam(searchParams, 'content');
+  if (!encodedContent) {
+    return new NextResponse('Missing content parameter', { status: 400 });
+  }
+
+  const content = decodeBase64(encodedContent);
+  if (!content) {
+    return new NextResponse('Invalid content encoding', { status: 400 });
+  }
+
+  // Parse all parameters
+  const language = getParam(searchParams, 'language') || 'auto';
+
+  const templateParam = getParam(searchParams, 'template');
+  const template: TemplateType = templateParam && ['macos', 'windows', 'minimal'].includes(templateParam)
+    ? templateParam as TemplateType
+    : DEFAULT_SETTINGS.template;
+
+  const terminalTheme = getParam(searchParams, 'terminalTheme') || DEFAULT_SETTINGS.terminalTheme;
+
+  const fontSizeParam = getParam(searchParams, 'fontSize');
+  const fontSize = fontSizeParam ? Number(fontSizeParam) : DEFAULT_SETTINGS.fontSize;
+
+  const lineHeightParam = getParam(searchParams, 'lineHeight');
+  const lineHeight = lineHeightParam ? Number(lineHeightParam) : DEFAULT_SETTINGS.lineHeight;
+
+  const paddingParam = getParam(searchParams, 'padding');
+  const padding = paddingParam ? decodePadding(paddingParam) || DEFAULT_SETTINGS.padding : DEFAULT_SETTINGS.padding;
+
+  const title = getParam(searchParams, 'title') ?? DEFAULT_SETTINGS.title;
+
+  const showControlsParam = getParam(searchParams, 'showControls');
+  const showControls = showControlsParam !== null ? decodeBool(showControlsParam, true) : DEFAULT_SETTINGS.showControls;
+
+  const controlsPositionParam = getParam(searchParams, 'controlsPosition');
+  const controlsPosition: ControlsPosition = controlsPositionParam === 'right' ? 'right' : DEFAULT_SETTINGS.controlsPosition;
+
+  const borderRadiusParam = getParam(searchParams, 'borderRadius');
+  const borderRadius = borderRadiusParam ? Number(borderRadiusParam) : DEFAULT_SETTINGS.borderRadius;
+
+  const widthParam = getParam(searchParams, 'width');
+  const width = widthParam ? Number(widthParam) : DEFAULT_SETTINGS.width;
+
+  const fontFamilyParam = getParam(searchParams, 'fontFamily');
+  const fontFamily = fontFamilyParam ? decodeBase64(fontFamilyParam) : DEFAULT_SETTINGS.fontFamily;
+
+  // Parse watermark
+  const watermarkType = getParam(searchParams, 'watermarkType') as 'text' | 'markup' | null;
+  const watermarkText = getParam(searchParams, 'watermarkText');
+  const watermarkStyle = getParam(searchParams, 'watermarkStyle');
+  const watermarkMarkup = getParam(searchParams, 'watermarkMarkup');
+
+  const watermark = (watermarkType || watermarkText || watermarkMarkup) ? {
+    type: watermarkType || 'text' as const,
+    text: watermarkText ? decodeBase64(watermarkText) : '',
+    style: watermarkStyle ? decodeBase64(watermarkStyle) : DEFAULT_WATERMARK.style,
+    markup: watermarkMarkup ? decodeBase64(watermarkMarkup) : '',
+  } : undefined;
+
+  // Parse header
+  const headerEnabled = getParam(searchParams, 'headerEnabled');
+  const header = headerEnabled !== null ? {
+    enabled: decodeBool(headerEnabled),
+    backgroundColor: getParam(searchParams, 'headerBgColor') || '',
+    height: Number(getParam(searchParams, 'headerHeight')) || DEFAULT_HEADER.height,
+    border: decodeBool(getParam(searchParams, 'headerBorder')),
+    borderColor: getParam(searchParams, 'headerBorderColor') || DEFAULT_HEADER.borderColor,
+    borderWidth: Number(getParam(searchParams, 'headerBorderWidth')) || DEFAULT_HEADER.borderWidth,
+  } : undefined;
+
+  // Parse footer
+  const footerEnabled = getParam(searchParams, 'footerEnabled');
+  const footer = footerEnabled !== null ? {
+    enabled: decodeBool(footerEnabled),
+    backgroundColor: getParam(searchParams, 'footerBgColor') || '',
+    height: Number(getParam(searchParams, 'footerHeight')) || DEFAULT_FOOTER.height,
+    border: decodeBool(getParam(searchParams, 'footerBorder')),
+    borderColor: getParam(searchParams, 'footerBorderColor') || DEFAULT_FOOTER.borderColor,
+    borderWidth: Number(getParam(searchParams, 'footerBorderWidth')) || DEFAULT_FOOTER.borderWidth,
+  } : undefined;
+
+  // Parse background
+  const bgTypeParam = getParam(searchParams, 'bgType');
+  const bgType: BackgroundType = bgTypeParam && ['none', 'solid', 'gradient', 'image'].includes(bgTypeParam)
+    ? bgTypeParam as BackgroundType
+    : 'none';
+
+  const bgColor = getParam(searchParams, 'bgColor') || DEFAULT_BACKGROUND.color;
+  const bgGradientFrom = getParam(searchParams, 'bgGradientFrom') || DEFAULT_BACKGROUND.gradientFrom;
+  const bgGradientTo = getParam(searchParams, 'bgGradientTo') || DEFAULT_BACKGROUND.gradientTo;
+  const bgGradientDirectionParam = getParam(searchParams, 'bgGradientDirection');
+  const bgGradientDirection: GradientDirection = bgGradientDirectionParam as GradientDirection || DEFAULT_BACKGROUND.gradientDirection;
+  const bgPaddingParam = getParam(searchParams, 'bgPadding');
+  const bgPadding = bgPaddingParam ? Number(bgPaddingParam) : DEFAULT_BACKGROUND.padding;
+  const bgImageAspectRatioParam = getParam(searchParams, 'bgImageAspectRatio');
+  const bgImageAspectRatio: ImageAspectRatio = bgImageAspectRatioParam as ImageAspectRatio || DEFAULT_BACKGROUND.imageAspectRatio;
+
+  const background = {
+    type: bgType,
+    color: bgColor,
+    gradientFrom: bgGradientFrom,
+    gradientTo: bgGradientTo,
+    gradientDirection: bgGradientDirection,
+    padding: bgPadding,
+    imageAspectRatio: bgImageAspectRatio,
+    image: null, // Images are not supported in URL sharing (too large)
+  };
+
+  try {
+    // Generate SVG
+    let svg = generateSvg({
+      content,
+      language,
+      template,
+      terminalTheme,
+      fontSize,
+      lineHeight,
+      padding: padding as PaddingTuple,
+      title,
+      showControls,
+      controlsPosition,
+      borderRadius,
+      width,
+      fontFamily,
+      header,
+      footer,
+      watermark,
+    });
+
+    if (!svg) {
+      return new NextResponse('Failed to generate SVG', { status: 500 });
+    }
+
+    // Wrap with background if configured
+    if (background.type !== 'none') {
+      svg = wrapSvgWithBackground(svg, background);
+    }
+
+    // Return SVG
+    return new NextResponse(svg, {
+      headers: {
+        'Content-Type': 'image/svg+xml',
+        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Access-Control-Allow-Origin': '*',
+      },
+    });
+  } catch (error) {
+    console.error('Error generating image:', error);
+    return new NextResponse('Internal server error', { status: 500 });
+  }
+}
+
+export const runtime = 'nodejs';
+export const revalidate = false;
