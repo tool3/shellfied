@@ -74,6 +74,7 @@ export interface BrandConfig {
   name: string; // Brand name (replaces "Shellfied")
   url: string; // Custom URL
   showIcon: boolean; // Whether to show logo icon
+  iconUrl: string; // Custom icon URL when showIcon is true
 }
 
 export interface CustomTheme {
@@ -121,9 +122,12 @@ export interface ShellfieSettings {
 
 export type CompareLabelAlignment = 'left' | 'center' | 'right';
 
+export type FontWeight = 400 | 500 | 600 | 700;
+
 export interface CompareLabelConfig {
   fontSize: number;
   fontFamily: string;
+  fontWeight: FontWeight;
   color: string;
   alignment: CompareLabelAlignment;
 }
@@ -136,5 +140,6 @@ export interface CompareExportOptions {
   labelHeight?: number;
   labelColor?: string;
   labelFont?: string;
+  labelFontWeight?: FontWeight;
   labelAlignment?: CompareLabelAlignment;
 }

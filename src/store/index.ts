@@ -166,7 +166,7 @@ function applyUrlState(
   if (urlState.beforeLanguage !== undefined) result.beforeLanguage = urlState.beforeLanguage;
   if (urlState.afterLanguage !== undefined) result.afterLanguage = urlState.afterLanguage;
   if (urlState.compareLabelConfig) {
-    result.compareLabelConfig = { ...result.compareLabelConfig, ...urlState.compareLabelConfig };
+    result.compareLabelConfig = { ...result.compareLabelConfig, ...urlState.compareLabelConfig } as typeof result.compareLabelConfig;
   }
 
   // Watermark

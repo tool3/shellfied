@@ -3,7 +3,7 @@ import styles from './NumberSlider.module.scss';
 
 interface NumberSliderProps {
   label?: string;
-  value: number;
+  value?: number;
   onChange: (value: number) => void;
   min: number;
   max: number;
@@ -16,7 +16,9 @@ export const NumberSlider = forwardRef<HTMLInputElement, NumberSliderProps>(func
   ref
 ) {
   const id = useId();
-  const percentage = ((value - min) / (max - min)) * 100;
+  // Ensure value is never undefined to prevent uncontrolled->controlled switch
+  const safeValue = value ?? min;
+  const percentage = ((safeValue - min) / (max - min)) * 100;
 
   return (
     <div className={`${styles.wrapper} ${className}`}>
@@ -32,7 +34,7 @@ export const NumberSlider = forwardRef<HTMLInputElement, NumberSliderProps>(func
             type="range"
             id={id}
             className={styles.slider}
-            value={value}
+            value={safeValue}
             onChange={(e) => onChange(Number(e.target.value))}
             min={min}
             max={max}
@@ -45,7 +47,7 @@ export const NumberSlider = forwardRef<HTMLInputElement, NumberSliderProps>(func
             />
           </div>
         </div>
-        <span className={styles.value}>{value}</span>
+        <span className={styles.value}>{safeValue}</span>
       </div>
     </div>
   );

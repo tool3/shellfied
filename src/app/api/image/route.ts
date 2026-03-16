@@ -17,9 +17,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import LZString from 'lz-string';
-import { generateSvg, wrapSvgWithBackground } from '@/lib/generateSvg';
-import { DEFAULT_BACKGROUND, DEFAULT_SETTINGS, DEFAULT_HEADER, DEFAULT_FOOTER, DEFAULT_WATERMARK } from '@/constants/defaults';
-import type { TemplateType, ControlsPosition, PaddingTuple, BackgroundType, GradientDirection, ImageAspectRatio } from '@/types';
+import { generateSvg, generateCompareSvg, wrapSvgWithBackground } from '@/lib/generateSvg';
+import { DEFAULT_BACKGROUND, DEFAULT_SETTINGS, DEFAULT_HEADER, DEFAULT_FOOTER, DEFAULT_WATERMARK, DEFAULT_COMPARE_LABEL_CONFIG } from '@/constants/defaults';
+import type { TemplateType, ControlsPosition, PaddingTuple, BackgroundType, GradientDirection, ImageAspectRatio, CompareLabelAlignment } from '@/types';
 
 // Compact state interface (matching urlParams.ts)
 interface CompactState {
@@ -36,6 +36,21 @@ interface CompactState {
   wd?: number | null; // width
   ff?: string; // fontFamily
   lg?: string; // language
+  // Compare mode
+  cmp?: boolean; // compareMode
+  bc?: string; // beforeContent
+  ac?: string; // afterContent
+  bl?: string; // beforeLabel
+  al?: string; // afterLabel
+  bti?: string; // beforeTitle
+  ati?: string; // afterTitle
+  blg?: string; // beforeLanguage
+  alg?: string; // afterLanguage
+  clf?: number; // compareLabelFontSize
+  clff?: string; // compareLabelFontFamily
+  clfw?: number; // compareLabelFontWeight
+  clc?: string; // compareLabelColor
+  cla?: string; // compareLabelAlignment
   // Watermark
   wt?: string; // watermarkType
   wtx?: string; // watermarkText
@@ -164,6 +179,23 @@ function parseCompressedState(compact: CompactState) {
     borderRadius: compact.br ?? DEFAULT_SETTINGS.borderRadius,
     width: compact.wd ?? DEFAULT_SETTINGS.width,
     fontFamily: compact.ff || DEFAULT_SETTINGS.fontFamily,
+    // Compare mode
+    compareMode: compact.cmp ?? false,
+    beforeContent: compact.bc || '',
+    afterContent: compact.ac || '',
+    beforeLabel: compact.bl || 'Before',
+    afterLabel: compact.al || 'After',
+    beforeTitle: compact.bti || DEFAULT_SETTINGS.title,
+    afterTitle: compact.ati || DEFAULT_SETTINGS.title,
+    beforeLanguage: compact.blg || 'auto',
+    afterLanguage: compact.alg || 'auto',
+    compareLabelConfig: {
+      fontSize: compact.clf ?? DEFAULT_COMPARE_LABEL_CONFIG.fontSize,
+      fontFamily: compact.clff || DEFAULT_COMPARE_LABEL_CONFIG.fontFamily,
+      fontWeight: compact.clfw ?? DEFAULT_COMPARE_LABEL_CONFIG.fontWeight,
+      color: compact.clc || DEFAULT_COMPARE_LABEL_CONFIG.color,
+      alignment: (compact.cla || DEFAULT_COMPARE_LABEL_CONFIG.alignment) as CompareLabelAlignment,
+    },
     watermark: (compact.wt || compact.wtx || compact.wmk) ? {
       type: (compact.wt || 'text') as 'text' | 'markup',
       text: compact.wtx || '',
@@ -209,36 +241,72 @@ export async function GET(request: NextRequest) {
     if (compact) {
       const opts = parseCompressedState(compact);
 
-      if (!opts.content) {
-        return new NextResponse('Missing content in compressed data', { status: 400 });
-      }
-
       try {
-        let svg = generateSvg({
-          content: opts.content,
-          language: opts.language,
-          template: opts.template,
-          terminalTheme: opts.terminalTheme,
-          fontSize: opts.fontSize,
-          lineHeight: opts.lineHeight,
-          padding: opts.padding as PaddingTuple,
-          title: opts.title,
-          showControls: opts.showControls,
-          controlsPosition: opts.controlsPosition,
-          borderRadius: opts.borderRadius,
-          width: opts.width,
-          fontFamily: opts.fontFamily,
-          header: opts.header,
-          footer: opts.footer,
-          watermark: opts.watermark,
-        });
+        let svg: string;
+
+        // Handle compare mode
+        if (opts.compareMode) {
+          if (!opts.beforeContent && !opts.afterContent) {
+            return new NextResponse('Missing content in compare mode', { status: 400 });
+          }
+
+          svg = generateCompareSvg({
+            beforeContent: opts.beforeContent,
+            afterContent: opts.afterContent,
+            beforeLabel: opts.beforeLabel,
+            afterLabel: opts.afterLabel,
+            beforeTitle: opts.beforeTitle,
+            afterTitle: opts.afterTitle,
+            beforeLanguage: opts.beforeLanguage,
+            afterLanguage: opts.afterLanguage,
+            compareLabelConfig: opts.compareLabelConfig,
+            template: opts.template,
+            terminalTheme: opts.terminalTheme,
+            fontSize: opts.fontSize,
+            lineHeight: opts.lineHeight,
+            padding: opts.padding as PaddingTuple,
+            showControls: opts.showControls,
+            controlsPosition: opts.controlsPosition,
+            borderRadius: opts.borderRadius,
+            fontFamily: opts.fontFamily,
+            header: opts.header,
+            footer: opts.footer,
+            watermark: opts.watermark,
+            background: opts.background,
+          });
+        } else {
+          // Handle single mode
+          if (!opts.content) {
+            return new NextResponse('Missing content in compressed data', { status: 400 });
+          }
+
+          svg = generateSvg({
+            content: opts.content,
+            language: opts.language,
+            template: opts.template,
+            terminalTheme: opts.terminalTheme,
+            fontSize: opts.fontSize,
+            lineHeight: opts.lineHeight,
+            padding: opts.padding as PaddingTuple,
+            title: opts.title,
+            showControls: opts.showControls,
+            controlsPosition: opts.controlsPosition,
+            borderRadius: opts.borderRadius,
+            width: opts.width,
+            fontFamily: opts.fontFamily,
+            header: opts.header,
+            footer: opts.footer,
+            watermark: opts.watermark,
+          });
+
+          // Only wrap with background for single mode (compare mode handles it internally)
+          if (svg && opts.background.type !== 'none') {
+            svg = wrapSvgWithBackground(svg, opts.background);
+          }
+        }
 
         if (!svg) {
           return new NextResponse('Failed to generate SVG', { status: 500 });
-        }
-
-        if (opts.background.type !== 'none') {
-          svg = wrapSvgWithBackground(svg, opts.background);
         }
 
         return new NextResponse(svg, {

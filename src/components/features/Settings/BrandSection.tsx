@@ -45,6 +45,15 @@ export const BrandSection = memo(function BrandSection() {
               onChange={(showIcon) => setBrand({ showIcon })}
               label="Show icon"
             />
+            {brand.showIcon && (
+              <Input
+                label="Icon URL"
+                value={brand.iconUrl}
+                onChange={(e) => setBrand({ iconUrl: e.target.value })}
+                placeholder="https://yourbrand.com/icon.svg"
+                fullWidth
+              />
+            )}
           </div>
         </div>
       )}

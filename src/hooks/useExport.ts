@@ -18,12 +18,6 @@ export function useExport() {
   const [status, setStatus] = useState<ExportStatus>('idle');
   const [lastAction, setLastAction] = useState<LastAction>(null);
   const [error, setError] = useState<string | null>(null);
-  const exportFormat = useStore((s) => s.exportFormat);
-  const exportScale = useStore((s) => s.exportScale);
-  const jpegQuality = useStore((s) => s.jpegQuality);
-  const background = useStore((s) => s.background);
-  const compareMode = useStore((s) => s.compareMode);
-  const compareLabelConfig = useStore((s) => s.compareLabelConfig);
   const { generate } = useShellfieSync();
   const { generate: generateCompare } = useShellfieCompareSync();
 
@@ -38,6 +32,10 @@ export function useExport() {
       setStatus('exporting');
       setLastAction('download');
       setError(null);
+
+      // Read current state directly to avoid stale closure issues
+      const state = useStore.getState();
+      const { compareMode, exportFormat, exportScale, jpegQuality, background, compareLabelConfig } = state;
 
       try {
         // Handle compare mode export
@@ -54,7 +52,8 @@ export function useExport() {
             gap: 32,
             labelHeight: compareLabelConfig.fontSize + 24,
             labelColor: compareLabelConfig.color,
-            labelFont: `600 ${compareLabelConfig.fontSize}px ${compareLabelConfig.fontFamily}`,
+            labelFont: `${compareLabelConfig.fontWeight} ${compareLabelConfig.fontSize}px ${compareLabelConfig.fontFamily}`,
+            labelFontWeight: compareLabelConfig.fontWeight,
             labelAlignment: compareLabelConfig.alignment,
           };
 
@@ -97,13 +96,17 @@ export function useExport() {
         setStatus('error');
       }
     },
-    [generate, generateCompare, compareMode, exportFormat, exportScale, jpegQuality, background, compareLabelConfig, resetStatus]
+    [generate, generateCompare, resetStatus]
   );
 
   const copyToClipboardFn = useCallback(async () => {
     setStatus('exporting');
     setLastAction('copy');
     setError(null);
+
+    // Read current state directly to avoid stale closure issues
+    const state = useStore.getState();
+    const { compareMode, exportFormat, exportScale, background, compareLabelConfig } = state;
 
     try {
       // Handle compare mode copy
@@ -119,7 +122,8 @@ export function useExport() {
           gap: 32,
           labelHeight: compareLabelConfig.fontSize + 24,
           labelColor: compareLabelConfig.color,
-          labelFont: `600 ${compareLabelConfig.fontSize}px ${compareLabelConfig.fontFamily}`,
+          labelFont: `${compareLabelConfig.fontWeight} ${compareLabelConfig.fontSize}px ${compareLabelConfig.fontFamily}`,
+          labelFontWeight: compareLabelConfig.fontWeight,
           labelAlignment: compareLabelConfig.alignment,
         };
 
@@ -145,7 +149,7 @@ export function useExport() {
       setError(err instanceof Error ? err.message : 'Copy failed');
       setStatus('error');
     }
-  }, [generate, generateCompare, compareMode, exportFormat, exportScale, background, compareLabelConfig, resetStatus]);
+  }, [generate, generateCompare, resetStatus]);
 
   // Legacy exports for backward compatibility
   const exportToSvg = useCallback(
@@ -173,6 +177,7 @@ export function useExport() {
       try {
         const svg = generate();
         if (!svg) throw new Error('No content to export');
+        const { exportScale } = useStore.getState();
         await downloadRaster(svg, filename, 'png', { scale: exportScale });
         setStatus('success');
         setTimeout(resetStatus, 2000);
@@ -181,7 +186,7 @@ export function useExport() {
         setStatus('error');
       }
     },
-    [generate, exportScale, resetStatus]
+    [generate, resetStatus]
   );
 
   return {

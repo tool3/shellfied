@@ -6,6 +6,7 @@ import type { CompareLabelConfig } from '@/types';
 const DEFAULT_COMPARE_LABEL_CONFIG: CompareLabelConfig = {
   fontSize: 16,
   fontFamily: 'system-ui, -apple-system, sans-serif',
+  fontWeight: 600,
   color: '#ffffff',
   alignment: 'left',
 };
@@ -23,6 +24,8 @@ export const createEditorSlice: StateCreator<AppStore, [], [], EditorState> = (s
   afterContent: '',
   beforeLabel: 'Before',
   afterLabel: 'After',
+  beforeTitle: 'Terminal',
+  afterTitle: 'Terminal',
   beforeLanguage: 'auto',
   afterLanguage: 'auto',
   compareLabelConfig: DEFAULT_COMPARE_LABEL_CONFIG,
@@ -31,6 +34,8 @@ export const createEditorSlice: StateCreator<AppStore, [], [], EditorState> = (s
   setAfterContent: (afterContent) => set({ afterContent }),
   setBeforeLabel: (beforeLabel) => set({ beforeLabel }),
   setAfterLabel: (afterLabel) => set({ afterLabel }),
+  setBeforeTitle: (beforeTitle) => set({ beforeTitle }),
+  setAfterTitle: (afterTitle) => set({ afterTitle }),
   setBeforeLanguage: (beforeLanguage) => set({ beforeLanguage }),
   setAfterLanguage: (afterLanguage) => set({ afterLanguage }),
   setCompareLabelConfig: (config) =>

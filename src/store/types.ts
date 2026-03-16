@@ -27,6 +27,8 @@ export interface EditorState {
   afterContent: string;
   beforeLabel: string;
   afterLabel: string;
+  beforeTitle: string;
+  afterTitle: string;
   beforeLanguage: string;
   afterLanguage: string;
   compareLabelConfig: CompareLabelConfig;
@@ -34,6 +36,8 @@ export interface EditorState {
   setAfterContent: (content: string) => void;
   setBeforeLabel: (label: string) => void;
   setAfterLabel: (label: string) => void;
+  setBeforeTitle: (title: string) => void;
+  setAfterTitle: (title: string) => void;
   setBeforeLanguage: (language: string) => void;
   setAfterLanguage: (language: string) => void;
   setCompareLabelConfig: (config: Partial<CompareLabelConfig>) => void;

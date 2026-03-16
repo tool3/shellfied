@@ -1,13 +1,20 @@
 import { memo, useState, useRef, useEffect } from 'react';
 import { useStore } from '@/store';
 import { Button, Select, ColorPicker, NumberSlider } from '@/components/common';
-import type { CompareLabelAlignment } from '@/types';
+import type { CompareLabelAlignment, FontWeight } from '@/types';
 import styles from './LabelSettings.module.scss';
 
 const ALIGNMENT_OPTIONS = [
   { value: 'left', label: 'Left' },
   { value: 'center', label: 'Center' },
   { value: 'right', label: 'Right' },
+];
+
+const FONT_WEIGHT_OPTIONS = [
+  { value: '400', label: 'Normal (400)' },
+  { value: '500', label: 'Medium (500)' },
+  { value: '600', label: 'Semi Bold (600)' },
+  { value: '700', label: 'Bold (700)' },
 ];
 
 const FONT_FAMILY_OPTIONS = [
@@ -125,6 +132,15 @@ export const LabelSettings = memo(function LabelSettings() {
                 options={FONT_FAMILY_OPTIONS}
                 value={compareLabelConfig.fontFamily}
                 onChange={(value) => setCompareLabelConfig({ fontFamily: value })}
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>Font Weight</label>
+              <Select
+                options={FONT_WEIGHT_OPTIONS}
+                value={String(compareLabelConfig.fontWeight)}
+                onChange={(value) => setCompareLabelConfig({ fontWeight: Number(value) as FontWeight })}
               />
             </div>
 
