@@ -3,7 +3,7 @@ import { useStore, useContent } from '@/store';
 import { useExport } from '@/hooks/useExport';
 import { Button, Select, Slider } from '@/components/common';
 import { ShareModal } from '@/components/features/Share';
-import { generateShareUrlLZ } from '@/utils/urlParams';
+import { generateShareUrlLZ, generateCompressedData } from '@/utils/urlParams';
 import type { ExportFormat, ExportScale } from '@/types';
 import styles from './ExportPanel.module.scss';
 
@@ -32,7 +32,7 @@ export const ExportPanel = memo(function ExportPanel() {
   const { download, copyToClipboard, isExporting, isDownloadSuccess, isCopySuccess } = useExport();
 
   const [showShareModal, setShowShareModal] = useState(false);
-  const [shareUrls, setShareUrls] = useState({ viewUrl: '', editUrl: '' });
+  const [shareUrls, setShareUrls] = useState({ viewUrl: '', editUrl: '', compressedData: '' });
 
   const hasContent = Boolean(content.trim());
   const isRasterFormat = exportFormat !== 'svg';
@@ -47,7 +47,8 @@ export const ExportPanel = memo(function ExportPanel() {
       // LZ compression is synchronous and much more efficient
       const viewUrl = generateShareUrlLZ(state, 'view');
       const editUrl = generateShareUrlLZ(state, 'edit');
-      setShareUrls({ viewUrl, editUrl });
+      const compressedData = generateCompressedData(state, 'view');
+      setShareUrls({ viewUrl, editUrl, compressedData });
       setShowShareModal(true);
     } finally {
       setIsGeneratingUrls(false);
@@ -140,6 +141,7 @@ export const ExportPanel = memo(function ExportPanel() {
         <ShareModal
           viewUrl={shareUrls.viewUrl}
           editUrl={shareUrls.editUrl}
+          compressedData={shareUrls.compressedData}
           onClose={() => setShowShareModal(false)}
         />
       )}
