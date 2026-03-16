@@ -1,12 +1,14 @@
+'use client';
+
 import { useEffect } from 'react';
 import { useTheme } from '@/hooks/useTheme';
 import { useIsViewMode, useStore } from '@/store';
 import { rehydrateCompressedContent } from '@/utils/urlParams';
 import { Header } from '@/components/layout';
 import { Editor, Preview, SettingsPanel, ExportPanel, ViewMode } from '@/components/features';
-import styles from './App.module.scss';
+import styles from './page.module.scss';
 
-function App() {
+export function HomeClient() {
   useTheme();
   const isViewMode = useIsViewMode();
 
@@ -57,5 +59,3 @@ function App() {
     </div>
   );
 }
-
-export default App;

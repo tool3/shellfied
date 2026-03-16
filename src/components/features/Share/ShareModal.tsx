@@ -31,6 +31,10 @@ export const ShareModal = memo(function ShareModal({ viewUrl, editUrl, onClose }
     }
   }, []);
 
+  const openInNewTab = useCallback((url: string) => {
+    window.open(url, '_blank');
+  }, []);
+
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onClose();
@@ -56,14 +60,22 @@ export const ShareModal = memo(function ShareModal({ viewUrl, editUrl, onClose }
             </label>
             <div className={styles.urlInput}>
               <input type="text" value={viewUrl} readOnly />
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={copiedView ? 'check' : 'copy'}
-                onClick={() => copyToClipboard(viewUrl, 'view')}
-              >
-                {copiedView ? 'Copied!' : 'Copy'}
-              </Button>
+              <div className={styles.urlActions}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={copiedView ? 'check' : 'copy'}
+                  onClick={() => copyToClipboard(viewUrl, 'view')}
+                  aria-label={copiedView ? 'Copied!' : 'Copy URL'}
+                />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon="externalLink"
+                  onClick={() => openInNewTab(viewUrl)}
+                  aria-label="Open in new tab"
+                />
+              </div>
             </div>
             <p className={styles.hint}>Recipients see only the rendered image</p>
           </div>
@@ -75,14 +87,22 @@ export const ShareModal = memo(function ShareModal({ viewUrl, editUrl, onClose }
             </label>
             <div className={styles.urlInput}>
               <input type="text" value={editUrl} readOnly />
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={copiedEdit ? 'check' : 'copy'}
-                onClick={() => copyToClipboard(editUrl, 'edit')}
-              >
-                {copiedEdit ? 'Copied!' : 'Copy'}
-              </Button>
+              <div className={styles.urlActions}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={copiedEdit ? 'check' : 'copy'}
+                  onClick={() => copyToClipboard(editUrl, 'edit')}
+                  aria-label={copiedEdit ? 'Copied!' : 'Copy URL'}
+                />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon="externalLink"
+                  onClick={() => openInNewTab(editUrl)}
+                  aria-label="Open in new tab"
+                />
+              </div>
             </div>
             <p className={styles.hint}>Recipients can modify settings and content</p>
           </div>

@@ -1,4 +1,4 @@
-import { forwardRef, type InputHTMLAttributes } from 'react';
+import { forwardRef, useId, type InputHTMLAttributes } from 'react';
 import styles from './Toggle.module.scss';
 
 interface ToggleProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'onChange'> {
@@ -11,7 +11,8 @@ export const Toggle = forwardRef<HTMLInputElement, ToggleProps>(function Toggle(
   { checked, onChange, label, className = '', id, disabled, ...props },
   ref
 ) {
-  const toggleId = id || `toggle-${Math.random().toString(36).slice(2, 9)}`;
+  const generatedId = useId();
+  const toggleId = id || generatedId;
 
   return (
     <div className={`${styles.wrapper} ${className}`}>

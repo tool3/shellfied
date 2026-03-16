@@ -3,7 +3,7 @@ import { useStore, useContent } from '@/store';
 import { useExport } from '@/hooks/useExport';
 import { Button, Select, Slider } from '@/components/common';
 import { ShareModal } from '@/components/features/Share';
-import { generateShareUrlCompressed } from '@/utils/urlParams';
+import { generateShareUrlLZ } from '@/utils/urlParams';
 import type { ExportFormat, ExportScale } from '@/types';
 import styles from './ExportPanel.module.scss';
 
@@ -40,14 +40,13 @@ export const ExportPanel = memo(function ExportPanel() {
 
   const [isGeneratingUrls, setIsGeneratingUrls] = useState(false);
 
-  const handleShare = useCallback(async () => {
+  const handleShare = useCallback(() => {
     setIsGeneratingUrls(true);
     try {
       const state = useStore.getState();
-      const [viewUrl, editUrl] = await Promise.all([
-        generateShareUrlCompressed(state, 'view'),
-        generateShareUrlCompressed(state, 'edit'),
-      ]);
+      // LZ compression is synchronous and much more efficient
+      const viewUrl = generateShareUrlLZ(state, 'view');
+      const editUrl = generateShareUrlLZ(state, 'edit');
       setShareUrls({ viewUrl, editUrl });
       setShowShareModal(true);
     } finally {

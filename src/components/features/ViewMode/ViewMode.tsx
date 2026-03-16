@@ -29,30 +29,42 @@ function calculateExpandedDimensions(
   const baseWidth = contentWidth + padding * 2;
   const baseHeight = contentHeight + padding * 2;
 
-  if (aspectRatio === 'auto') {
+  // Handle auto, undefined, null, or empty string
+  if (!aspectRatio || aspectRatio === 'auto') {
+    return { width: baseWidth, height: baseHeight, paddingX: padding, paddingY: padding };
+  }
+
+  // Validate aspect ratio format
+  if (!aspectRatio.includes(':')) {
     return { width: baseWidth, height: baseHeight, paddingX: padding, paddingY: padding };
   }
 
   const [w, h] = aspectRatio.split(':').map(Number);
+
+  // Validate parsed values
+  if (!w || !h || isNaN(w) || isNaN(h)) {
+    return { width: baseWidth, height: baseHeight, paddingX: padding, paddingY: padding };
+  }
+
   const targetRatio = w / h;
   const currentRatio = baseWidth / baseHeight;
 
   let totalWidth: number;
   let totalHeight: number;
-  let paddingX: number;
-  let paddingY: number;
 
   if (currentRatio > targetRatio) {
+    // Content is wider than target ratio - expand height to match
     totalWidth = baseWidth;
     totalHeight = baseWidth / targetRatio;
-    paddingX = padding;
-    paddingY = (totalHeight - contentHeight) / 2;
   } else {
+    // Content is taller than target ratio - expand width to match
     totalHeight = baseHeight;
     totalWidth = baseHeight * targetRatio;
-    paddingX = (totalWidth - contentWidth) / 2;
-    paddingY = padding;
   }
+
+  // Always center the content within the expanded dimensions
+  const paddingX = (totalWidth - contentWidth) / 2;
+  const paddingY = (totalHeight - contentHeight) / 2;
 
   return { width: totalWidth, height: totalHeight, paddingX, paddingY };
 }

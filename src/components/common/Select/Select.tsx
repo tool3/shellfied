@@ -1,4 +1,4 @@
-import { forwardRef, type SelectHTMLAttributes } from 'react';
+import { forwardRef, useId, type SelectHTMLAttributes } from 'react';
 import { Icon } from '../Icon';
 import styles from './Select.module.scss';
 
@@ -20,7 +20,8 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
   { options, value, onChange, label, fullWidth = false, placeholder, className = '', id, ...props },
   ref
 ) {
-  const selectId = id || `select-${Math.random().toString(36).slice(2, 9)}`;
+  const generatedId = useId();
+  const selectId = id || generatedId;
 
   return (
     <div className={`${styles.wrapper} ${fullWidth ? styles.fullWidth : ''} ${className}`}>

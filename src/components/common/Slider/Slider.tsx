@@ -1,4 +1,4 @@
-import { forwardRef, type InputHTMLAttributes } from 'react';
+import { forwardRef, useId, type InputHTMLAttributes } from 'react';
 import styles from './Slider.module.scss';
 
 interface SliderProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'onChange'> {
@@ -28,7 +28,8 @@ export const Slider = forwardRef<HTMLInputElement, SliderProps>(function Slider(
   },
   ref
 ) {
-  const sliderId = id || `slider-${Math.random().toString(36).slice(2, 9)}`;
+  const generatedId = useId();
+  const sliderId = id || generatedId;
   const percentage = ((value - min) / (max - min)) * 100;
 
   return (

@@ -89,51 +89,6 @@ $z-toast: 600;
 // ========================================
 // CSS Custom Properties (Runtime Theming)
 // ========================================
-
-:root {
-  // Spacing
-  --space-unit: #{$space-unit};
-  --space-xs: #{$space-xs};
-  --space-sm: #{$space-sm};
-  --space-md: #{$space-md};
-  --space-lg: #{$space-lg};
-  --space-xl: #{$space-xl};
-  --space-2xl: #{$space-2xl};
-  --space-3xl: #{$space-3xl};
-
-  // Border radius
-  --radius-sm: #{$radius-sm};
-  --radius-md: #{$radius-md};
-  --radius-lg: #{$radius-lg};
-  --radius-xl: #{$radius-xl};
-  --radius-full: #{$radius-full};
-
-  // Transitions
-  --transition-fast: #{$transition-fast};
-  --transition-base: #{$transition-base};
-  --transition-slow: #{$transition-slow};
-
-  // Typography
-  --font-family-sans: #{$font-family-sans};
-  --font-family-mono: #{$font-family-mono};
-  --font-family-display: #{$font-family-display};
-
-  // Font sizes
-  --font-size-xs: #{$font-size-xs};
-  --font-size-sm: #{$font-size-sm};
-  --font-size-base: #{$font-size-base};
-  --font-size-lg: #{$font-size-lg};
-  --font-size-xl: #{$font-size-xl};
-  --font-size-2xl: #{$font-size-2xl};
-  --font-size-3xl: #{$font-size-3xl};
-
-  // Brand Colors (theme-specific, set in theme files)
-  --color-brand-dark: #{$brand-dark};
-  --color-brand-dark-hover: #{$brand-dark-hover};
-  --color-brand-dark-active: #{$brand-dark-active};
-  --color-brand-dark-subtle: #{$brand-dark-subtle};
-  --color-brand-light: #{$brand-light};
-  --color-brand-light-hover: #{$brand-light-hover};
-  --color-brand-light-active: #{$brand-light-active};
-  --color-brand-light-subtle: #{$brand-light-subtle};
-}
+// NOTE: :root variables are defined in main.scss to avoid
+// conflicts with CSS Modules which require pure/local selectors.
+// The variables below are used via @use in SCSS files directly.
