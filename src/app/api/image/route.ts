@@ -1,28 +1,76 @@
 /**
  * API Route: /api/image
  *
- * Generates static SVG images from URL parameters.
+ * Generates static images from URL parameters.
  * This enables embedding shellfied images directly in markdown, GitHub READMEs, etc.
  *
  * Usage:
+ *   /api/image?d=<lz-compressed-data>
  *   /api/image?c=<base64-content>&tp=macos&th=dracula
  *
  * Parameters:
- *   - c (content): Base64-encoded code content
+ *   - d: LZ-compressed state data (new format)
+ *   - o: Output format (svg, png, webp, jpeg) - defaults to svg
+ *   - c (content): Base64-encoded code content (legacy format)
  *   - All other URL parameters from urlParams.ts are supported
  *
- * Note: Currently only SVG output is supported server-side.
- * PNG/WebP/JPEG conversion requires native modules that need special setup.
+ * Supported formats:
+ *   - SVG: Vector format, scalable, best for web embedding
+ *   - PNG: Raster format with transparency, good for general use
+ *   - WebP: Modern raster format, smaller file size
+ *   - JPEG: Raster format, no transparency, smaller file size
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import LZString from 'lz-string';
+import sharp from 'sharp';
 import { generateSvg, generateCompareSvg, wrapSvgWithBackground } from '@/lib/generateSvg';
 import { DEFAULT_BACKGROUND, DEFAULT_SETTINGS, DEFAULT_HEADER, DEFAULT_FOOTER, DEFAULT_WATERMARK, DEFAULT_COMPARE_LABEL_CONFIG } from '@/constants/defaults';
 import type { TemplateType, ControlsPosition, PaddingTuple, BackgroundType, GradientDirection, ImageAspectRatio, CompareLabelAlignment } from '@/types';
 
+// Output format type
+type OutputFormat = 'svg' | 'png' | 'webp' | 'jpeg';
+
+// Convert SVG to raster format using sharp
+async function svgToRaster(
+  svg: string,
+  format: Exclude<OutputFormat, 'svg'>,
+  scale: number = 2,
+  quality: number = 90
+): Promise<Buffer> {
+  // Scale the SVG for higher resolution output
+  const svgBuffer = Buffer.from(svg);
+
+  let pipeline = sharp(svgBuffer, { density: 72 * scale });
+
+  switch (format) {
+    case 'png':
+      pipeline = pipeline.png();
+      break;
+    case 'webp':
+      pipeline = pipeline.webp({ quality });
+      break;
+    case 'jpeg':
+      pipeline = pipeline.jpeg({ quality });
+      break;
+  }
+
+  return pipeline.toBuffer();
+}
+
+// Get content type for format
+function getContentType(format: OutputFormat): string {
+  switch (format) {
+    case 'svg': return 'image/svg+xml';
+    case 'png': return 'image/png';
+    case 'webp': return 'image/webp';
+    case 'jpeg': return 'image/jpeg';
+  }
+}
+
 // Compact state interface (matching urlParams.ts)
 interface CompactState {
+  o?: string; // output format (svg, png, webp, jpeg) - only SVG supported server-side
   c?: string; // content
   tp?: string; // template
   th?: string; // terminalTheme
@@ -309,9 +357,25 @@ export async function GET(request: NextRequest) {
           return new NextResponse('Failed to generate SVG', { status: 500 });
         }
 
-        return new NextResponse(svg, {
+        // Determine output format (default to svg)
+        const outputFormat = (compact.o as OutputFormat) || 'svg';
+
+        // Return SVG directly
+        if (outputFormat === 'svg') {
+          return new NextResponse(svg, {
+            headers: {
+              'Content-Type': 'image/svg+xml',
+              'Cache-Control': 'public, max-age=31536000, immutable',
+              'Access-Control-Allow-Origin': '*',
+            },
+          });
+        }
+
+        // Convert to raster format
+        const rasterBuffer = await svgToRaster(svg, outputFormat);
+        return new NextResponse(new Uint8Array(rasterBuffer), {
           headers: {
-            'Content-Type': 'image/svg+xml',
+            'Content-Type': getContentType(outputFormat),
             'Cache-Control': 'public, max-age=31536000, immutable',
             'Access-Control-Allow-Origin': '*',
           },
@@ -462,10 +526,29 @@ export async function GET(request: NextRequest) {
       svg = wrapSvgWithBackground(svg, background);
     }
 
-    // Return SVG
-    return new NextResponse(svg, {
+    // Check for output format param (legacy URLs)
+    const outputFormatParam = searchParams.get('o');
+    const outputFormat: OutputFormat =
+      outputFormatParam && ['svg', 'png', 'webp', 'jpeg'].includes(outputFormatParam)
+        ? outputFormatParam as OutputFormat
+        : 'svg';
+
+    // Return SVG directly
+    if (outputFormat === 'svg') {
+      return new NextResponse(svg, {
+        headers: {
+          'Content-Type': 'image/svg+xml',
+          'Cache-Control': 'public, max-age=31536000, immutable',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
+
+    // Convert to raster format
+    const rasterBuffer = await svgToRaster(svg, outputFormat);
+    return new NextResponse(new Uint8Array(rasterBuffer), {
       headers: {
-        'Content-Type': 'image/svg+xml',
+        'Content-Type': getContentType(outputFormat),
         'Cache-Control': 'public, max-age=31536000, immutable',
         'Access-Control-Allow-Origin': '*',
       },

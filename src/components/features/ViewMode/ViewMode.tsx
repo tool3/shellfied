@@ -238,7 +238,7 @@ export const ViewMode = memo(function ViewMode() {
   const { generate } = useShellfieSync();
   const { generate: generateCompare } = useShellfieCompareSync();
 
-  const { download, copyToClipboard, isExporting, isCopySuccess } = useExport();
+  const { download, copyToClipboard, isExporting, isCopySuccess, isDownloadSuccess, error: exportError } = useExport();
 
   const svgWrapperRef = useRef<HTMLDivElement>(null);
   const compareWrapperRef = useRef<HTMLDivElement>(null);
@@ -531,11 +531,11 @@ export const ViewMode = memo(function ViewMode() {
           <div className={styles.buttonRow}>
             <Button
               variant="primary"
-              icon="download"
+              icon={isDownloadSuccess ? 'check' : 'download'}
               onClick={() => download()}
               disabled={isExporting}
             >
-              {isExporting ? 'Downloading...' : 'Download'}
+              {isExporting ? 'Downloading...' : isDownloadSuccess ? 'Downloaded!' : 'Download'}
             </Button>
             <Button
               variant="secondary"
@@ -550,7 +550,11 @@ export const ViewMode = memo(function ViewMode() {
               icon="externalLink"
               onClick={handleOpenStaticUrl}
               disabled={hasImageBackground}
-              title={hasImageBackground ? 'Static URLs not available for image backgrounds' : 'Open as static image'}
+              title={
+                hasImageBackground
+                  ? 'Static URLs not available for image backgrounds'
+                  : 'Open as static image'
+              }
             >
               Static
             </Button>
@@ -588,6 +592,11 @@ export const ViewMode = memo(function ViewMode() {
               />
             )}
           </div>
+          {exportError && (
+            <div className={styles.exportError}>
+              {exportError}
+            </div>
+          )}
         </div>
 
         <footer className={styles.footer}>

@@ -110,6 +110,14 @@
   align-items: center;
 }
 
+.exportError {
+  color: var(--color-error);
+  font-size: var(--font-size-sm);
+  padding: var(--space-xs) var(--space-sm);
+  background-color: rgba(248, 113, 113, 0.1);
+  border-radius: var(--radius-sm);
+}
+
 .footer {
   margin-top: var(--space-lg);
   color: var(--color-text-tertiary);

@@ -3,29 +3,32 @@ import { Button, Icon } from '@/components/common';
 import { validateUrlLength } from '@/utils/urlParams';
 import styles from './ShareModal.module.scss';
 
+export interface ShortUrls {
+  shortUrl: string;
+  svgUrl: string;
+}
+
 interface ShareModalProps {
   viewUrl: string;
   editUrl: string;
   compressedData: string; // LZ-compressed data for shortening
+  shortUrls: ShortUrls | null;
+  onShortUrlsChange: (urls: ShortUrls | null) => void;
   onClose: () => void;
-}
-
-interface ShortUrls {
-  shortUrl: string;
-  svgUrl: string;
 }
 
 export const ShareModal = memo(function ShareModal({
   viewUrl,
   editUrl,
   compressedData,
+  shortUrls,
+  onShortUrlsChange,
   onClose,
 }: ShareModalProps) {
   const [copiedView, setCopiedView] = useState(false);
   const [copiedEdit, setCopiedEdit] = useState(false);
   const [copiedShort, setCopiedShort] = useState(false);
   const [copiedSvg, setCopiedSvg] = useState(false);
-  const [shortUrls, setShortUrls] = useState<ShortUrls | null>(null);
   const [isShortening, setIsShortening] = useState(false);
   const [shortenError, setShortenError] = useState<string | null>(null);
 
@@ -73,7 +76,7 @@ export const ShareModal = memo(function ShareModal({
         return;
       }
 
-      setShortUrls({
+      onShortUrlsChange({
         shortUrl: result.shortUrl,
         svgUrl: result.svgUrl,
       });
@@ -83,7 +86,7 @@ export const ShareModal = memo(function ShareModal({
     } finally {
       setIsShortening(false);
     }
-  }, [compressedData]);
+  }, [compressedData, onShortUrlsChange]);
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {

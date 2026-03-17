@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { useShallow } from 'zustand/react/shallow';
+import { useState, useEffect } from 'react';
 import { createEditorSlice } from './slices/editorSlice';
 import { createSettingsSlice } from './slices/settingsSlice';
 import { createUISlice } from './slices/uiSlice';
@@ -13,6 +14,9 @@ const initialUrlState = typeof window !== 'undefined' ? parseUrlParams() : null;
 const initialShareMode = typeof window !== 'undefined' ? getShareMode() : null;
 const initialOutputFormat = typeof window !== 'undefined' ? getOutputFormat() : null;
 
+// Track hydration state
+let hasHydrated = false;
+
 export const useStore = create<AppStore>()(
   persist(
     (...args) => ({
@@ -23,6 +27,11 @@ export const useStore = create<AppStore>()(
     {
       name: 'shellfied-storage',
       storage: createJSONStorage(() => localStorage),
+      onRehydrateStorage: () => {
+        return () => {
+          hasHydrated = true;
+        };
+      },
       partialize: (state) => ({
         // Persist user preferences
         content: state.content,
@@ -163,6 +172,8 @@ function applyUrlState(
   if (urlState.afterContent !== undefined) result.afterContent = urlState.afterContent;
   if (urlState.beforeLabel !== undefined) result.beforeLabel = urlState.beforeLabel;
   if (urlState.afterLabel !== undefined) result.afterLabel = urlState.afterLabel;
+  if (urlState.beforeTitle !== undefined) result.beforeTitle = urlState.beforeTitle;
+  if (urlState.afterTitle !== undefined) result.afterTitle = urlState.afterTitle;
   if (urlState.beforeLanguage !== undefined) result.beforeLanguage = urlState.beforeLanguage;
   if (urlState.afterLanguage !== undefined) result.afterLanguage = urlState.afterLanguage;
   if (urlState.compareLabelConfig) {
@@ -203,6 +214,23 @@ export const useCompareMode = () => useStore((s) => s.compareMode);
 export const useShareMode = () => useStore((s) => s.shareMode);
 export const useIsViewMode = () => useStore((s) => s.isViewMode);
 export const useStaticOutput = () => useStore((s) => s.staticOutput);
+
+// Hook to check if store has been hydrated
+export const useHasHydrated = () => {
+  const [hydrated, setHydrated] = useState(hasHydrated);
+
+  useEffect(() => {
+    // Subscribe to hydration if not already hydrated
+    if (!hasHydrated) {
+      const unsubscribe = useStore.persist.onFinishHydration(() => {
+        setHydrated(true);
+      });
+      return unsubscribe;
+    }
+  }, []);
+
+  return hydrated;
+};
 
 export const useShellfieOptions = () =>
   useStore(

@@ -1,11 +1,45 @@
-import { memo, useState, useCallback } from 'react';
+import { memo, useState, useCallback, useRef } from 'react';
 import { useStore } from '@/store';
 import { useExport } from '@/hooks/useExport';
 import { Button, Select, Slider } from '@/components/common';
-import { ShareModal } from '@/components/features/Share';
+import { ShareModal, type ShortUrls } from '@/components/features/Share';
 import { generateShareUrlLZ, generateCompressedData } from '@/utils/urlParams';
 import type { ExportFormat, ExportScale } from '@/types';
 import styles from './ExportPanel.module.scss';
+
+// Generate a simple hash of the state that affects share URLs
+function getStateHash(state: ReturnType<typeof useStore.getState>): string {
+  // Include all state that affects the generated image
+  return JSON.stringify({
+    content: state.content,
+    language: state.language,
+    template: state.template,
+    terminalTheme: state.terminalTheme,
+    fontSize: state.fontSize,
+    lineHeight: state.lineHeight,
+    padding: state.padding,
+    title: state.title,
+    showControls: state.showControls,
+    controlsPosition: state.controlsPosition,
+    borderRadius: state.borderRadius,
+    width: state.width,
+    fontFamily: state.fontFamily,
+    watermark: state.watermark,
+    header: state.header,
+    footer: state.footer,
+    background: state.background,
+    compareMode: state.compareMode,
+    beforeContent: state.beforeContent,
+    afterContent: state.afterContent,
+    beforeLabel: state.beforeLabel,
+    afterLabel: state.afterLabel,
+    beforeTitle: state.beforeTitle,
+    afterTitle: state.afterTitle,
+    beforeLanguage: state.beforeLanguage,
+    afterLanguage: state.afterLanguage,
+    compareLabelConfig: state.compareLabelConfig,
+  });
+}
 
 const FORMAT_OPTIONS = [
   { value: 'svg', label: 'SVG' },
@@ -36,6 +70,8 @@ export const ExportPanel = memo(function ExportPanel() {
 
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareUrls, setShareUrls] = useState({ viewUrl: '', editUrl: '', compressedData: '' });
+  const [shortUrls, setShortUrls] = useState<ShortUrls | null>(null);
+  const lastStateHashRef = useRef<string>('');
 
   // Check for content based on current mode
   const hasContent = compareMode
@@ -47,19 +83,27 @@ export const ExportPanel = memo(function ExportPanel() {
   const [isGeneratingUrls, setIsGeneratingUrls] = useState(false);
 
   const handleShare = useCallback(() => {
-    setIsGeneratingUrls(true);
-    try {
-      const state = useStore.getState();
-      // LZ compression is synchronous and much more efficient
-      const viewUrl = generateShareUrlLZ(state, 'view');
-      const editUrl = generateShareUrlLZ(state, 'edit');
-      const compressedData = generateCompressedData(state, 'view');
-      setShareUrls({ viewUrl, editUrl, compressedData });
-      setShowShareModal(true);
-    } finally {
-      setIsGeneratingUrls(false);
+    const state = useStore.getState();
+    const currentHash = getStateHash(state);
+
+    // Only regenerate URLs if state has changed since last generation
+    if (currentHash !== lastStateHashRef.current || !shareUrls.viewUrl) {
+      setIsGeneratingUrls(true);
+      try {
+        const viewUrl = generateShareUrlLZ(state, 'view');
+        const editUrl = generateShareUrlLZ(state, 'edit');
+        const compressedData = generateCompressedData(state, 'view');
+        setShareUrls({ viewUrl, editUrl, compressedData });
+        // Clear short URLs when state changes since they're no longer valid
+        setShortUrls(null);
+        lastStateHashRef.current = currentHash;
+      } finally {
+        setIsGeneratingUrls(false);
+      }
     }
-  }, []);
+
+    setShowShareModal(true);
+  }, [shareUrls.viewUrl]);
 
   const handleFormatChange = (value: string) => {
     setExportFormat(value as ExportFormat);
@@ -152,6 +196,8 @@ export const ExportPanel = memo(function ExportPanel() {
           viewUrl={shareUrls.viewUrl}
           editUrl={shareUrls.editUrl}
           compressedData={shareUrls.compressedData}
+          shortUrls={shortUrls}
+          onShortUrlsChange={setShortUrls}
           onClose={() => setShowShareModal(false)}
         />
       )}

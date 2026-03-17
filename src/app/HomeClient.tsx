@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useTheme } from '@/hooks/useTheme';
-import { useIsViewMode, useStore } from '@/store';
+import { useIsViewMode, useStore, useHasHydrated } from '@/store';
 import { rehydrateCompressedContent } from '@/utils/urlParams';
 import { Header } from '@/components/layout';
 import { Editor, Preview, SettingsPanel, ExportPanel, ViewMode } from '@/components/features';
@@ -11,6 +11,7 @@ import styles from './page.module.scss';
 export function HomeClient() {
   useTheme();
   const isViewMode = useIsViewMode();
+  const hasHydrated = useHasHydrated();
 
   // Rehydrate compressed URL content after initial mount
   useEffect(() => {
@@ -22,6 +23,22 @@ export function HomeClient() {
       }
     });
   }, []);
+
+  // Wait for store hydration before rendering view mode
+  // This ensures URL params are applied before ViewMode tries to use them
+  if (isViewMode && !hasHydrated) {
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        background: 'var(--color-bg-primary)'
+      }}>
+        <div className="loading-spinner" />
+      </div>
+    );
+  }
 
   // Render view-only mode for shared links
   if (isViewMode) {
