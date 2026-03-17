@@ -1,1 +1,1 @@
-export { ShareModal } from './ShareModal';
+export { ShareModal, type ShortUrls } from './ShareModal';
