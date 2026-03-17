@@ -1,4 +1,5 @@
 import { memo, useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useStore } from '@/store';
 import { Button, Select, ColorPicker, NumberSlider } from '@/components/common';
 import type { CompareLabelAlignment, FontWeight } from '@/types';
@@ -104,7 +105,7 @@ export const LabelSettings = memo(function LabelSettings() {
         Label Style
       </Button>
 
-      {isOpen && (
+      {isOpen && createPortal(
         <div
           className={styles.dropdown}
           ref={dropdownRef}
@@ -161,7 +162,8 @@ export const LabelSettings = memo(function LabelSettings() {
               />
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
