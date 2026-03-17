@@ -1,5 +1,5 @@
 import { memo, useState, useCallback, useRef } from 'react';
-import { useStore } from '@/store';
+import { useStore, useExportSettings, useExportActions, useCompareState } from '@/store';
 import { useExport } from '@/hooks/useExport';
 import { Button, Select, Slider } from '@/components/common';
 import { ShareModal, type ShortUrls } from '@/components/features/Share';
@@ -56,15 +56,9 @@ const SCALE_OPTIONS = [
 
 export const ExportPanel = memo(function ExportPanel() {
   const content = useStore((s) => s.content);
-  const compareMode = useStore((s) => s.compareMode);
-  const beforeContent = useStore((s) => s.beforeContent);
-  const afterContent = useStore((s) => s.afterContent);
-  const exportFormat = useStore((s) => s.exportFormat);
-  const setExportFormat = useStore((s) => s.setExportFormat);
-  const exportScale = useStore((s) => s.exportScale);
-  const setExportScale = useStore((s) => s.setExportScale);
-  const jpegQuality = useStore((s) => s.jpegQuality);
-  const setJpegQuality = useStore((s) => s.setJpegQuality);
+  const { compareMode, beforeContent, afterContent } = useCompareState();
+  const { exportFormat, exportScale, jpegQuality } = useExportSettings();
+  const { setExportFormat, setExportScale, setJpegQuality } = useExportActions();
 
   const { download, copyToClipboard, isExporting, isDownloadSuccess, isCopySuccess } = useExport();
 

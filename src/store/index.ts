@@ -252,4 +252,67 @@ export const useShellfieOptions = () =>
     }))
   );
 
+// Compare mode state
+export const useCompareState = () =>
+  useStore(
+    useShallow((s) => ({
+      compareMode: s.compareMode,
+      beforeContent: s.beforeContent,
+      afterContent: s.afterContent,
+      beforeLabel: s.beforeLabel,
+      afterLabel: s.afterLabel,
+      beforeLanguage: s.beforeLanguage,
+      afterLanguage: s.afterLanguage,
+      beforeTitle: s.beforeTitle,
+      afterTitle: s.afterTitle,
+      compareLabelConfig: s.compareLabelConfig,
+    }))
+  );
+
+// Compare mode actions
+export const useCompareActions = () =>
+  useStore(
+    useShallow((s) => ({
+      setCompareMode: s.setCompareMode,
+      setBeforeContent: s.setBeforeContent,
+      setAfterContent: s.setAfterContent,
+      setBeforeLabel: s.setBeforeLabel,
+      setAfterLabel: s.setAfterLabel,
+      setBeforeLanguage: s.setBeforeLanguage,
+      setAfterLanguage: s.setAfterLanguage,
+      setBeforeTitle: s.setBeforeTitle,
+      setAfterTitle: s.setAfterTitle,
+      setCompareLabelConfig: s.setCompareLabelConfig,
+    }))
+  );
+
+// Export settings state
+export const useExportSettings = () =>
+  useStore(
+    useShallow((s) => ({
+      exportFormat: s.exportFormat,
+      exportScale: s.exportScale,
+      jpegQuality: s.jpegQuality,
+    }))
+  );
+
+// Export settings actions
+export const useExportActions = () =>
+  useStore(
+    useShallow((s) => ({
+      setExportFormat: s.setExportFormat,
+      setExportScale: s.setExportScale,
+      setJpegQuality: s.setJpegQuality,
+    }))
+  );
+
+// Background state
+export const useBackgroundState = () =>
+  useStore(
+    useShallow((s) => ({
+      background: s.background,
+      setBackground: s.setBackground,
+    }))
+  );
+
 export type { AppStore } from './types';

@@ -1,4 +1,5 @@
 import Prism from 'prismjs';
+import { ANSI, TOKEN_COLORS, LANGUAGE_ALIASES } from '@/lib/svgHelpers';
 
 // Import core/markup first (many languages depend on it)
 import 'prismjs/components/prism-markup';
@@ -82,88 +83,6 @@ import 'prismjs/components/prism-tcl';
 import 'prismjs/components/prism-prolog';
 import 'prismjs/components/prism-brainfuck';
 
-// Language alias mapping (for languages with different Prism identifiers)
-const LANGUAGE_ALIASES: Record<string, string> = {
-  html: 'markup',
-  xml: 'markup',
-  apache: 'apacheconf',
-  shell: 'bash',
-};
-
-// ANSI escape codes for terminal colors
-const ANSI = {
-  reset: '\x1b[0m',
-  // Standard colors
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  magenta: '\x1b[35m',
-  cyan: '\x1b[36m',
-  white: '\x1b[37m',
-  // Bright colors
-  brightBlack: '\x1b[90m',
-  brightRed: '\x1b[91m',
-  brightGreen: '\x1b[92m',
-  brightYellow: '\x1b[93m',
-  brightBlue: '\x1b[94m',
-  brightMagenta: '\x1b[95m',
-  brightCyan: '\x1b[96m',
-  brightWhite: '\x1b[97m',
-};
-
-// Map Prism token types to ANSI colors
-const TOKEN_COLORS: Record<string, string> = {
-  // Comments
-  comment: ANSI.brightBlack,
-  prolog: ANSI.brightBlack,
-  doctype: ANSI.brightBlack,
-  cdata: ANSI.brightBlack,
-
-  // Punctuation and operators
-  punctuation: ANSI.white,
-  operator: ANSI.cyan,
-
-  // Properties and tags
-  property: ANSI.cyan,
-  tag: ANSI.red,
-  'attr-name': ANSI.yellow,
-  'attr-value': ANSI.green,
-
-  // Strings
-  string: ANSI.green,
-  'template-string': ANSI.green,
-  char: ANSI.green,
-
-  // Numbers and booleans
-  number: ANSI.magenta,
-  boolean: ANSI.magenta,
-  constant: ANSI.magenta,
-
-  // Keywords
-  keyword: ANSI.red,
-  atrule: ANSI.red,
-  selector: ANSI.red,
-  important: ANSI.red,
-
-  // Functions and classes
-  function: ANSI.blue,
-  'function-variable': ANSI.blue,
-  'class-name': ANSI.yellow,
-  builtin: ANSI.cyan,
-
-  // Variables and symbols
-  variable: ANSI.brightCyan,
-  symbol: ANSI.brightMagenta,
-  regex: ANSI.brightGreen,
-
-  // Shell-specific
-  shebang: ANSI.brightBlack,
-  command: ANSI.brightBlue,
-  parameter: ANSI.brightCyan,
-  assign: ANSI.white,
-};
-
 type PrismToken = string | Prism.Token;
 
 function processToken(token: PrismToken): string {
@@ -178,33 +97,22 @@ function processToken(token: PrismToken): string {
     ? token.content
     : processToken(token.content);
 
-  if (color) {
-    return `${color}${content}${ANSI.reset}`;
-  }
-  return content;
+  return color ? `${color}${content}${ANSI.reset}` : content;
 }
 
-// Check if text contains ANSI escape sequences
-// Matches ESC character followed by any CSI sequence or other escape patterns
 const ANSI_REGEX = /\x1b(?:\[[0-9;:]*[A-Za-z]|\][^\x07]*\x07|\(B|=|>|c)/;
-
-// Matches literal escape notations in text (e.g., \u001b, \x1b, \033, \e)
 const LITERAL_ESCAPE_REGEX = /\\u001[bB]|\\x1[bB]|\\033|\\e/g;
 
-// Convert literal escape sequence notations to actual ESC character
 export function normalizeAnsiEscapes(text: string): string {
   return text.replace(LITERAL_ESCAPE_REGEX, '\x1b');
 }
 
 export function containsAnsi(text: string): boolean {
-  // Check for actual ESC character
   if (ANSI_REGEX.test(text)) return true;
-  // Check for literal escape notations
   return LITERAL_ESCAPE_REGEX.test(text);
 }
 
 export function highlightWithAnsi(code: string, language: string): string {
-  // If the code already contains ANSI codes, normalize and preserve them as-is
   if (containsAnsi(code)) {
     return normalizeAnsiEscapes(code);
   }
@@ -213,10 +121,9 @@ export function highlightWithAnsi(code: string, language: string): string {
     return code;
   }
 
-  // Resolve language aliases
   const resolvedLanguage = LANGUAGE_ALIASES[language] || language;
-
   const grammar = Prism.languages[resolvedLanguage];
+
   if (!grammar) {
     return code;
   }
