@@ -5,8 +5,7 @@ import { ThemeSelector } from './ThemeSelector';
 import { TemplateSelector } from './TemplateSelector';
 import { WatermarkEditor } from './WatermarkEditor';
 import { BackgroundSection } from './BackgroundSection';
-import { HeaderSection } from './HeaderSection';
-import { FooterSection } from './FooterSection';
+import { HeaderSection, FooterSection } from './HeaderFooterSection';
 import { BrandSection } from './BrandSection';
 import { ExportPanel } from '../Export';
 import {
