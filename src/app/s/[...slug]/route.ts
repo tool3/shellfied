@@ -481,6 +481,111 @@ async function generateSvgResponse(id: string): Promise<NextResponse> {
   }
 }
 
+function base64Encode(str: string): string {
+  const bytes = new TextEncoder().encode(str);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  // Use Buffer in Node.js environment
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(str, 'utf-8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function generateLandingPage(
+  redirectUrl: string,
+  compact: CompactState,
+  baseUrl: string
+): string {
+  // Extract metadata for OG tags
+  const isCompareMode = compact.cmp ?? false;
+  const title = isCompareMode
+    ? (compact.bl || 'Code Comparison')
+    : (compact.ti || 'Code Snippet');
+  const pageTitle = `${title} - Shellfied`;
+
+  // Build OG image URL
+  const ogParams = new URLSearchParams();
+  if (isCompareMode) {
+    if (compact.bc) ogParams.set('c', base64Encode(compact.bc));
+    if (compact.bl) ogParams.set('ti', compact.bl);
+  } else {
+    if (compact.c) ogParams.set('c', base64Encode(compact.c));
+    if (compact.ti) ogParams.set('ti', compact.ti);
+  }
+  if (compact.th) ogParams.set('th', compact.th);
+  if (compact.lg) ogParams.set('lg', compact.lg);
+
+  const ogImageUrl = ogParams.toString()
+    ? `${baseUrl}/api/og?${ogParams.toString()}`
+    : `${baseUrl}/api/og`;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeXml(pageTitle)}</title>
+  <meta name="description" content="Code screenshot created with Shellfied">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="${escapeXml(pageTitle)}">
+  <meta property="og:description" content="Code screenshot created with Shellfied">
+  <meta property="og:image" content="${escapeXml(ogImageUrl)}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:url" content="${escapeXml(baseUrl + redirectUrl)}">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${escapeXml(pageTitle)}">
+  <meta name="twitter:description" content="Code screenshot created with Shellfied">
+  <meta name="twitter:image" content="${escapeXml(ogImageUrl)}">
+
+  <!-- Redirect after a brief delay for crawlers to read meta tags -->
+  <meta http-equiv="refresh" content="0;url=${escapeXml(redirectUrl)}">
+
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f0f0f;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .loading {
+      text-align: center;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: #34D399;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    a { color: #34D399; }
+  </style>
+</head>
+<body>
+  <div class="loading">
+    <div class="spinner"></div>
+    <p>Loading your code snippet...</p>
+    <p><a href="${escapeXml(redirectUrl)}">Click here if not redirected</a></p>
+  </div>
+  <script>window.location.replace("${redirectUrl.replace(/"/g, '\\"')}");</script>
+</body>
+</html>`;
+}
+
 interface RouteParams {
   params: Promise<{ slug: string[] }>;
 }
@@ -493,25 +598,45 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     return new NextResponse('Not found', { status: 404 });
   }
 
-  // Get the first (and should be only) part of the slug
   const slug = slugParts[0];
 
-  // Check if it ends with .svg
+  // Handle .svg requests - return raw SVG
   if (slug.endsWith('.svg')) {
-    const id = slug.slice(0, -4); // Remove .svg extension
+    const id = slug.slice(0, -4);
     return generateSvgResponse(id);
   }
 
-  // Otherwise, redirect to the ViewMode landing page
+  // Handle landing page requests - return HTML with OG metadata
   const result = await resolveShortUrl(slug);
 
   if (!result.success) {
     return new NextResponse('Short URL not found', { status: 404 });
   }
 
-  // Redirect to the main page with the LZ-compressed data
-  const redirectUrl = `/?d=${encodeURIComponent(result.data)}`;
-  return NextResponse.redirect(new URL(redirectUrl, request.url));
+  try {
+    const json = LZString.decompressFromEncodedURIComponent(result.data);
+    if (!json) {
+      return new NextResponse('Invalid data', { status: 400 });
+    }
+
+    const compact = JSON.parse(json) as CompactState;
+    const redirectUrl = `/?d=${encodeURIComponent(result.data)}`;
+    const baseUrl = new URL(request.url).origin;
+
+    const html = generateLandingPage(redirectUrl, compact, baseUrl);
+
+    return new NextResponse(html, {
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=3600',
+      },
+    });
+  } catch (error) {
+    console.error('Error generating landing page:', error);
+    // Fallback to redirect
+    const redirectUrl = `/?d=${encodeURIComponent(result.data)}`;
+    return NextResponse.redirect(new URL(redirectUrl, request.url));
+  }
 }
 
 export const runtime = 'nodejs';

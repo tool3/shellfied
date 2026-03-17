@@ -218,7 +218,7 @@ export const metadata: Metadata = {
     description: 'Create stunning SVGs from your code and terminal output. Export to PNG, JPEG, or SVG with custom themes.',
     images: [
       {
-        url: '/og-image.png',
+        url: '/api/og',
         width: 1200,
         height: 630,
       },
@@ -228,7 +228,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Shellfied - Beautiful code screenshots in seconds',
     description: 'Create stunning SVGs from your code and terminal output. Export to PNG, JPEG, or SVG with custom themes.',
-    images: ['/og-image.png'],
+    images: ['/api/og'],
   },
   icons: {
     icon: '/favicon.svg',
