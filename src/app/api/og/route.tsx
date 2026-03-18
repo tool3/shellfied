@@ -262,36 +262,26 @@ function tokenizeLine(line: string, _language: string): Token[] {
   return tokens;
 }
 
-// Render a line with syntax highlighting as JSX for ImageResponse
-function renderHighlightedLine(line: string, language: string, theme: ThemeColors): React.ReactElement[] {
+// Render a line with syntax highlighting - returns array of JSX elements
+function renderHighlightedLine(line: string, language: string, theme: ThemeColors) {
   const tokens = tokenizeLine(line, language);
 
-  return tokens.map((token, i) => {
-    const colorMap: Record<Token['type'], string> = {
-      keyword: theme.keyword,
-      string: theme.string,
-      number: theme.number,
-      comment: theme.comment,
-      function: theme.function,
-      operator: theme.operator,
-      punctuation: theme.punctuation,
-      text: theme.foreground,
-    };
+  const colorMap: Record<Token['type'], string> = {
+    keyword: theme.keyword,
+    string: theme.string,
+    number: theme.number,
+    comment: theme.comment,
+    function: theme.function,
+    operator: theme.operator,
+    punctuation: theme.punctuation,
+    text: theme.foreground,
+  };
 
-    const color = colorMap[token.type];
-
-    return (
-      <span
-        key={i}
-        style={{
-          color: color,
-          display: 'inline',
-        }}
-      >
-        {token.value}
-      </span>
-    );
-  });
+  return tokens.map((token, i) => (
+    <span key={i} style={{ color: colorMap[token.type] }}>
+      {token.value}
+    </span>
+  ));
 }
 
 export async function GET(request: NextRequest) {
@@ -306,13 +296,94 @@ export async function GET(request: NextRequest) {
   // Decode content if provided
   const content = encodedContent ? decodeBase64(encodedContent) : '';
 
-  // Truncate content for preview (first 10 lines, max 50 chars per line)
+  // If no content, return a branded default OG image
+  if (!content.trim()) {
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#0a0a0a',
+            padding: '40px',
+          }}
+        >
+          {/* Logo and branding */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: '32px',
+            }}
+          >
+            {/* Large Shellfied Logo */}
+            <svg
+              width="140"
+              height="140"
+              viewBox="0 0 32 32"
+              style={{ flexShrink: 0 }}
+            >
+              <rect width="32" height="32" rx="4" fill="#18181c" />
+              <rect width="32" height="5" rx="4" fill="#242526" />
+              <rect y="3" width="32" height="3" fill="#242526" />
+              <circle cx="4" cy="3" r="1.3" fill="#ff5f57" />
+              <circle cx="8" cy="3" r="1.3" fill="#febc2e" />
+              <circle cx="12" cy="3" r="1.3" fill="#28c840" />
+              <rect x="4" y="11" width="20" height="3" rx="1" fill="#EC4899" />
+              <rect x="4" y="17" width="15" height="3" rx="1" fill="#8c50c5" />
+              <rect x="4" y="23" width="24" height="3" rx="1" fill="#d6345a" />
+            </svg>
+            {/* Text */}
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+              }}
+            >
+              <span
+                style={{
+                  fontSize: '64px',
+                  fontWeight: 700,
+                  color: '#ffffff',
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                  letterSpacing: '-1px',
+                }}
+              >
+                Shellfied
+              </span>
+              <span
+                style={{
+                  fontSize: '24px',
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                }}
+              >
+                Create and share beautiful code
+              </span>
+            </div>
+          </div>
+        </div>
+      ),
+      {
+        width: 1200,
+        height: 630,
+      }
+    );
+  }
+
+  // Truncate content for preview (first 12 lines, max 60 chars per line)
   const previewLines = content
     .split('\n')
-    .slice(0, 10)
-    .map(line => line.length > 50 ? line.slice(0, 47) + '...' : line);
+    .slice(0, 12)
+    .map(line => line.length > 60 ? line.slice(0, 57) + '...' : line);
 
-  const hasMore = content.split('\n').length > 10;
+  const hasMore = content.split('\n').length > 12;
 
   const themeColors = getTheme(theme);
   const bgColor = themeColors.background;
@@ -321,7 +392,7 @@ export async function GET(request: NextRequest) {
   const terminalMaxWidth = 900;
   const terminalMaxHeight = 480;
   const lineCount = previewLines.length + (hasMore ? 1 : 0);
-  const lineHeight = 28;
+  const lineHeight = 26;
   const titleBarHeight = 44;
   const paddingVertical = 40;
   const estimatedHeight = titleBarHeight + paddingVertical + (lineCount * lineHeight);

@@ -214,11 +214,11 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     url: 'https://shellfied.vercel.app/',
-    title: 'Shellfied - Beautiful code screenshots in seconds',
+    title: 'Shellfied - Create and share beautiful code',
     description: 'Create stunning SVGs from your code and terminal output. Export to PNG, JPEG, or SVG with custom themes.',
     images: [
       {
-        url: '/api/og',
+        url: '/og-image.svg',
         width: 1200,
         height: 630,
       },
@@ -226,9 +226,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Shellfied - Beautiful code screenshots in seconds',
+    title: 'Shellfied - Create and share beautiful code',
     description: 'Create stunning SVGs from your code and terminal output. Export to PNG, JPEG, or SVG with custom themes.',
-    images: ['/api/og'],
+    images: ['/og-image.svg'],
   },
   icons: {
     icon: '/favicon.svg',
