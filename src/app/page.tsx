@@ -101,7 +101,7 @@ export async function generateMetadata({
     description: 'Create beautiful SVGs from your code and terminal output',
     openGraph: {
       title,
-      description: 'Code screenshot created with Shellfied',
+      description: 'Share beautiful code',
       images: [
         {
           url: ogImageUrl,
@@ -114,7 +114,7 @@ export async function generateMetadata({
     twitter: {
       card: 'summary_large_image',
       title,
-      description: 'Code screenshot created with Shellfied',
+      description: 'Share beautiful code',
       images: [ogImageUrl],
     },
   };

@@ -182,12 +182,19 @@ interface Token {
   value: string;
 }
 
+// Strip ANSI escape codes from text
+function stripAnsi(text: string): string {
+  return text.replace(/\x1b\[[0-9;]*m/g, '');
+}
+
 // Simple regex-based tokenizer for common syntax patterns
-function tokenizeLine(line: string, language: string): Token[] {
-  if (!line) return [{ type: 'text', value: ' ' }];
+function tokenizeLine(line: string, _language: string): Token[] {
+  // Strip any ANSI codes first
+  const cleanLine = stripAnsi(line);
+  if (!cleanLine) return [{ type: 'text', value: ' ' }];
 
   const tokens: Token[] = [];
-  let remaining = line;
+  let remaining = cleanLine;
 
   // Keywords for common languages
   const keywords = new Set([
@@ -256,38 +263,31 @@ function tokenizeLine(line: string, language: string): Token[] {
 }
 
 // Render a line with syntax highlighting as JSX for ImageResponse
-function renderHighlightedLine(line: string, language: string, theme: ThemeColors): React.ReactNode[] {
+function renderHighlightedLine(line: string, language: string, theme: ThemeColors): React.ReactElement[] {
   const tokens = tokenizeLine(line, language);
 
   return tokens.map((token, i) => {
-    let color = theme.foreground;
+    const colorMap: Record<Token['type'], string> = {
+      keyword: theme.keyword,
+      string: theme.string,
+      number: theme.number,
+      comment: theme.comment,
+      function: theme.function,
+      operator: theme.operator,
+      punctuation: theme.punctuation,
+      text: theme.foreground,
+    };
 
-    switch (token.type) {
-      case 'keyword':
-        color = theme.keyword;
-        break;
-      case 'string':
-        color = theme.string;
-        break;
-      case 'number':
-        color = theme.number;
-        break;
-      case 'comment':
-        color = theme.comment;
-        break;
-      case 'function':
-        color = theme.function;
-        break;
-      case 'operator':
-        color = theme.operator;
-        break;
-      case 'punctuation':
-        color = theme.punctuation;
-        break;
-    }
+    const color = colorMap[token.type];
 
     return (
-      <span key={i} style={{ color }}>
+      <span
+        key={i}
+        style={{
+          color: color,
+          display: 'inline',
+        }}
+      >
         {token.value}
       </span>
     );
@@ -417,8 +417,7 @@ export async function GET(request: NextRequest) {
                 padding: '20px 24px',
                 fontFamily: 'monospace',
                 fontSize: '14px',
-                lineHeight: '1.7',
-                color: themeColors.foreground,
+                lineHeight: '1.8',
               }}
             >
               {previewLines.map((line, i) => (
@@ -426,12 +425,11 @@ export async function GET(request: NextRequest) {
                   key={i}
                   style={{
                     display: 'flex',
-                    whiteSpace: 'pre',
+                    flexDirection: 'row',
+                    flexWrap: 'nowrap',
                   }}
                 >
-                  <span style={{ display: 'flex' }}>
-                    {renderHighlightedLine(line, language, themeColors)}
-                  </span>
+                  {renderHighlightedLine(line, language, themeColors)}
                 </div>
               ))}
               {hasMore && (
