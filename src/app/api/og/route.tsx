@@ -24,24 +24,274 @@ function decodeBase64(str: string): string {
   }
 }
 
-// Theme background colors (subset of common themes)
-const THEME_BACKGROUNDS: Record<string, string> = {
-  dracula: '#282a36',
-  monokai: '#272822',
-  'one-dark': '#282c34',
-  nord: '#2e3440',
-  'solarized-dark': '#002b36',
-  'material-dark': '#263238',
-  'night-owl': '#011627',
-  'tokyo-night': '#1a1b26',
-  gruvbox: '#282828',
-  cobalt2: '#193549',
-  default: '#1e1e1e',
+// Theme configurations with syntax highlighting colors
+interface ThemeColors {
+  background: string;
+  foreground: string;
+  comment: string;
+  keyword: string;
+  string: string;
+  number: string;
+  function: string;
+  variable: string;
+  operator: string;
+  punctuation: string;
+}
+
+const THEMES: Record<string, ThemeColors> = {
+  dracula: {
+    background: '#282a36',
+    foreground: '#f8f8f2',
+    comment: '#6272a4',
+    keyword: '#ff79c6',
+    string: '#f1fa8c',
+    number: '#bd93f9',
+    function: '#50fa7b',
+    variable: '#f8f8f2',
+    operator: '#ff79c6',
+    punctuation: '#f8f8f2',
+  },
+  monokai: {
+    background: '#272822',
+    foreground: '#f8f8f2',
+    comment: '#75715e',
+    keyword: '#f92672',
+    string: '#e6db74',
+    number: '#ae81ff',
+    function: '#a6e22e',
+    variable: '#f8f8f2',
+    operator: '#f92672',
+    punctuation: '#f8f8f2',
+  },
+  'one-dark': {
+    background: '#282c34',
+    foreground: '#abb2bf',
+    comment: '#5c6370',
+    keyword: '#c678dd',
+    string: '#98c379',
+    number: '#d19a66',
+    function: '#61afef',
+    variable: '#e06c75',
+    operator: '#56b6c2',
+    punctuation: '#abb2bf',
+  },
+  nord: {
+    background: '#2e3440',
+    foreground: '#d8dee9',
+    comment: '#616e88',
+    keyword: '#81a1c1',
+    string: '#a3be8c',
+    number: '#b48ead',
+    function: '#88c0d0',
+    variable: '#d8dee9',
+    operator: '#81a1c1',
+    punctuation: '#eceff4',
+  },
+  'solarized-dark': {
+    background: '#002b36',
+    foreground: '#839496',
+    comment: '#586e75',
+    keyword: '#859900',
+    string: '#2aa198',
+    number: '#d33682',
+    function: '#268bd2',
+    variable: '#b58900',
+    operator: '#859900',
+    punctuation: '#839496',
+  },
+  'material-dark': {
+    background: '#263238',
+    foreground: '#eeffff',
+    comment: '#546e7a',
+    keyword: '#c792ea',
+    string: '#c3e88d',
+    number: '#f78c6c',
+    function: '#82aaff',
+    variable: '#eeffff',
+    operator: '#89ddff',
+    punctuation: '#89ddff',
+  },
+  'night-owl': {
+    background: '#011627',
+    foreground: '#d6deeb',
+    comment: '#637777',
+    keyword: '#c792ea',
+    string: '#ecc48d',
+    number: '#f78c6c',
+    function: '#82aaff',
+    variable: '#d6deeb',
+    operator: '#c792ea',
+    punctuation: '#d6deeb',
+  },
+  'tokyo-night': {
+    background: '#1a1b26',
+    foreground: '#a9b1d6',
+    comment: '#565f89',
+    keyword: '#bb9af7',
+    string: '#9ece6a',
+    number: '#ff9e64',
+    function: '#7aa2f7',
+    variable: '#c0caf5',
+    operator: '#89ddff',
+    punctuation: '#a9b1d6',
+  },
+  gruvbox: {
+    background: '#282828',
+    foreground: '#ebdbb2',
+    comment: '#928374',
+    keyword: '#fb4934',
+    string: '#b8bb26',
+    number: '#d3869b',
+    function: '#fabd2f',
+    variable: '#83a598',
+    operator: '#fe8019',
+    punctuation: '#ebdbb2',
+  },
+  cobalt2: {
+    background: '#193549',
+    foreground: '#ffffff',
+    comment: '#0088ff',
+    keyword: '#ff9d00',
+    string: '#a5ff90',
+    number: '#ff628c',
+    function: '#ffc600',
+    variable: '#9effff',
+    operator: '#ff9d00',
+    punctuation: '#ffffff',
+  },
+  default: {
+    background: '#1e1e1e',
+    foreground: '#d4d4d4',
+    comment: '#6a9955',
+    keyword: '#569cd6',
+    string: '#ce9178',
+    number: '#b5cea8',
+    function: '#dcdcaa',
+    variable: '#9cdcfe',
+    operator: '#d4d4d4',
+    punctuation: '#d4d4d4',
+  },
 };
 
-// Get theme background color
-function getThemeBackground(theme: string): string {
-  return THEME_BACKGROUNDS[theme] || THEME_BACKGROUNDS.default;
+function getTheme(theme: string): ThemeColors {
+  return THEMES[theme] || THEMES.default;
+}
+
+interface Token {
+  type: 'keyword' | 'string' | 'number' | 'comment' | 'function' | 'operator' | 'punctuation' | 'text';
+  value: string;
+}
+
+// Simple regex-based tokenizer for common syntax patterns
+function tokenizeLine(line: string, _language: string): Token[] {
+  if (!line) return [{ type: 'text', value: ' ' }];
+
+  const tokens: Token[] = [];
+  let remaining = line;
+
+  // Keywords for common languages
+  const keywords = new Set([
+    'const', 'let', 'var', 'function', 'return', 'if', 'else', 'for', 'while', 'do',
+    'switch', 'case', 'break', 'continue', 'class', 'extends', 'new', 'this', 'super',
+    'import', 'export', 'from', 'default', 'async', 'await', 'try', 'catch', 'finally',
+    'throw', 'typeof', 'instanceof', 'in', 'of', 'true', 'false', 'null', 'undefined',
+    'void', 'delete', 'yield', 'static', 'public', 'private', 'protected', 'interface',
+    'type', 'enum', 'implements', 'abstract', 'readonly', 'as', 'is', 'keyof', 'never',
+    'def', 'lambda', 'None', 'True', 'False', 'and', 'or', 'not', 'with', 'assert',
+    'pass', 'raise', 'except', 'global', 'nonlocal', 'elif', 'fn', 'pub', 'mod', 'use',
+    'struct', 'impl', 'trait', 'where', 'match', 'self', 'Self', 'mut', 'ref', 'move',
+    'func', 'package', 'go', 'chan', 'select', 'defer', 'range', 'map', 'make',
+  ]);
+
+  const patterns: Array<{ regex: RegExp; type: Token['type'] }> = [
+    // Comments
+    { regex: /^(\/\/.*|#.*|\/\*[\s\S]*?\*\/)/, type: 'comment' },
+    // Strings (double, single, backtick)
+    { regex: /^("[^"\\]*(?:\\.[^"\\]*)*"|'[^'\\]*(?:\\.[^'\\]*)*'|`[^`\\]*(?:\\.[^`\\]*)*`)/, type: 'string' },
+    // Numbers
+    { regex: /^(0x[0-9a-fA-F]+|0b[01]+|0o[0-7]+|\d+\.?\d*(?:e[+-]?\d+)?)/i, type: 'number' },
+    // Function calls
+    { regex: /^([a-zA-Z_]\w*)\s*(?=\()/, type: 'function' },
+    // Operators
+    { regex: /^(===|!==|==|!=|<=|>=|=>|->|\+\+|--|&&|\|\||[+\-*/%=<>!&|^~?:]+)/, type: 'operator' },
+    // Punctuation
+    { regex: /^([{}[\]();,.<>])/, type: 'punctuation' },
+    // Words (identifiers/keywords)
+    { regex: /^([a-zA-Z_]\w*)/, type: 'text' },
+    // Whitespace
+    { regex: /^(\s+)/, type: 'text' },
+    // Any other character
+    { regex: /^(.)/, type: 'text' },
+  ];
+
+  while (remaining.length > 0) {
+    let matched = false;
+
+    for (const { regex, type } of patterns) {
+      const match = remaining.match(regex);
+      if (match) {
+        let tokenType = type;
+        const value = match[1] || match[0];
+
+        // Check if text token is a keyword
+        if (type === 'text' && keywords.has(value)) {
+          tokenType = 'keyword';
+        }
+
+        tokens.push({ type: tokenType, value });
+        remaining = remaining.slice(match[0].length);
+        matched = true;
+        break;
+      }
+    }
+
+    if (!matched) {
+      // Safety: consume one character to prevent infinite loop
+      tokens.push({ type: 'text', value: remaining[0] });
+      remaining = remaining.slice(1);
+    }
+  }
+
+  return tokens;
+}
+
+// Render a line with syntax highlighting as JSX for ImageResponse
+function renderHighlightedLine(line: string, language: string, theme: ThemeColors): React.ReactNode[] {
+  const tokens = tokenizeLine(line, language);
+
+  return tokens.map((token, i) => {
+    let color = theme.foreground;
+
+    switch (token.type) {
+      case 'keyword':
+        color = theme.keyword;
+        break;
+      case 'string':
+        color = theme.string;
+        break;
+      case 'number':
+        color = theme.number;
+        break;
+      case 'comment':
+        color = theme.comment;
+        break;
+      case 'function':
+        color = theme.function;
+        break;
+      case 'operator':
+        color = theme.operator;
+        break;
+      case 'punctuation':
+        color = theme.punctuation;
+        break;
+    }
+
+    return (
+      <span key={i} style={{ color }}>
+        {token.value}
+      </span>
+    );
+  });
 }
 
 export async function GET(request: NextRequest) {
@@ -64,7 +314,8 @@ export async function GET(request: NextRequest) {
 
   const hasMore = content.split('\n').length > 10;
 
-  const bgColor = getThemeBackground(theme);
+  const themeColors = getTheme(theme);
+  const bgColor = themeColors.background;
 
   try {
     return new ImageResponse(
@@ -165,7 +416,7 @@ export async function GET(request: NextRequest) {
                 fontFamily: '"JetBrains Mono", "Fira Code", monospace',
                 fontSize: '16px',
                 lineHeight: '1.5',
-                color: '#e0e0e0',
+                color: themeColors.foreground,
               }}
             >
               {previewLines.map((line, i) => (
@@ -180,7 +431,9 @@ export async function GET(request: NextRequest) {
                   <span style={{ color: 'rgba(255, 255, 255, 0.3)', marginRight: '16px', minWidth: '24px', textAlign: 'right' }}>
                     {i + 1}
                   </span>
-                  <span>{line || ' '}</span>
+                  <span style={{ display: 'flex' }}>
+                    {renderHighlightedLine(line, language, themeColors)}
+                  </span>
                 </div>
               ))}
               {hasMore && (
@@ -205,12 +458,21 @@ export async function GET(request: NextRequest) {
               alignItems: 'center',
               justifyContent: 'center',
               marginTop: '24px',
-              gap: '12px',
+              gap: '8px',
             }}
           >
+            <span
+              style={{
+                fontSize: '18px',
+                color: 'rgba(255, 255, 255, 0.6)',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+              }}
+            >
+              Created with
+            </span>
             <svg
-              width="32"
-              height="32"
+              width="24"
+              height="24"
               viewBox="0 0 24 24"
               fill="none"
               stroke="#34D399"
@@ -223,22 +485,13 @@ export async function GET(request: NextRequest) {
             </svg>
             <span
               style={{
-                fontSize: '24px',
+                fontSize: '20px',
                 fontWeight: 600,
                 color: '#ffffff',
                 fontFamily: 'system-ui, -apple-system, sans-serif',
               }}
             >
               Shellfied
-            </span>
-            <span
-              style={{
-                fontSize: '16px',
-                color: 'rgba(255, 255, 255, 0.5)',
-                fontFamily: 'system-ui, -apple-system, sans-serif',
-              }}
-            >
-              Beautiful code screenshots
             </span>
           </div>
         </div>
