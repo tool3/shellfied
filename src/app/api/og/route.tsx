@@ -183,7 +183,7 @@ interface Token {
 }
 
 // Simple regex-based tokenizer for common syntax patterns
-function tokenizeLine(line: string, _language: string): Token[] {
+function tokenizeLine(line: string, language: string): Token[] {
   if (!line) return [{ type: 'text', value: ' ' }];
 
   const tokens: Token[] = [];
@@ -317,6 +317,16 @@ export async function GET(request: NextRequest) {
   const themeColors = getTheme(theme);
   const bgColor = themeColors.background;
 
+  // Calculate dimensions - terminal should be centered with room for footer
+  const terminalMaxWidth = 900;
+  const terminalMaxHeight = 480;
+  const lineCount = previewLines.length + (hasMore ? 1 : 0);
+  const lineHeight = 28;
+  const titleBarHeight = 44;
+  const paddingVertical = 40;
+  const estimatedHeight = titleBarHeight + paddingVertical + (lineCount * lineHeight);
+  const terminalHeight = Math.min(estimatedHeight, terminalMaxHeight);
+
   try {
     return new ImageResponse(
       (
@@ -326,20 +336,23 @@ export async function GET(request: NextRequest) {
             height: '100%',
             display: 'flex',
             flexDirection: 'column',
-            backgroundColor: '#0f0f0f',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#0a0a0a',
             padding: '40px',
           }}
         >
-          {/* Terminal Window */}
+          {/* Terminal Window - Centered */}
           <div
             style={{
               display: 'flex',
               flexDirection: 'column',
-              flex: 1,
+              width: terminalMaxWidth,
+              maxHeight: terminalHeight,
               backgroundColor: bgColor,
               borderRadius: '12px',
               overflow: 'hidden',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+              boxShadow: '0 25px 80px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)',
             }}
           >
             {/* Title Bar */}
@@ -348,8 +361,9 @@ export async function GET(request: NextRequest) {
                 display: 'flex',
                 alignItems: 'center',
                 padding: '12px 16px',
-                backgroundColor: 'rgba(0, 0, 0, 0.2)',
-                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                flexShrink: 0,
               }}
             >
               {/* Traffic lights */}
@@ -384,26 +398,15 @@ export async function GET(request: NextRequest) {
                 style={{
                   flex: 1,
                   textAlign: 'center',
-                  fontSize: '14px',
-                  color: 'rgba(255, 255, 255, 0.6)',
+                  fontSize: '13px',
+                  color: 'rgba(255, 255, 255, 0.5)',
                   fontFamily: 'system-ui, -apple-system, sans-serif',
                 }}
               >
                 {title}
               </div>
-              {/* Language badge */}
-              {language && (
-                <div
-                  style={{
-                    fontSize: '12px',
-                    color: 'rgba(255, 255, 255, 0.4)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  {language}
-                </div>
-              )}
+              {/* Spacer for symmetry */}
+              <div style={{ width: '52px' }} />
             </div>
 
             {/* Code Content */}
@@ -411,11 +414,10 @@ export async function GET(request: NextRequest) {
               style={{
                 display: 'flex',
                 flexDirection: 'column',
-                flex: 1,
                 padding: '20px 24px',
-                fontFamily: '"JetBrains Mono", "Fira Code", monospace',
-                fontSize: '16px',
-                lineHeight: '1.5',
+                fontFamily: 'monospace',
+                fontSize: '14px',
+                lineHeight: '1.7',
                 color: themeColors.foreground,
               }}
             >
@@ -425,12 +427,8 @@ export async function GET(request: NextRequest) {
                   style={{
                     display: 'flex',
                     whiteSpace: 'pre',
-                    opacity: i >= 8 ? 0.5 : 1,
                   }}
                 >
-                  <span style={{ color: 'rgba(255, 255, 255, 0.3)', marginRight: '16px', minWidth: '24px', textAlign: 'right' }}>
-                    {i + 1}
-                  </span>
                   <span style={{ display: 'flex' }}>
                     {renderHighlightedLine(line, language, themeColors)}
                   </span>
@@ -441,10 +439,9 @@ export async function GET(request: NextRequest) {
                   style={{
                     display: 'flex',
                     color: 'rgba(255, 255, 255, 0.3)',
-                    marginTop: '8px',
+                    marginTop: '4px',
                   }}
                 >
-                  <span style={{ marginRight: '16px', minWidth: '24px' }} />
                   <span>...</span>
                 </div>
               )}
@@ -457,35 +454,39 @@ export async function GET(request: NextRequest) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              marginTop: '24px',
-              gap: '8px',
+              marginTop: '32px',
+              gap: '10px',
             }}
           >
             <span
               style={{
-                fontSize: '18px',
-                color: 'rgba(255, 255, 255, 0.6)',
+                fontSize: '16px',
+                color: 'rgba(255, 255, 255, 0.5)',
                 fontFamily: 'system-ui, -apple-system, sans-serif',
               }}
             >
               Created with
             </span>
+            {/* Shellfied Logo */}
             <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#34D399"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+              width="28"
+              height="28"
+              viewBox="0 0 32 32"
+              style={{ flexShrink: 0 }}
             >
-              <polyline points="4 17 10 11 4 5" />
-              <line x1="12" y1="19" x2="20" y2="19" />
+              <rect width="32" height="32" rx="4" fill="#18181c" />
+              <rect width="32" height="5" rx="4" fill="#242526" />
+              <rect y="3" width="32" height="3" fill="#242526" />
+              <circle cx="4" cy="3" r="1.3" fill="#ff5f57" />
+              <circle cx="8" cy="3" r="1.3" fill="#febc2e" />
+              <circle cx="12" cy="3" r="1.3" fill="#28c840" />
+              <rect x="4" y="11" width="20" height="3" rx="1" fill="#EC4899" />
+              <rect x="4" y="17" width="15" height="3" rx="1" fill="#8c50c5" />
+              <rect x="4" y="23" width="24" height="3" rx="1" fill="#d6345a" />
             </svg>
             <span
               style={{
-                fontSize: '20px',
+                fontSize: '18px',
                 fontWeight: 600,
                 color: '#ffffff',
                 fontFamily: 'system-ui, -apple-system, sans-serif',
