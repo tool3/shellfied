@@ -10,11 +10,13 @@ export const Header = memo(function Header() {
   const setSettingsPanelOpen = useStore((s) => s.setSettingsPanelOpen);
 
   const scrollToExport = useCallback(() => {
+    // Close the settings panel on mobile when scrolling to export
+    setSettingsPanelOpen(false);
     const exportPane = document.querySelector('[data-export-pane]');
     if (exportPane) {
       exportPane.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  }, []);
+  }, [setSettingsPanelOpen]);
 
   return (
     <header className={styles.header}>
