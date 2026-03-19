@@ -2,7 +2,7 @@
  * API Route: /api/og
  *
  * Generates dynamic Open Graph images for social media previews.
- * Uses the actual terminal SVG artifact, converted to PNG via sharp.
+ * Uses the actual terminal SVG artifact, converted to PNG via resvg.
  *
  * Usage:
  *   /api/og?c=<base64-content>&ti=My Title&th=dracula&lg=javascript
@@ -12,7 +12,7 @@
 
 import { ImageResponse } from 'next/og';
 import { NextRequest, NextResponse } from 'next/server';
-import sharp from 'sharp';
+import { Resvg } from '@resvg/resvg-js';
 import { generateSvg } from '@/lib/generateSvg';
 
 // OG image dimensions
@@ -42,6 +42,22 @@ const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" wi
   <rect x="4" y="17" width="15" height="3" rx="1" fill="#8c50c5"/>
   <rect x="4" y="23" width="24" height="3" rx="1" fill="#d6345a"/>
 </svg>`;
+
+// Extract inner content from SVG (without the outer svg tag)
+function extractSvgContent(svgString: string): string {
+  const match = svgString.match(/<svg[^>]*>([\s\S]*)<\/svg>/i);
+  return match ? match[1] : '';
+}
+
+// Get SVG dimensions
+function getSvgDimensions(svgContent: string): { width: number; height: number } {
+  const widthMatch = svgContent.match(/width="([^"]+)"/);
+  const heightMatch = svgContent.match(/height="([^"]+)"/);
+  return {
+    width: widthMatch ? parseFloat(widthMatch[1]) : 800,
+    height: heightMatch ? parseFloat(heightMatch[1]) : 400,
+  };
+}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -154,75 +170,67 @@ export async function GET(request: NextRequest) {
     }
 
     // Get terminal SVG dimensions
-    const widthMatch = terminalSvg.match(/width="([^"]+)"/);
-    const heightMatch = terminalSvg.match(/height="([^"]+)"/);
-    const terminalWidth = widthMatch ? parseFloat(widthMatch[1]) : 800;
-    const terminalHeight = heightMatch ? parseFloat(heightMatch[1]) : 400;
+    const { width: terminalWidth, height: terminalHeight } = getSvgDimensions(terminalSvg);
 
     // Footer dimensions
-    const footerHeight = 60;
-    const footerPadding = 20;
+    const footerHeight = 50;
+    const verticalPadding = 40;
 
-    // Calculate scaling to fit within OG image (with padding for branding footer)
-    const maxTerminalWidth = OG_WIDTH - 80; // 40px padding on each side
-    const maxTerminalHeight = OG_HEIGHT - footerHeight - footerPadding - 60; // Room for footer and padding
+    // Calculate scaling to fit within OG image
+    const maxTerminalWidth = OG_WIDTH - 80;
+    const maxTerminalHeight = OG_HEIGHT - footerHeight - verticalPadding * 2;
     const scale = Math.min(
       maxTerminalWidth / terminalWidth,
       maxTerminalHeight / terminalHeight,
-      1.5 // Allow slight upscale for small terminals
+      1.5
     );
 
     const scaledWidth = Math.round(terminalWidth * scale);
     const scaledHeight = Math.round(terminalHeight * scale);
 
-    // Convert terminal SVG to PNG using sharp
-    const terminalPng = await sharp(Buffer.from(terminalSvg))
-      .resize(scaledWidth, scaledHeight, { fit: 'inside' })
-      .png()
-      .toBuffer();
+    // Calculate positions
+    const terminalX = Math.round((OG_WIDTH - scaledWidth) / 2);
+    const terminalY = Math.round((OG_HEIGHT - footerHeight - scaledHeight) / 2);
+    const footerY = OG_HEIGHT - footerHeight - 10;
 
-    // Create the footer with branding (logo + text)
-    const footerSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${OG_WIDTH}" height="${footerHeight}">
-      <text x="${OG_WIDTH / 2 - 90}" y="38" font-family="system-ui, -apple-system, sans-serif" font-size="16" fill="rgba(255, 255, 255, 0.5)">Created with</text>
-      <g transform="translate(${OG_WIDTH / 2 + 2}, 20)">
-        ${LOGO_SVG}
+    // Create a combined SVG with the terminal embedded and scaled
+    const combinedSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${OG_WIDTH}" height="${OG_HEIGHT}" viewBox="0 0 ${OG_WIDTH} ${OG_HEIGHT}">
+      <!-- Background -->
+      <rect width="${OG_WIDTH}" height="${OG_HEIGHT}" fill="#0a0a0a"/>
+
+      <!-- Terminal (scaled and positioned) -->
+      <g transform="translate(${terminalX}, ${terminalY}) scale(${scale})">
+        ${extractSvgContent(terminalSvg)}
       </g>
-      <text x="${OG_WIDTH / 2 + 34}" y="38" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="600" fill="#ffffff">Shellfied</text>
+
+      <!-- Footer branding -->
+      <g transform="translate(0, ${footerY})">
+        <text x="${OG_WIDTH / 2 - 90}" y="30" font-family="Arial, sans-serif" font-size="16" fill="rgba(255, 255, 255, 0.5)">Created with</text>
+        <g transform="translate(${OG_WIDTH / 2 + 2}, 12)">
+          ${extractSvgContent(LOGO_SVG)}
+        </g>
+        <text x="${OG_WIDTH / 2 + 34}" y="30" font-family="Arial, sans-serif" font-size="18" font-weight="600" fill="#ffffff">Shellfied</text>
+      </g>
     </svg>`;
 
-    const footerPng = await sharp(Buffer.from(footerSvg))
-      .png()
-      .toBuffer();
-
-    // Calculate terminal position (centered horizontally, positioned above footer)
-    const terminalX = Math.round((OG_WIDTH - scaledWidth) / 2);
-    const terminalY = Math.round((OG_HEIGHT - footerHeight - footerPadding - scaledHeight) / 2);
-
-    // Composite everything together
-    const finalImage = await sharp({
-      create: {
-        width: OG_WIDTH,
-        height: OG_HEIGHT,
-        channels: 4,
-        background: { r: 10, g: 10, b: 10, alpha: 1 }, // #0a0a0a
+    // Use resvg to render SVG to PNG with proper font support
+    const resvg = new Resvg(combinedSvg, {
+      fitTo: {
+        mode: 'width',
+        value: OG_WIDTH,
       },
-    })
-      .composite([
-        {
-          input: terminalPng,
-          left: terminalX,
-          top: terminalY,
-        },
-        {
-          input: footerPng,
-          left: 0,
-          top: OG_HEIGHT - footerHeight - footerPadding,
-        },
-      ])
-      .png()
-      .toBuffer();
+      font: {
+        // Use system fonts as fallback
+        fontFiles: [],
+        loadSystemFonts: true,
+        defaultFontFamily: 'Arial',
+      },
+    });
 
-    return new NextResponse(new Uint8Array(finalImage), {
+    const pngData = resvg.render();
+    const pngBuffer = pngData.asPng();
+
+    return new NextResponse(new Uint8Array(pngBuffer), {
       headers: {
         'Content-Type': 'image/png',
         'Cache-Control': 'public, max-age=31536000, immutable',
