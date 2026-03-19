@@ -14,13 +14,13 @@
     "serialize-javascript": "^7.0.4"
   },
   "dependencies": {
-    "@resvg/resvg-js": "^2.6.2",
     "lz-string": "^1.5.0",
     "next": "^15.3.0",
     "prismjs": "^1.30.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "sass": "^1.97.3",
+    "satori": "^0.25.0",
     "sharp": "^0.34.5",
     "shellfie": "^2.1.1",
     "zustand": "^5.0.11"
