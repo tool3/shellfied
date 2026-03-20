@@ -24,9 +24,94 @@
 import { NextRequest, NextResponse } from 'next/server';
 import LZString from 'lz-string';
 import sharp from 'sharp';
+import { readFile } from 'fs/promises';
+import { join } from 'path';
 import { generateSvg, generateCompareSvg, wrapSvgWithBackground } from '@/lib/generateSvg';
 import { DEFAULT_BACKGROUND, DEFAULT_SETTINGS, DEFAULT_HEADER, DEFAULT_FOOTER, DEFAULT_WATERMARK, DEFAULT_COMPARE_LABEL_CONFIG } from '@/constants/defaults';
 import type { TemplateType, ControlsPosition, PaddingTuple, BackgroundType, GradientDirection, ImageAspectRatio, CompareLabelAlignment } from '@/types';
+
+// Cache for loaded fonts
+let fontCache: Map<string, string> | null = null;
+
+// Load fonts from static files and convert to base64
+async function loadFonts(): Promise<Map<string, string>> {
+  if (fontCache) return fontCache;
+
+  fontCache = new Map();
+
+  const fontFiles = [
+    { name: 'JetBrains Mono', file: 'JetBrainsMono-Regular.ttf', format: 'truetype' },
+  ];
+
+  for (const font of fontFiles) {
+    try {
+      const fontPath = join(process.cwd(), 'public', 'fonts', font.file);
+      const fontBuffer = await readFile(fontPath);
+      const base64 = fontBuffer.toString('base64');
+      fontCache.set(font.name, `data:font/${font.format};base64,${base64}`);
+    } catch (error) {
+      console.warn(`Failed to load font ${font.name}:`, error);
+    }
+  }
+
+  return fontCache;
+}
+
+// Embed fonts directly in SVG for raster conversion
+async function embedFontsInSvg(svg: string): Promise<string> {
+  const fonts = await loadFonts();
+
+  // Build @font-face declarations
+  const fontFaceRules: string[] = [];
+
+  // Always embed JetBrains Mono for code (primary monospace font)
+  const jetBrainsMono = fonts.get('JetBrains Mono');
+  if (jetBrainsMono) {
+    fontFaceRules.push(`
+      @font-face {
+        font-family: 'JetBrains Mono';
+        src: url('${jetBrainsMono}') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+      }
+    `);
+  }
+
+  if (fontFaceRules.length === 0) {
+    return svg;
+  }
+
+  // Remove any @import url() statements that won't work with sharp/librsvg
+  let modifiedSvg = svg.replace(/@import\s+url\([^)]+\);?\s*/g, '');
+
+  // Find existing <defs><style> or <style> and prepend font-face rules
+  const styleMatch = modifiedSvg.match(/<style[^>]*>([\s\S]*?)<\/style>/);
+
+  if (styleMatch) {
+    const existingStyle = styleMatch[1];
+    // Remove @import from existing styles and prepend font-face
+    const cleanedStyle = existingStyle.replace(/@import\s+url\([^)]+\);?\s*/g, '');
+    const newStyle = fontFaceRules.join('\n') + '\n' + cleanedStyle;
+    modifiedSvg = modifiedSvg.replace(styleMatch[0], `<style>${newStyle}</style>`);
+  } else {
+    // No existing style tag, add one after <svg> opening tag or inside <defs>
+    const defsMatch = modifiedSvg.match(/<defs[^>]*>/);
+    if (defsMatch) {
+      modifiedSvg = modifiedSvg.replace(
+        defsMatch[0],
+        `${defsMatch[0]}\n<style>${fontFaceRules.join('\n')}</style>`
+      );
+    } else {
+      // Add defs with style right after svg opening tag
+      modifiedSvg = modifiedSvg.replace(
+        /(<svg[^>]*>)/,
+        `$1\n<defs><style>${fontFaceRules.join('\n')}</style></defs>`
+      );
+    }
+  }
+
+  return modifiedSvg;
+}
 
 // Output format type
 type OutputFormat = 'svg' | 'png' | 'webp' | 'jpeg';
@@ -38,8 +123,11 @@ async function svgToRaster(
   scale: number = 2,
   quality: number = 90
 ): Promise<Buffer> {
+  // Embed fonts directly in SVG for proper rendering
+  const svgWithFonts = await embedFontsInSvg(svg);
+
   // Scale the SVG for higher resolution output
-  const svgBuffer = Buffer.from(svg);
+  const svgBuffer = Buffer.from(svgWithFonts);
 
   let pipeline = sharp(svgBuffer, { density: 72 * scale });
 
