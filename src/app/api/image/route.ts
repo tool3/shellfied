@@ -24,30 +24,80 @@
 import { NextRequest, NextResponse } from 'next/server';
 import LZString from 'lz-string';
 import sharp from 'sharp';
+import { initWasm, Resvg } from '@resvg/resvg-wasm';
+import { readFile } from 'fs/promises';
+import { join } from 'path';
 import { generateSvg, generateCompareSvg, wrapSvgWithBackground } from '@/lib/generateSvg';
 import { DEFAULT_BACKGROUND, DEFAULT_SETTINGS, DEFAULT_HEADER, DEFAULT_FOOTER, DEFAULT_WATERMARK, DEFAULT_COMPARE_LABEL_CONFIG } from '@/constants/defaults';
 import type { TemplateType, ControlsPosition, PaddingTuple, BackgroundType, GradientDirection, ImageAspectRatio, CompareLabelAlignment } from '@/types';
 
+// Track WASM initialization
+let wasmInitialized = false;
+
+// Initialize resvg WASM
+async function ensureWasmInitialized(): Promise<void> {
+  if (wasmInitialized) return;
+
+  try {
+    // Initialize with WASM binary from node_modules
+    const wasmPath = join(process.cwd(), 'node_modules', '@resvg', 'resvg-wasm', 'index_bg.wasm');
+    const wasmBuffer = await readFile(wasmPath);
+    await initWasm(wasmBuffer);
+    wasmInitialized = true;
+  } catch (error) {
+    // May already be initialized
+    if (error instanceof Error && error.message.includes('Already initialized')) {
+      wasmInitialized = true;
+    } else {
+      throw error;
+    }
+  }
+}
+
+// Load font for resvg
+async function loadFontBuffer(): Promise<Buffer> {
+  const fontPath = join(process.cwd(), 'public', 'fonts', 'JetBrainsMono-Regular.ttf');
+  return readFile(fontPath);
+}
+
 // Output format type
 type OutputFormat = 'svg' | 'png' | 'webp' | 'jpeg';
 
-// Convert SVG to raster format using sharp
-// Note: Font embedding is handled by generateSvg via shellfie's customFont option
+// Convert SVG to raster format using resvg-wasm (proper font support) + sharp (format conversion)
 async function svgToRaster(
   svg: string,
   format: Exclude<OutputFormat, 'svg'>,
   scale: number = 2,
   quality: number = 90
 ): Promise<Buffer> {
-  // Scale the SVG for higher resolution output
-  const svgBuffer = Buffer.from(svg);
+  // Initialize WASM if needed
+  await ensureWasmInitialized();
 
-  let pipeline = sharp(svgBuffer, { density: 72 * scale });
+  // Load font for proper text rendering
+  const fontBuffer = await loadFontBuffer();
+
+  // Use resvg for SVG to PNG conversion (handles embedded fonts properly)
+  const resvg = new Resvg(svg, {
+    fitTo: { mode: 'zoom', value: scale },
+    font: {
+      fontBuffers: [fontBuffer],
+      loadSystemFonts: false,
+      defaultFontFamily: 'JetBrains Mono',
+    },
+  });
+
+  const pngData = resvg.render();
+  const pngBuffer = Buffer.from(pngData.asPng());
+
+  // If PNG is requested, return directly
+  if (format === 'png') {
+    return pngBuffer;
+  }
+
+  // Use sharp for format conversion (webp, jpeg)
+  let pipeline = sharp(pngBuffer);
 
   switch (format) {
-    case 'png':
-      pipeline = pipeline.png();
-      break;
     case 'webp':
       pipeline = pipeline.webp({ quality });
       break;
