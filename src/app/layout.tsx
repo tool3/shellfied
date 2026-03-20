@@ -209,13 +209,13 @@ const merriweather = Merriweather({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://shellfied.vercel.app'),
-  title: 'Shellfied - beautiful code',
+  title: 'Shellfied - Beautiful code',
   description: 'Create beautiful SVGs from your code and terminal output',
   openGraph: {
     type: 'website',
     url: 'https://shellfied.vercel.app/',
     title: 'Shellfied - Create and share beautiful code',
-    description: 'Create stunning SVGs from your code and terminal output. Export to PNG, JPEG, or SVG with custom themes.',
+    description: 'Create stunning SVGs from your code and terminal output.',
     images: [
       {
         url: '/og-image.svg',
@@ -227,7 +227,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Shellfied - Create and share beautiful code',
-    description: 'Create stunning SVGs from your code and terminal output. Export to PNG, JPEG, or SVG with custom themes.',
+    description: 'Create stunning SVGs from your code and terminal output.',
     images: ['/og-image.svg'],
   },
   icons: {
