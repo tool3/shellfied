@@ -38,12 +38,12 @@ export async function generateMetadata({
 
   if (!compressedData && !hasDirectParams) {
     return {
-      title: 'Shellfied - beautiful code',
-      description: 'Create beautiful SVGs from your code and terminal output',
+      title: 'Shellfied - Beautiful code',
+      description: 'Create and share beautiful code',
     };
   }
 
-  let title = 'Shellfied - Beautiful code screenshot';
+  let title = 'Shellfied - Beautiful code';
   let ogImageUrl = '/api/og';
 
   // If we have LZ-compressed data, decompress and extract params for OG image
