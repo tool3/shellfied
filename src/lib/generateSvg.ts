@@ -5,6 +5,33 @@
 
 import shellfie, { templates, type Theme, createTheme } from 'shellfie';
 import type { WatermarkStyle, WatermarkConfig as ShellfieWatermarkConfig } from 'shellfie';
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
+
+// Cache for embedded font data (loaded synchronously on first use)
+let fontDataCache: { data: string; format: 'ttf' } | null = null;
+let fontLoadAttempted = false;
+
+// Load JetBrains Mono font synchronously for embedding in SVG
+// This ensures fonts work in serverless environments where system fonts aren't available
+function getEmbeddedFontData(): { data: string; format: 'ttf' } | null {
+  if (fontLoadAttempted) return fontDataCache;
+  fontLoadAttempted = true;
+
+  try {
+    const fontPath = join(process.cwd(), 'public', 'fonts', 'JetBrainsMono-Regular.ttf');
+    if (existsSync(fontPath)) {
+      const buffer = readFileSync(fontPath);
+      fontDataCache = {
+        data: buffer.toString('base64'),
+        format: 'ttf',
+      };
+    }
+  } catch (error) {
+    console.warn('Failed to load embedded font:', error);
+  }
+  return fontDataCache;
+}
 import type {
   TemplateType,
   ControlsPosition,
@@ -540,6 +567,20 @@ export function generateSvg(options: GenerateSvgOptions): string {
   // Get theme
   const theme = getTheme(terminalTheme);
 
+  // Load embedded font for serverless environments (ensures PNG/raster conversion works)
+  const embeddedFont = getEmbeddedFontData();
+
+  // Build custom font config for shellfie
+  const customFont = embeddedFont ? {
+    data: embeddedFont.data,
+    format: embeddedFont.format,
+  } : undefined;
+
+  // When embedding font, prepend JetBrains Mono to the font family stack
+  const effectiveFontFamily = embeddedFont
+    ? "'JetBrains Mono', " + (fontFamily || "'SF Mono', 'Monaco', 'Menlo', 'Consolas', monospace")
+    : fontFamily;
+
   // Generate SVG
   const svg = shellfie(highlightedContent, {
     template: buildTemplate(template, controlsPosition, borderRadius),
@@ -551,7 +592,8 @@ export function generateSvg(options: GenerateSvgOptions): string {
     controls: showControls,
     watermark: buildWatermarkConfig(watermark),
     width: width || undefined,
-    fontFamily: fontFamily || undefined,
+    fontFamily: effectiveFontFamily || undefined,
+    customFont,
     header: buildHeaderOptions(header),
     footer: buildFooterOptions(footer),
   });
