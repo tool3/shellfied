@@ -33,25 +33,34 @@ import type { TemplateType, ControlsPosition, PaddingTuple, BackgroundType, Grad
 
 // Track WASM initialization
 let wasmInitialized = false;
+let wasmInitPromise: Promise<void> | null = null;
 
 // Initialize resvg WASM
 async function ensureWasmInitialized(): Promise<void> {
   if (wasmInitialized) return;
 
-  try {
-    // Initialize with WASM binary from node_modules
-    const wasmPath = join(process.cwd(), 'node_modules', '@resvg', 'resvg-wasm', 'index_bg.wasm');
-    const wasmBuffer = await readFile(wasmPath);
-    await initWasm(wasmBuffer);
-    wasmInitialized = true;
-  } catch (error) {
-    // May already be initialized
-    if (error instanceof Error && error.message.includes('Already initialized')) {
+  // Prevent concurrent initialization attempts
+  if (wasmInitPromise) return wasmInitPromise;
+
+  wasmInitPromise = (async () => {
+    try {
+      // Try loading from public folder first (works on Vercel)
+      const wasmPath = join(process.cwd(), 'public', 'wasm', 'resvg.wasm');
+      const wasmBuffer = await readFile(wasmPath);
+      await initWasm(wasmBuffer);
       wasmInitialized = true;
-    } else {
-      throw error;
+    } catch (error) {
+      // May already be initialized
+      if (error instanceof Error && error.message.includes('Already initialized')) {
+        wasmInitialized = true;
+      } else {
+        console.error('Failed to initialize resvg WASM:', error);
+        throw error;
+      }
     }
-  }
+  })();
+
+  return wasmInitPromise;
 }
 
 // Load font for resvg
