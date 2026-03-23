@@ -9,28 +9,51 @@ import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
 // Cache for embedded font data (loaded synchronously on first use)
-let fontDataCache: { data: string; format: 'ttf' } | null = null;
+// All 4 weights: 400 (Regular), 500 (Medium), 600 (SemiBold), 700 (Bold)
+interface FontCache {
+  regular: string | null;    // 400
+  medium: string | null;     // 500
+  semibold: string | null;   // 600
+  bold: string | null;       // 700
+}
+const fontDataCache: FontCache = { regular: null, medium: null, semibold: null, bold: null };
 let fontLoadAttempted = false;
 
-// Load JetBrains Mono font synchronously for embedding in SVG
+// Load JetBrains Mono fonts synchronously for embedding in SVG
 // This ensures fonts work in serverless environments where system fonts aren't available
-function getEmbeddedFontData(): { data: string; format: 'ttf' } | null {
+function loadEmbeddedFonts(): FontCache {
   if (fontLoadAttempted) return fontDataCache;
   fontLoadAttempted = true;
 
-  try {
-    const fontPath = join(process.cwd(), 'public', 'fonts', 'JetBrainsMono-Regular.ttf');
-    if (existsSync(fontPath)) {
-      const buffer = readFileSync(fontPath);
-      fontDataCache = {
-        data: buffer.toString('base64'),
-        format: 'ttf',
-      };
+  const fontFiles: Array<{ key: keyof FontCache; filename: string }> = [
+    { key: 'regular', filename: 'JetBrainsMono-Regular.ttf' },
+    { key: 'medium', filename: 'JetBrainsMono-Medium.ttf' },
+    { key: 'semibold', filename: 'JetBrainsMono-SemiBold.ttf' },
+    { key: 'bold', filename: 'JetBrainsMono-Bold.ttf' },
+  ];
+
+  for (const { key, filename } of fontFiles) {
+    try {
+      const fontPath = join(process.cwd(), 'public', 'fonts', filename);
+      if (existsSync(fontPath)) {
+        const buffer = readFileSync(fontPath);
+        fontDataCache[key] = buffer.toString('base64');
+      }
+    } catch (error) {
+      console.warn(`Failed to load embedded ${key} font:`, error);
     }
-  } catch (error) {
-    console.warn('Failed to load embedded font:', error);
   }
+
   return fontDataCache;
+}
+
+// Get embedded font data for a specific weight (returns regular font data for shellfie)
+function getEmbeddedFontData(): { data: string; format: 'ttf' } | null {
+  const fonts = loadEmbeddedFonts();
+  if (fonts.regular) {
+    return { data: fonts.regular, format: 'ttf' };
+  }
+  return null;
 }
 import type {
   TemplateType,
@@ -819,8 +842,8 @@ function getFontImportUrl(fontFamily: string): string | null {
   const primaryFont = fontFamilyPart.split(',')[0].trim().replace(/['"]/g, '');
 
   if (fontMap[primaryFont]) {
-    // Use &amp; for XML/SVG compatibility
-    return `https://fonts.googleapis.com/css2?family=${fontMap[primaryFont]}&amp;display=swap`;
+    // Use plain & - caller wraps in CDATA section for SVG compatibility
+    return `https://fonts.googleapis.com/css2?family=${fontMap[primaryFont]}&display=swap`;
   }
   return null;
 }
@@ -916,8 +939,16 @@ export function generateCompareSvg(options: GenerateCompareSvgOptions): string {
   const totalWidth = finalBeforeDims.width + gap + finalAfterDims.width + padding * 2;
   const totalHeight = maxHeight + labelHeight + padding * 2;
 
-  // Build label font string
-  const labelFont = `${compareLabelConfig.fontWeight} ${compareLabelConfig.fontSize}px ${compareLabelConfig.fontFamily}`;
+  // Check if using a system font that won't be available in serverless rendering
+  const isSystemFont = compareLabelConfig.fontFamily.includes('system-ui') ||
+    compareLabelConfig.fontFamily.includes('-apple-system') ||
+    compareLabelConfig.fontFamily.includes('sans-serif') ||
+    compareLabelConfig.fontFamily.includes('serif');
+
+  // For server-side rendering, replace system fonts with JetBrains Mono (which is embedded)
+  const effectiveLabelFontFamily = isSystemFont
+    ? "'JetBrains Mono', monospace"
+    : compareLabelConfig.fontFamily;
 
   // Calculate label positions based on alignment
   let beforeLabelX = padding;
@@ -937,17 +968,49 @@ export function generateCompareSvg(options: GenerateCompareSvgOptions): string {
   // Generate background SVG element
   const backgroundSvg = background ? generateSvgBackground(background, totalWidth, totalHeight) : '';
 
-  // Get font import URL if using a Google Font
-  const fontImportUrl = getFontImportUrl(labelFont);
+  // Build label font string for browser rendering (used for Google Fonts import URL)
+  const labelFontShorthand = `${compareLabelConfig.fontWeight} ${compareLabelConfig.fontSize}px ${effectiveLabelFontFamily}`;
+
+  // Get font import URL if using a Google Font (not needed for embedded fonts)
+  const fontImportUrl = !isSystemFont ? getFontImportUrl(labelFontShorthand) : null;
   const fontImportStyle = fontImportUrl ? `@import url('${fontImportUrl}');` : '';
 
-  // Create combined SVG
+  // For system fonts, we embed JetBrains Mono for serverless compatibility
+  // Use separate @font-face declarations for each weight for proper resvg compatibility
+  const fonts = isSystemFont ? loadEmbeddedFonts() : { regular: null, medium: null, semibold: null, bold: null };
+  const fontWeight = compareLabelConfig.fontWeight;
+
+  // Build font-face style with the requested weight
+  // Only include the specific weight needed to minimize SVG size
+  let fontFaceStyle = '';
+  if (fontWeight <= 400 && fonts.regular) {
+    fontFaceStyle = `@font-face { font-family: 'JetBrains Mono'; src: url('data:font/ttf;base64,${fonts.regular}') format('truetype'); font-weight: 400; }`;
+  } else if (fontWeight <= 500 && fonts.medium) {
+    fontFaceStyle = `@font-face { font-family: 'JetBrains Mono'; src: url('data:font/ttf;base64,${fonts.medium}') format('truetype'); font-weight: 500; }`;
+  } else if (fontWeight <= 600 && fonts.semibold) {
+    fontFaceStyle = `@font-face { font-family: 'JetBrains Mono'; src: url('data:font/ttf;base64,${fonts.semibold}') format('truetype'); font-weight: 600; }`;
+  } else if (fonts.bold) {
+    fontFaceStyle = `@font-face { font-family: 'JetBrains Mono'; src: url('data:font/ttf;base64,${fonts.bold}') format('truetype'); font-weight: 700; }`;
+  } else if (fonts.regular) {
+    // Fallback to regular if specific weight not available
+    fontFaceStyle = `@font-face { font-family: 'JetBrains Mono'; src: url('data:font/ttf;base64,${fonts.regular}') format('truetype'); font-weight: 400; }`;
+  }
+
+  // Create combined SVG - use explicit font properties for better resvg compatibility
+  // Use CDATA section for style to avoid XML entity escaping issues
   const combinedSvg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}">
   <defs>
-    <style>
+    <style><![CDATA[
+      ${fontFaceStyle}
       ${fontImportStyle}
-      .label { font: ${labelFont}; fill: ${compareLabelConfig.color}; text-anchor: ${textAnchor}; }
-    </style>
+      .label {
+        font-family: ${effectiveLabelFontFamily};
+        font-size: ${compareLabelConfig.fontSize}px;
+        font-weight: ${compareLabelConfig.fontWeight};
+        fill: ${compareLabelConfig.color};
+        text-anchor: ${textAnchor};
+      }
+    ]]></style>
   </defs>
 
   <!-- Background -->
