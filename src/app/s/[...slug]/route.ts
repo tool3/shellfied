@@ -205,6 +205,7 @@ function getFontImportUrl(fontFamily: string): string | null {
   const primaryFont = fontFamily.split(',')[0].trim().replace(/['"]/g, '');
 
   if (fontMap[primaryFont]) {
+    // Use plain & - caller wraps in CDATA section for SVG compatibility
     return `https://fonts.googleapis.com/css2?family=${fontMap[primaryFont]}&display=swap`;
   }
   return null;
@@ -311,13 +312,13 @@ function generateCompareSvg(
     ? `@import url('${fontImportUrl}');`
     : '';
 
-  // Create combined SVG
+  // Create combined SVG - use CDATA section for style to avoid XML entity escaping issues
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}">
   <defs>
-    <style>
+    <style><![CDATA[
       ${fontImportStyle}
       .label { font: ${labelConfig.fontWeight} ${labelConfig.fontSize}px ${labelConfig.fontFamily}; fill: ${labelConfig.color}; text-anchor: ${textAnchor}; }
-    </style>
+    ]]></style>
   </defs>
 
   <!-- Background -->

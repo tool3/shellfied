@@ -63,10 +63,26 @@ async function ensureWasmInitialized(): Promise<void> {
   return wasmInitPromise;
 }
 
-// Load font for resvg
-async function loadFontBuffer(): Promise<Buffer> {
-  const fontPath = join(process.cwd(), 'public', 'fonts', 'JetBrainsMono-Regular.ttf');
-  return readFile(fontPath);
+// Load all font weights for resvg
+async function loadFontBuffers(): Promise<Buffer[]> {
+  const fontFiles = [
+    'JetBrainsMono-Regular.ttf',
+    'JetBrainsMono-Medium.ttf',
+    'JetBrainsMono-SemiBold.ttf',
+    'JetBrainsMono-Bold.ttf',
+  ];
+
+  const buffers: Buffer[] = [];
+  for (const filename of fontFiles) {
+    try {
+      const fontPath = join(process.cwd(), 'public', 'fonts', filename);
+      const buffer = await readFile(fontPath);
+      buffers.push(buffer);
+    } catch {
+      // Font file not found, skip it
+    }
+  }
+  return buffers;
 }
 
 // Output format type
@@ -82,14 +98,14 @@ async function svgToRaster(
   // Initialize WASM if needed
   await ensureWasmInitialized();
 
-  // Load font for proper text rendering
-  const fontBuffer = await loadFontBuffer();
+  // Load all font weights for proper text rendering
+  const fontBuffers = await loadFontBuffers();
 
   // Use resvg for SVG to PNG conversion (handles embedded fonts properly)
   const resvg = new Resvg(svg, {
     fitTo: { mode: 'zoom', value: scale },
     font: {
-      fontBuffers: [fontBuffer],
+      fontBuffers,
       loadSystemFonts: false,
       defaultFontFamily: 'JetBrains Mono',
     },

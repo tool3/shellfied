@@ -118,20 +118,31 @@ const GOOGLE_FONTS: Record<string, string> = {
  * Preload a font for Canvas rendering using CSS Font Loading API
  */
 async function preloadFont(fontString: string): Promise<void> {
-  // Parse the font string to extract family - format is "weight size family, fallback"
+  // Validate fontString - must have format "weight size family, fallback"
   // e.g., "600 16px Inter, sans-serif"
+  if (!fontString || fontString.includes('undefined')) {
+    console.warn('Invalid font string passed to preloadFont:', fontString);
+    return;
+  }
+
+  // Parse the font string to extract family
   const fontFamilyPart = fontString.includes('px ')
     ? fontString.split('px ')[1]
     : fontString;
-  const primaryFont = fontFamilyPart.split(',')[0].trim().replace(/['"]/g, '');
+  const primaryFont = fontFamilyPart?.split(',')[0]?.trim()?.replace(/['"]/g, '');
 
   // Check if it's a Google Font
-  if (!GOOGLE_FONTS[primaryFont]) {
-    return; // System font, no need to preload
+  if (!primaryFont || !GOOGLE_FONTS[primaryFont]) {
+    return; // System font or invalid, no need to preload
   }
 
-  // Check if font is already loaded
-  if (document.fonts.check(fontString)) {
+  // Check if font is already loaded - wrap in try/catch to handle invalid font strings
+  try {
+    if (document.fonts.check(fontString)) {
+      return;
+    }
+  } catch {
+    console.warn('Failed to check font:', fontString);
     return;
   }
 

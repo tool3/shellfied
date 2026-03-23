@@ -819,12 +819,13 @@ function parseCompactState(compact: CompactState): UrlState {
     if (compact.blg) state.beforeLanguage = compact.blg;
     if (compact.alg) state.afterLanguage = compact.alg;
     if (compact.clf || compact.clff || compact.clfw || compact.clc || compact.cla) {
+      // Merge with defaults to ensure all fields have valid values
       state.compareLabelConfig = {
-        fontSize: compact.clf,
-        fontFamily: compact.clff,
-        fontWeight: compact.clfw,
-        color: compact.clc,
-        alignment: compact.cla as CompareLabelAlignment,
+        fontSize: compact.clf ?? 18,
+        fontFamily: compact.clff ?? 'system-ui, -apple-system, sans-serif',
+        fontWeight: compact.clfw ?? 600,
+        color: compact.clc ?? '#ffffff',
+        alignment: (compact.cla as CompareLabelAlignment) ?? 'left',
       };
     }
   }

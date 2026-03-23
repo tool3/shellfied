@@ -1,4 +1,4 @@
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback, useState, useEffect, useRef } from 'react';
 import { Button, Icon } from '@/components/common';
 import { validateUrlLength } from '@/utils/urlParams';
 import styles from './ShareModal.module.scss';
@@ -7,6 +7,8 @@ export interface ShortUrls {
   shortUrl: string;
   svgUrl: string;
 }
+
+type UrlTab = 'short' | 'long';
 
 interface ShareModalProps {
   viewUrl: string;
@@ -25,12 +27,18 @@ export const ShareModal = memo(function ShareModal({
   onShortUrlsChange,
   onClose,
 }: ShareModalProps) {
+  const [activeTab, setActiveTab] = useState<UrlTab>('short');
   const [copiedView, setCopiedView] = useState(false);
   const [copiedEdit, setCopiedEdit] = useState(false);
   const [copiedShort, setCopiedShort] = useState(false);
   const [copiedSvg, setCopiedSvg] = useState(false);
   const [isShortening, setIsShortening] = useState(false);
   const [shortenError, setShortenError] = useState<string | null>(null);
+
+  // Track the compressedData that was used to create current shortUrls
+  // Initialize with current compressedData if we already have shortUrls (from parent state)
+  const lastShortenedDataRef = useRef<string | null>(shortUrls ? compressedData : null);
+  const hasAttemptedAutoCreate = useRef(!!shortUrls);
 
   const viewValidation = validateUrlLength(viewUrl);
   const editValidation = validateUrlLength(editUrl);
@@ -58,7 +66,11 @@ export const ShareModal = memo(function ShareModal({
     window.open(url, '_blank');
   }, []);
 
-  const handleCreateShortUrl = useCallback(async () => {
+  const createShortUrl = useCallback(async () => {
+    // Don't create if already shortening or if we already have URLs for this data
+    if (isShortening) return;
+    if (shortUrls && lastShortenedDataRef.current === compressedData) return;
+
     setIsShortening(true);
     setShortenError(null);
 
@@ -76,6 +88,7 @@ export const ShareModal = memo(function ShareModal({
         return;
       }
 
+      lastShortenedDataRef.current = compressedData;
       onShortUrlsChange({
         shortUrl: result.shortUrl,
         svgUrl: result.svgUrl,
@@ -86,7 +99,17 @@ export const ShareModal = memo(function ShareModal({
     } finally {
       setIsShortening(false);
     }
-  }, [compressedData, onShortUrlsChange]);
+  }, [compressedData, onShortUrlsChange, isShortening, shortUrls]);
+
+  // Auto-create short URL when modal opens (only once per unique content)
+  useEffect(() => {
+    // Skip if already have URLs for this content or already attempted
+    if (shortUrls && lastShortenedDataRef.current === compressedData) return;
+    if (hasAttemptedAutoCreate.current) return;
+
+    hasAttemptedAutoCreate.current = true;
+    createShortUrl();
+  }, [createShortUrl, shortUrls, compressedData]);
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -106,172 +129,206 @@ export const ShareModal = memo(function ShareModal({
         </div>
 
         <div className={styles.content}>
-          {/* Shortened URLs Section */}
-          <div className={styles.shortSection}>
-            {!shortUrls ? (
-              <Button
-                variant="primary"
-                icon="link"
-                onClick={handleCreateShortUrl}
-                disabled={isShortening}
-                className={styles.shortenButton}
-              >
-                {isShortening ? 'Creating...' : 'Create Short URL'}
-              </Button>
-            ) : (
-              <>
-                <div className={styles.urlSection}>
-                  <label className={styles.label}>
-                    <Icon name="link" size={14} />
-                    <span>Short Link</span>
-                  </label>
-                  <div className={styles.urlInput}>
-                    <input type="text" value={shortUrls.shortUrl} readOnly />
-                    <div className={styles.urlActions}>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        icon={copiedShort ? 'check' : 'copy'}
-                        onClick={() => copyToClipboard(shortUrls.shortUrl, 'short')}
-                        aria-label={copiedShort ? 'Copied!' : 'Copy URL'}
-                      />
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        icon="externalLink"
-                        onClick={() => openInNewTab(shortUrls.shortUrl)}
-                        aria-label="Open in new tab"
-                      />
-                    </div>
-                  </div>
-                  <p className={styles.hint}>Share this link for the view page</p>
-                </div>
+          {/* Tab Toggle */}
+          <div className={styles.tabToggle}>
+            <button
+              type="button"
+              className={`${styles.tabButton} ${activeTab === 'short' ? styles.active : ''}`}
+              onClick={() => setActiveTab('short')}
+            >
+              <Icon name="link" size={14} />
+              Short URLs
+            </button>
+            <button
+              type="button"
+              className={`${styles.tabButton} ${activeTab === 'long' ? styles.active : ''}`}
+              onClick={() => setActiveTab('long')}
+            >
+              <Icon name="code" size={14} />
+              Full URLs
+            </button>
+          </div>
 
-                <div className={styles.urlSection}>
-                  <label className={styles.label}>
-                    <Icon name="image" size={14} />
-                    <span>Embed URL (Markdown)</span>
-                  </label>
-                  <div className={styles.urlInput}>
-                    <input type="text" value={shortUrls.svgUrl} readOnly />
-                    <div className={styles.urlActions}>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        icon={copiedSvg ? 'check' : 'copy'}
-                        onClick={() => copyToClipboard(shortUrls.svgUrl, 'svg')}
-                        aria-label={copiedSvg ? 'Copied!' : 'Copy URL'}
-                      />
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        icon="externalLink"
-                        onClick={() => openInNewTab(shortUrls.svgUrl)}
-                        aria-label="Open in new tab"
-                      />
-                    </div>
+          {/* Short URLs Tab Content */}
+          {activeTab === 'short' && (
+            <div className={styles.tabContent}>
+              {isShortening ? (
+                <div className={styles.loadingSection}>
+                  <div className={styles.spinner} />
+                  <p className={styles.loadingText}>Creating short links...</p>
+                </div>
+              ) : shortenError ? (
+                <div className={styles.createShortSection}>
+                  <div className={`${styles.warning} ${styles.error}`}>
+                    <Icon name="warning" size={16} />
+                    <span>{shortenError}</span>
                   </div>
-                  <p className={styles.hint}>
-                    Use in markdown: <code>![img]({shortUrls.svgUrl})</code>
+                  <Button
+                    variant="primary"
+                    onClick={createShortUrl}
+                    className={styles.shortenButton}
+                  >
+                    Try Again
+                  </Button>
+                </div>
+              ) : !shortUrls ? (
+                <div className={styles.loadingSection}>
+                  <div className={styles.spinner} />
+                  <p className={styles.loadingText}>Creating short links...</p>
+                </div>
+              ) : (
+                <>
+                  <div className={styles.urlSection}>
+                    <label className={styles.label}>
+                      <Icon name="link" size={14} />
+                      <span>Share Page</span>
+                    </label>
+                    <div className={styles.urlInput}>
+                      <input type="text" value={shortUrls.shortUrl} readOnly />
+                      <div className={styles.urlActions}>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          icon={copiedShort ? 'check' : 'copy'}
+                          onClick={() => copyToClipboard(shortUrls.shortUrl, 'short')}
+                          aria-label={copiedShort ? 'Copied!' : 'Copy URL'}
+                        />
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          icon="externalLink"
+                          onClick={() => openInNewTab(shortUrls.shortUrl)}
+                          aria-label="Open in new tab"
+                        />
+                      </div>
+                    </div>
+                    <p className={styles.hint}>Opens a branded page with download options</p>
+                  </div>
+
+                  <div className={styles.urlSection}>
+                    <label className={styles.label}>
+                      <Icon name="image" size={14} />
+                      <span>Embed URL</span>
+                    </label>
+                    <div className={styles.urlInput}>
+                      <input type="text" value={shortUrls.svgUrl} readOnly />
+                      <div className={styles.urlActions}>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          icon={copiedSvg ? 'check' : 'copy'}
+                          onClick={() => copyToClipboard(shortUrls.svgUrl, 'svg')}
+                          aria-label={copiedSvg ? 'Copied!' : 'Copy URL'}
+                        />
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          icon="externalLink"
+                          onClick={() => openInNewTab(shortUrls.svgUrl)}
+                          aria-label="Open in new tab"
+                        />
+                      </div>
+                    </div>
+                    <p className={styles.hint}>
+                      Direct image link for markdown: <code>![img]({shortUrls.svgUrl})</code>
+                    </p>
+                  </div>
+
+                  <p className={styles.persistNote}>
+                    <Icon name="check" size={12} />
+                    Short links persist as long as content doesn&apos;t change
                   </p>
-                </div>
-              </>
-            )}
-
-            {shortenError && (
-              <div className={`${styles.warning} ${styles.error}`}>
-                <Icon name="warning" size={16} />
-                <span>{shortenError}</span>
-              </div>
-            )}
-          </div>
-
-          <div className={styles.divider}>
-            <span>or use full URLs</span>
-          </div>
-
-          {/* Original Long URLs Section */}
-          <div className={styles.urlSection}>
-            <label className={styles.label}>
-              <Icon name="eye" size={14} />
-              <span>View-only Link</span>
-            </label>
-            <div className={styles.urlInput}>
-              <input type="text" value={viewUrl} readOnly />
-              <div className={styles.urlActions}>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  icon={copiedView ? 'check' : 'copy'}
-                  onClick={() => copyToClipboard(viewUrl, 'view')}
-                  aria-label={copiedView ? 'Copied!' : 'Copy URL'}
-                />
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  icon="externalLink"
-                  onClick={() => openInNewTab(viewUrl)}
-                  aria-label="Open in new tab"
-                />
-              </div>
-            </div>
-            <p className={styles.hint}>Recipients see only the rendered image</p>
-          </div>
-
-          <div className={styles.urlSection}>
-            <label className={styles.label}>
-              <Icon name="edit" size={14} />
-              <span>Editable Link</span>
-            </label>
-            <div className={styles.urlInput}>
-              <input type="text" value={editUrl} readOnly />
-              <div className={styles.urlActions}>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  icon={copiedEdit ? 'check' : 'copy'}
-                  onClick={() => copyToClipboard(editUrl, 'edit')}
-                  aria-label={copiedEdit ? 'Copied!' : 'Copy URL'}
-                />
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  icon="externalLink"
-                  onClick={() => openInNewTab(editUrl)}
-                  aria-label="Open in new tab"
-                />
-              </div>
-            </div>
-            <p className={styles.hint}>Recipients can modify settings and content</p>
-          </div>
-
-          {(warning || isInvalid) && (
-            <div className={`${styles.warning} ${isInvalid ? styles.error : ''}`}>
-              <Icon name="warning" size={16} />
-              <span>
-                {isInvalid
-                  ? 'URL exceeds maximum length. Consider using shorter content.'
-                  : warning}
-              </span>
+                </>
+              )}
             </div>
           )}
 
-          <div className={styles.urlLength}>
-            <span>URL Length: {viewUrl.length.toLocaleString()} / 8,000 characters</span>
-            <div className={styles.progressBar}>
-              <div
-                className={styles.progress}
-                style={{
-                  width: `${Math.min((viewUrl.length / 8000) * 100, 100)}%`,
-                  backgroundColor: isInvalid
-                    ? 'var(--color-error)'
-                    : viewUrl.length > 2000
-                      ? 'var(--color-warning)'
-                      : 'var(--color-success)',
-                }}
-              />
+          {/* Full URLs Tab Content */}
+          {activeTab === 'long' && (
+            <div className={styles.tabContent}>
+              <div className={styles.urlSection}>
+                <label className={styles.label}>
+                  <Icon name="eye" size={14} />
+                  <span>Share Page</span>
+                </label>
+                <div className={styles.urlInput}>
+                  <input type="text" value={viewUrl} readOnly />
+                  <div className={styles.urlActions}>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={copiedView ? 'check' : 'copy'}
+                      onClick={() => copyToClipboard(viewUrl, 'view')}
+                      aria-label={copiedView ? 'Copied!' : 'Copy URL'}
+                    />
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon="externalLink"
+                      onClick={() => openInNewTab(viewUrl)}
+                      aria-label="Open in new tab"
+                    />
+                  </div>
+                </div>
+                <p className={styles.hint}>Opens a branded page with download options</p>
+              </div>
+
+              <div className={styles.urlSection}>
+                <label className={styles.label}>
+                  <Icon name="edit" size={14} />
+                  <span>Editor Link</span>
+                </label>
+                <div className={styles.urlInput}>
+                  <input type="text" value={editUrl} readOnly />
+                  <div className={styles.urlActions}>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={copiedEdit ? 'check' : 'copy'}
+                      onClick={() => copyToClipboard(editUrl, 'edit')}
+                      aria-label={copiedEdit ? 'Copied!' : 'Copy URL'}
+                    />
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon="externalLink"
+                      onClick={() => openInNewTab(editUrl)}
+                      aria-label="Open in new tab"
+                    />
+                  </div>
+                </div>
+                <p className={styles.hint}>Opens the editor with all settings pre-filled</p>
+              </div>
+
+              {(warning || isInvalid) && (
+                <div className={`${styles.warning} ${isInvalid ? styles.error : ''}`}>
+                  <Icon name="warning" size={16} />
+                  <span>
+                    {isInvalid
+                      ? 'URL exceeds maximum length. Consider using shorter content.'
+                      : warning}
+                  </span>
+                </div>
+              )}
+
+              <div className={styles.urlLength}>
+                <span>URL Length: {viewUrl.length.toLocaleString()} / 8,000 characters</span>
+                <div className={styles.progressBar}>
+                  <div
+                    className={styles.progress}
+                    style={{
+                      width: `${Math.min((viewUrl.length / 8000) * 100, 100)}%`,
+                      backgroundColor: isInvalid
+                        ? 'var(--color-error)'
+                        : viewUrl.length > 2000
+                          ? 'var(--color-warning)'
+                          : 'var(--color-success)',
+                    }}
+                  />
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
