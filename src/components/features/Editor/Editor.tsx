@@ -176,13 +176,13 @@ export const Editor = memo(function Editor() {
         </div>
       </div>
 
-      <div className={styles.inputWrapper}>
+      <div className={styles.editorContainer}>
         <div className={styles.lineNumbers}>
           {content.split('\n').map((_, i) => (
             <span key={i}>{i + 1}</span>
           ))}
         </div>
-        <div className={styles.codeContainer}>
+        <div className={styles.codeArea}>
           <pre
             ref={highlightRef}
             className={styles.highlight}
