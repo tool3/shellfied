@@ -53,6 +53,9 @@
   display: flex;
   overflow: auto;
   min-height: 0;
+
+  // Stretch children to fill the scrollable area
+  align-items: stretch;
 }
 
 // Line numbers - static width, scrolls with container
@@ -82,18 +85,16 @@
   }
 }
 
-// Code area - contains the overlapping highlight and textarea
+// Code area - both highlight and textarea fill this container
 .codeArea {
   position: relative;
-  flex: 1 0 auto;
-  min-width: fit-content;
+  flex: 1;
+  min-width: 0;
+  min-height: fit-content;
 }
 
-.highlight,
-.textarea {
+.highlight {
   display: block;
-  width: 100%;
-  min-height: 100%;
   padding: var(--space-md);
   margin: 0;
   font-family: var(--font-family-mono);
@@ -102,18 +103,13 @@
   white-space: pre;
   overflow-wrap: normal;
   border: none;
+  pointer-events: none;
+  color: var(--color-text-primary);
+  background-color: transparent;
 
   @include breakpoint('lg') {
     font-size: var(--font-size-sm);
   }
-}
-
-.highlight {
-  width: fit-content;
-  min-width: 100%;
-  pointer-events: none;
-  color: var(--color-text-primary);
-  background-color: transparent;
 
   // Prism.js syntax highlighting colors
   :global {
@@ -180,12 +176,24 @@
   left: 0;
   width: 100%;
   height: 100%;
+  padding: var(--space-md);
+  margin: 0;
+  font-family: var(--font-family-mono);
+  font-size: 16px;
+  line-height: 1.6;
+  white-space: pre;
+  overflow-wrap: normal;
+  border: none;
   color: transparent;
   background-color: transparent;
   caret-color: var(--color-text-primary);
   outline: none;
   resize: none;
   overflow: hidden;
+
+  @include breakpoint('lg') {
+    font-size: var(--font-size-sm);
+  }
 
   &::placeholder {
     color: var(--color-text-tertiary);
