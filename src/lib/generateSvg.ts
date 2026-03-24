@@ -616,6 +616,7 @@ export function generateSvg(options: GenerateSvgOptions): string {
     watermark: buildWatermarkConfig(watermark),
     width: width || undefined,
     fontFamily: effectiveFontFamily || undefined,
+    embedFont: true,
     customFont,
     header: buildHeaderOptions(header),
     footer: buildFooterOptions(footer),
@@ -739,9 +740,14 @@ function generateSvgBackground(
       const toColor = isRadialReverse ? background.gradientFrom : background.gradientTo;
 
       if (isRadial) {
+        // Calculate radius to match CSS radial-gradient(circle, ...) behavior
+        // We use userSpaceOnUse to properly scale the gradient for non-square dimensions
+        const radius = Math.max(totalWidth, totalHeight);
+        const cx = totalWidth / 2;
+        const cy = totalHeight / 2;
         return `
           <defs>
-            <radialGradient id="bgGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+            <radialGradient id="bgGradient" gradientUnits="userSpaceOnUse" cx="${cx}" cy="${cy}" r="${radius / 2}" fx="${cx}" fy="${cy}">
               <stop offset="0%" stop-color="${fromColor}"/>
               <stop offset="100%" stop-color="${toColor}"/>
             </radialGradient>
@@ -788,7 +794,12 @@ export function wrapSvgWithBackground(
   const backgroundSvg = generateSvgBackground(background, totalWidth, totalHeight);
   const innerContent = extractSvgContent(svgContent);
 
+  // Extract any existing defs (fonts, etc.) from the inner SVG
+  const defsMatch = svgContent.match(/<defs[^>]*>([\s\S]*?)<\/defs>/i);
+  const existingDefs = defsMatch ? defsMatch[1] : '';
+
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}">
+  <defs>${existingDefs}</defs>
   ${backgroundSvg}
   <g transform="translate(${offsetX}, ${offsetY})">
     <svg width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}">
@@ -934,10 +945,21 @@ export function generateCompareSvg(options: GenerateCompareSvgOptions): string {
   // Layout constants
   const gap = 32;
   const labelHeight = compareLabelConfig.fontSize + 24;
-  const padding = background && background.type !== 'none' ? (background.padding ?? 32) : 32;
+  const basePadding = background && background.type !== 'none' ? (background.padding ?? 32) : 32;
   const maxHeight = Math.max(finalBeforeDims.height, finalAfterDims.height);
-  const totalWidth = finalBeforeDims.width + gap + finalAfterDims.width + padding * 2;
-  const totalHeight = maxHeight + labelHeight + padding * 2;
+
+  // Calculate base content dimensions (before aspect ratio adjustment)
+  const contentWidth = finalBeforeDims.width + gap + finalAfterDims.width;
+  const contentHeight = maxHeight + labelHeight;
+
+  // Apply aspect ratio to get final dimensions
+  const aspectRatio = background && background.type !== 'none' ? (background.imageAspectRatio ?? 'auto') : 'auto';
+  const { totalWidth, totalHeight, offsetX, offsetY } = calculateAspectRatioDimensions(
+    contentWidth,
+    contentHeight,
+    aspectRatio,
+    basePadding
+  );
 
   // Check if using a system font that won't be available in serverless rendering
   const isSystemFont = compareLabelConfig.fontFamily.includes('system-ui') ||
@@ -950,18 +972,18 @@ export function generateCompareSvg(options: GenerateCompareSvgOptions): string {
     ? "'JetBrains Mono', monospace"
     : compareLabelConfig.fontFamily;
 
-  // Calculate label positions based on alignment
-  let beforeLabelX = padding;
-  let afterLabelX = padding + finalBeforeDims.width + gap;
+  // Calculate label positions based on alignment (using offset for centering)
+  let beforeLabelX = offsetX;
+  let afterLabelX = offsetX + finalBeforeDims.width + gap;
   let textAnchor = 'start';
 
   if (compareLabelConfig.alignment === 'center') {
-    beforeLabelX = padding + finalBeforeDims.width / 2;
-    afterLabelX = padding + finalBeforeDims.width + gap + finalAfterDims.width / 2;
+    beforeLabelX = offsetX + finalBeforeDims.width / 2;
+    afterLabelX = offsetX + finalBeforeDims.width + gap + finalAfterDims.width / 2;
     textAnchor = 'middle';
   } else if (compareLabelConfig.alignment === 'right') {
-    beforeLabelX = padding + finalBeforeDims.width;
-    afterLabelX = padding + finalBeforeDims.width + gap + finalAfterDims.width;
+    beforeLabelX = offsetX + finalBeforeDims.width;
+    afterLabelX = offsetX + finalBeforeDims.width + gap + finalAfterDims.width;
     textAnchor = 'end';
   }
 
@@ -1017,18 +1039,18 @@ export function generateCompareSvg(options: GenerateCompareSvgOptions): string {
   ${backgroundSvg}
 
   <!-- Before label -->
-  <text x="${beforeLabelX}" y="${padding + compareLabelConfig.fontSize}" class="label">${escapeXml(beforeLabel)}</text>
+  <text x="${beforeLabelX}" y="${offsetY + compareLabelConfig.fontSize}" class="label">${escapeXml(beforeLabel)}</text>
 
   <!-- After label -->
-  <text x="${afterLabelX}" y="${padding + compareLabelConfig.fontSize}" class="label">${escapeXml(afterLabel)}</text>
+  <text x="${afterLabelX}" y="${offsetY + compareLabelConfig.fontSize}" class="label">${escapeXml(afterLabel)}</text>
 
   <!-- Before SVG -->
-  <g transform="translate(${padding}, ${padding + labelHeight})">
+  <g transform="translate(${offsetX}, ${offsetY + labelHeight})">
     ${finalBeforeSvg ? extractSvgContent(finalBeforeSvg) : `<rect width="${finalBeforeDims.width}" height="${finalBeforeDims.height}" fill="rgba(255,255,255,0.1)"/>`}
   </g>
 
   <!-- After SVG -->
-  <g transform="translate(${padding + finalBeforeDims.width + gap}, ${padding + labelHeight})">
+  <g transform="translate(${offsetX + finalBeforeDims.width + gap}, ${offsetY + labelHeight})">
     ${finalAfterSvg ? extractSvgContent(finalAfterSvg) : `<rect width="${finalAfterDims.width}" height="${finalAfterDims.height}" fill="rgba(255,255,255,0.1)"/>`}
   </g>
 </svg>`;
