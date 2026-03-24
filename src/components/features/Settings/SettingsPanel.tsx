@@ -6,7 +6,6 @@ import { TemplateSelector } from './TemplateSelector';
 import { WatermarkEditor } from './WatermarkEditor';
 import { BackgroundSection } from './BackgroundSection';
 import { HeaderSection, FooterSection } from './HeaderFooterSection';
-import { BrandSection } from './BrandSection';
 import { ExportPanel } from '../Export';
 import {
   FONT_SIZE_MIN,
@@ -124,22 +123,26 @@ export const SettingsPanel = memo(function SettingsPanel() {
                   fullWidth
                 />
               )}
-              <Toggle
-                checked={showControls}
-                onChange={setShowControls}
-                label="Show window controls"
-              />
-              {showControls && (
-                <Select
-                  label="Controls Position"
-                  options={[
-                    { value: 'left', label: 'Left' },
-                    { value: 'right', label: 'Right' },
-                  ]}
-                  value={controlsPosition}
-                  onChange={(v) => setControlsPosition(v as 'left' | 'right')}
-                  fullWidth
-                />
+              {template !== 'minimal' && (
+                <>
+                  <Toggle
+                    checked={showControls}
+                    onChange={setShowControls}
+                    label="Show window controls"
+                  />
+                  {showControls && (
+                    <Select
+                      label="Controls Position"
+                      options={[
+                        { value: 'left', label: 'Left' },
+                        { value: 'right', label: 'Right' },
+                      ]}
+                      value={controlsPosition}
+                      onChange={(v) => setControlsPosition(v as 'left' | 'right')}
+                      fullWidth
+                    />
+                  )}
+                </>
               )}
               <Slider
                 label="Border Radius"
@@ -238,9 +241,6 @@ export const SettingsPanel = memo(function SettingsPanel() {
 
         {/* Background Section */}
         <BackgroundSection />
-
-        {/* Brand Section */}
-        <BrandSection />
 
         {/* Export Section - Desktop only */}
         <div className={styles.exportSection}>

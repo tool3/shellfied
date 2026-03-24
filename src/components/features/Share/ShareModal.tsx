@@ -1,5 +1,6 @@
 import { memo, useCallback, useState, useEffect, useRef } from 'react';
-import { Button, Icon } from '@/components/common';
+import { Button, Icon, Toggle, Input } from '@/components/common';
+import { useStore } from '@/store';
 import { validateUrlLength } from '@/utils/urlParams';
 import styles from './ShareModal.module.scss';
 
@@ -28,6 +29,9 @@ export const ShareModal = memo(function ShareModal({
   onClose,
 }: ShareModalProps) {
   const [activeTab, setActiveTab] = useState<UrlTab>('short');
+  const [isBrandExpanded, setIsBrandExpanded] = useState(false);
+  const brand = useStore((s) => s.brand);
+  const setBrand = useStore((s) => s.setBrand);
   const [copiedView, setCopiedView] = useState(false);
   const [copiedEdit, setCopiedEdit] = useState(false);
   const [copiedShort, setCopiedShort] = useState(false);
@@ -329,6 +333,76 @@ export const ShareModal = memo(function ShareModal({
               </div>
             </div>
           )}
+
+          {/* Brand Section - Collapsible */}
+          <div className={styles.brandSection}>
+            <button
+              type="button"
+              className={styles.brandSectionHeader}
+              onClick={() => setIsBrandExpanded(!isBrandExpanded)}
+            >
+              <div className={styles.brandSectionTitle}>
+                <Icon name="share" size={14} />
+                <span>Brand Settings</span>
+                {brand.enabled && <span className={styles.brandBadge}>On</span>}
+              </div>
+              <Icon name={isBrandExpanded ? 'chevronUp' : 'chevronDown'} size={16} />
+            </button>
+
+            {isBrandExpanded && (
+              <div className={styles.brandSectionContent}>
+                <div className={styles.brandToggle}>
+                  <span>Enable branding on share page</span>
+                  <Toggle
+                    checked={brand.enabled}
+                    onChange={(enabled) => setBrand({ enabled })}
+                  />
+                </div>
+
+                {brand.enabled && (
+                  <div className={styles.brandFields}>
+                    <Input
+                      label="Text"
+                      value={brand.text}
+                      onChange={(e) => setBrand({ text: e.target.value })}
+                      placeholder="Created with"
+                      fullWidth
+                    />
+                    <Input
+                      label="Name"
+                      value={brand.name}
+                      onChange={(e) => setBrand({ name: e.target.value })}
+                      placeholder="Your Brand"
+                      fullWidth
+                    />
+                    <Input
+                      label="URL"
+                      value={brand.url}
+                      onChange={(e) => setBrand({ url: e.target.value })}
+                      placeholder="https://yourbrand.com"
+                      fullWidth
+                    />
+                    <div className={styles.brandToggle}>
+                      <span>Show icon</span>
+                      <Toggle
+                        checked={brand.showIcon}
+                        onChange={(showIcon) => setBrand({ showIcon })}
+                      />
+                    </div>
+                    {brand.showIcon && (
+                      <Input
+                        label="Icon URL"
+                        value={brand.iconUrl}
+                        onChange={(e) => setBrand({ iconUrl: e.target.value })}
+                        placeholder="https://yourbrand.com/icon.svg"
+                        fullWidth
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

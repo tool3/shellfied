@@ -16,7 +16,11 @@ export const createSettingsSlice: StateCreator<AppStore, [], [], SettingsState> 
   jpegQuality: DEFAULT_JPEG_QUALITY,
   brand: DEFAULT_BRAND,
 
-  setTemplate: (template) => set({ template }),
+  setTemplate: (template) => {
+    // Auto-switch controls position based on template style
+    const controlsPosition = template === 'windows' ? 'right' : 'left';
+    set({ template, controlsPosition });
+  },
   setTerminalTheme: (terminalTheme) => set({ terminalTheme }),
   setFontSize: (fontSize) => set({ fontSize }),
   setLineHeight: (lineHeight) => set({ lineHeight }),
