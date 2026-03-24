@@ -99,7 +99,7 @@
 
   &.active {
     background-color: var(--color-brand-primary);
-    color: var(--color-text-on-brand);
+    color: var(--color-text-inverted);
   }
 }
 
@@ -289,4 +289,70 @@
   height: 100%;
   border-radius: var(--radius-full);
   transition: width 0.2s ease, background-color 0.2s ease;
+}
+
+// Brand section styles (collapsible)
+.brandSection {
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.brandSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-bg-secondary);
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+
+  &:hover {
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+  }
+}
+
+.brandSectionTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.brandBadge {
+  padding: 2px 6px;
+  background: var(--color-brand-primary);
+  color: var(--color-text-inverted);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+}
+
+.brandSectionContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border-top: 1px solid var(--color-border-primary);
+}
+
+.brandToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.brandFields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
 }

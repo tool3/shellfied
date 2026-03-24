@@ -86,8 +86,8 @@
 // Code area - both highlight and textarea fill this container
 .codeArea {
   position: relative;
-  flex: 1;
-  min-width: 0;
+  flex: 1 0 auto;
+  min-width: fit-content;
   min-height: fit-content;
 }
 

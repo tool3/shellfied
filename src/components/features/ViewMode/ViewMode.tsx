@@ -335,12 +335,12 @@ export const ViewMode = memo(function ViewMode() {
       case 'image':
         return background.image
           ? {
-              ...expandedStyle,
-              backgroundImage: `url(${background.image})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              borderRadius: 'var(--radius-lg)',
-            }
+            ...expandedStyle,
+            backgroundImage: `url(${background.image})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            borderRadius: 'var(--radius-lg)',
+          }
           : expandedStyle;
       default:
         return expandedStyle;
@@ -397,12 +397,12 @@ export const ViewMode = memo(function ViewMode() {
       case 'image':
         return background.image
           ? {
-              ...expandedStyle,
-              backgroundImage: `url(${background.image})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              borderRadius: 'var(--radius-lg)',
-            }
+            ...expandedStyle,
+            backgroundImage: `url(${background.image})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            borderRadius: 'var(--radius-lg)',
+          }
           : expandedStyle;
       default:
         return expandedStyle;
@@ -529,42 +529,8 @@ export const ViewMode = memo(function ViewMode() {
 
         <div className={styles.actions}>
           <div className={styles.buttonRow}>
-            <Button
-              variant="primary"
-              icon={isDownloadSuccess ? 'check' : 'download'}
-              onClick={() => download()}
-              disabled={isExporting}
-            >
-              {isExporting ? 'Downloading...' : isDownloadSuccess ? 'Downloaded!' : 'Download'}
-            </Button>
-            <Button
-              variant="secondary"
-              icon={isCopySuccess ? 'check' : 'copy'}
-              onClick={copyToClipboard}
-              disabled={isExporting}
-            >
-              {isCopySuccess ? 'Copied!' : 'Copy'}
-            </Button>
-            <Button
-              variant="secondary"
-              icon="externalLink"
-              onClick={handleOpenStaticUrl}
-              disabled={hasImageBackground}
-              title={
-                hasImageBackground
-                  ? 'Static URLs not available for image backgrounds'
-                  : 'Open as static image'
-              }
-            >
-              Static
-            </Button>
-            <Button variant="ghost" icon="edit" onClick={handleEdit}>
-              Edit
-            </Button>
-          </div>
-          <div className={styles.optionsRow}>
             <Select
-              label="Format"
+              // label="Format"
               options={FORMAT_OPTIONS}
               value={exportFormat}
               onChange={(value) => setExportFormat(value as ExportFormat)}
@@ -572,7 +538,7 @@ export const ViewMode = memo(function ViewMode() {
             />
             {exportFormat !== 'svg' && (
               <Select
-                label="Scale"
+                // label="Scale"
                 options={SCALE_OPTIONS}
                 value={String(exportScale)}
                 onChange={(value) => setExportScale(Number(value) as ExportScale)}
@@ -581,7 +547,7 @@ export const ViewMode = memo(function ViewMode() {
             )}
             {exportFormat === 'jpeg' && (
               <Slider
-                label="Quality"
+                // label="Quality"
                 value={jpegQuality}
                 onChange={setJpegQuality}
                 min={0.6}
@@ -592,6 +558,47 @@ export const ViewMode = memo(function ViewMode() {
               />
             )}
           </div>
+          <div className={styles.row}> 
+            <Button
+              variant="secondary"
+              icon={isCopySuccess ? 'check' : 'copy'}
+              onClick={copyToClipboard}
+              fullWidth
+              disabled={isExporting}
+            >
+              {isCopySuccess ? 'Copied!' : 'Copy'}
+            </Button>
+            <Button fullWidth variant="secondary" icon="edit" onClick={handleEdit}>
+              Edit
+            </Button>
+          </div>
+          <Button
+            variant="primary"
+            fullWidth
+            // size="lg"
+            icon={isDownloadSuccess ? 'check' : 'download'}
+            onClick={() => download()}
+            disabled={isExporting}
+          >
+            {isExporting ? 'Downloading...' : isDownloadSuccess ? 'Downloaded!' : 'Download'}
+          </Button>
+          <Button
+            variant="secondary"
+            icon="externalLink"
+            onClick={handleOpenStaticUrl}
+            disabled={hasImageBackground}
+            fullWidth
+            title={
+              hasImageBackground
+                ? 'Static URLs not available for image backgrounds'
+                : 'Open as static image'
+            }
+          >
+            Static
+          </Button>
+        </div>
+        <div className={styles.optionsRow}>
+
           {exportError && (
             <div className={styles.exportError}>
               {exportError}
