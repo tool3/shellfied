@@ -38,16 +38,22 @@ export function usePanZoom(options: UsePanZoomOptions = {}) {
   const lastTouchDistance = useRef<number | null>(null);
   const isPanningRef = useRef(false);
 
+  // Track if we're the source of scale changes to avoid feedback loops
+  const isInternalChange = useRef(false);
+
   // Update scale when initialScale changes (from external zoom buttons)
   useEffect(() => {
-    liveTransform.current.scale = initialScale;
-    setState((prev) => ({ ...prev, scale: initialScale }));
+    // Skip if this change originated from us (via onScaleChange callback)
+    if (isInternalChange.current) {
+      isInternalChange.current = false;
+      return;
+    }
+    // Only update if the scale actually differs
+    if (Math.abs(liveTransform.current.scale - initialScale) > 0.001) {
+      liveTransform.current.scale = initialScale;
+      setState((prev) => ({ ...prev, scale: initialScale }));
+    }
   }, [initialScale]);
-
-  // Sync live transform with state when state changes externally
-  useEffect(() => {
-    liveTransform.current = { x: state.x, y: state.y, scale: state.scale };
-  }, [state.x, state.y, state.scale]);
 
   const clampScale = useCallback(
     (scale: number) => Math.min(Math.max(scale, minScale), maxScale),
@@ -136,6 +142,7 @@ export function usePanZoom(options: UsePanZoomOptions = {}) {
 
       liveTransform.current = { x: newX, y: newY, scale: newScale };
       setState({ x: newX, y: newY, scale: newScale });
+      isInternalChange.current = true;
       onScaleChange?.(Math.round(newScale * 100));
     };
 
@@ -219,6 +226,7 @@ export function usePanZoom(options: UsePanZoomOptions = {}) {
 
         // Notify scale change if it changed during pinch
         if (scale !== stateRef.current.scale) {
+          isInternalChange.current = true;
           onScaleChange?.(Math.round(scale * 100));
         }
       }
@@ -244,6 +252,7 @@ export function usePanZoom(options: UsePanZoomOptions = {}) {
     const newScale = clampScale(state.scale + scaleStep);
     liveTransform.current.scale = newScale;
     setState((prev) => ({ ...prev, scale: newScale }));
+    isInternalChange.current = true;
     onScaleChange?.(Math.round(newScale * 100));
   }, [state.scale, scaleStep, clampScale, onScaleChange]);
 
@@ -251,12 +260,14 @@ export function usePanZoom(options: UsePanZoomOptions = {}) {
     const newScale = clampScale(state.scale - scaleStep);
     liveTransform.current.scale = newScale;
     setState((prev) => ({ ...prev, scale: newScale }));
+    isInternalChange.current = true;
     onScaleChange?.(Math.round(newScale * 100));
   }, [state.scale, scaleStep, clampScale, onScaleChange]);
 
   const reset = useCallback(() => {
     liveTransform.current = { x: 0, y: 0, scale: 1 };
     setState({ x: 0, y: 0, scale: 1 });
+    isInternalChange.current = true;
     onScaleChange?.(100);
   }, [onScaleChange]);
 
