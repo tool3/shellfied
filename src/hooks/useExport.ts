@@ -9,6 +9,7 @@ import {
   downloadCompareRaster,
   downloadCompareSvg,
   copyCompareToClipboard,
+  embedFontInSvg,
 } from '@/services/exportService';
 
 type ExportStatus = 'idle' | 'exporting' | 'success' | 'error';
@@ -29,20 +30,30 @@ export function useExport() {
 
   const download = useCallback(
     async (filename: string = 'shellfie') => {
+      console.log('[useExport.download] Starting export...');
       setStatus('exporting');
       setLastAction('download');
       setError(null);
 
       // Read current state directly to avoid stale closure issues
       const state = useStore.getState();
-      const { compareMode, exportFormat, exportScale, jpegQuality, background, compareLabelConfig } = state;
+      console.log('[useExport.download] Format:', state.exportFormat, 'compareMode:', state.compareMode);
+      const { compareMode, exportFormat, exportScale, jpegQuality, background, compareLabelConfig, fontFamily } = state;
 
       try {
         // Handle compare mode export
         if (compareMode) {
-          const { beforeSvg, afterSvg, beforeLabel, afterLabel } = generateCompare();
+          let { beforeSvg, afterSvg, beforeLabel, afterLabel } = generateCompare();
           if (!beforeSvg && !afterSvg) {
             throw new Error('No content to export');
+          }
+
+          // Embed the terminal font in both SVGs for portable exports
+          if (beforeSvg) {
+            beforeSvg = await embedFontInSvg(beforeSvg, fontFamily);
+          }
+          if (afterSvg) {
+            afterSvg = await embedFontInSvg(afterSvg, fontFamily);
           }
 
           const compareOptions = {
@@ -58,7 +69,7 @@ export function useExport() {
           };
 
           if (exportFormat === 'svg') {
-            downloadCompareSvg(beforeSvg, afterSvg, beforeLabel, afterLabel, filename, compareOptions);
+            await downloadCompareSvg(beforeSvg, afterSvg, beforeLabel, afterLabel, filename, compareOptions);
           } else {
             await downloadCompareRaster(
               beforeSvg,
@@ -72,15 +83,22 @@ export function useExport() {
           }
         } else {
           // Handle single mode export
-          const svg = generate();
+          let svg = generate();
           if (!svg) {
             throw new Error('No content to export');
           }
 
+          // Embed the terminal font in the SVG for portable exports
+          svg = await embedFontInSvg(svg, fontFamily);
+
           if (exportFormat === 'svg') {
-            downloadSvg(svg, filename);
+            // Wrap SVG with background if configured
+            const { wrapSvgWithBackground } = await import('@/services/exportService');
+            const finalSvg = background.type !== 'none' ? wrapSvgWithBackground(svg, background) : svg;
+            downloadSvg(finalSvg, filename);
           } else {
             const quality = exportFormat === 'jpeg' ? jpegQuality : 1.0;
+            console.log('[useExport.download] Calling downloadRaster with background:', background);
             await downloadRaster(svg, filename, exportFormat, {
               scale: exportScale,
               quality,
@@ -106,14 +124,22 @@ export function useExport() {
 
     // Read current state directly to avoid stale closure issues
     const state = useStore.getState();
-    const { compareMode, exportFormat, exportScale, background, compareLabelConfig } = state;
+    const { compareMode, exportFormat, exportScale, background, compareLabelConfig, fontFamily } = state;
 
     try {
       // Handle compare mode copy
       if (compareMode) {
-        const { beforeSvg, afterSvg, beforeLabel, afterLabel } = generateCompare();
+        let { beforeSvg, afterSvg, beforeLabel, afterLabel } = generateCompare();
         if (!beforeSvg && !afterSvg) {
           throw new Error('No content to copy');
+        }
+
+        // Embed the terminal font in both SVGs for portable exports
+        if (beforeSvg) {
+          beforeSvg = await embedFontInSvg(beforeSvg, fontFamily);
+        }
+        if (afterSvg) {
+          afterSvg = await embedFontInSvg(afterSvg, fontFamily);
         }
 
         const compareOptions = {
@@ -131,10 +157,13 @@ export function useExport() {
         await copyCompareToClipboard(beforeSvg, afterSvg, beforeLabel, afterLabel, compareOptions);
       } else {
         // Handle single mode copy
-        const svg = generate();
+        let svg = generate();
         if (!svg) {
           throw new Error('No content to copy');
         }
+
+        // Embed the terminal font in the SVG for portable exports
+        svg = await embedFontInSvg(svg, fontFamily);
 
         if (exportFormat === 'svg') {
           await copySvgToClipboard(svg);

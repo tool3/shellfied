@@ -1,5 +1,201 @@
 import type { ExportFormat, BackgroundConfig, CompareExportOptions, ImageAspectRatio } from '@/types';
 
+// Cache for fetched font data - keyed by "fontFamily-weight"
+const fontCache: Map<string, string> = new Map();
+
+/**
+ * Google Fonts API base URL for fetching font files
+ */
+const GOOGLE_FONTS_CSS_API = 'https://fonts.googleapis.com/css2';
+
+/**
+ * Map of supported Google Fonts to their font family names
+ * Includes both label fonts and terminal/monospace fonts
+ */
+const SUPPORTED_GOOGLE_FONTS: Record<string, string> = {
+  // Label fonts (sans-serif, serif)
+  'Inter': 'Inter',
+  'Roboto': 'Roboto',
+  'Poppins': 'Poppins',
+  'Montserrat': 'Montserrat',
+  'Open Sans': 'Open+Sans',
+  'Lato': 'Lato',
+  'Oswald': 'Oswald',
+  'Raleway': 'Raleway',
+  'Nunito': 'Nunito',
+  'Ubuntu': 'Ubuntu',
+  'Rubik': 'Rubik',
+  'Work Sans': 'Work+Sans',
+  'Quicksand': 'Quicksand',
+  'Bebas Neue': 'Bebas+Neue',
+  'Playfair Display': 'Playfair+Display',
+  'Merriweather': 'Merriweather',
+  // Terminal/monospace fonts
+  'JetBrains Mono': 'JetBrains+Mono',
+  'Fira Code': 'Fira+Code',
+  'Source Code Pro': 'Source+Code+Pro',
+  'IBM Plex Mono': 'IBM+Plex+Mono',
+  'Roboto Mono': 'Roboto+Mono',
+  'Ubuntu Mono': 'Ubuntu+Mono',
+  'Space Mono': 'Space+Mono',
+};
+
+/**
+ * Extract primary font family name from a CSS font-family string
+ */
+function extractPrimaryFontFamily(fontFamily: string): string {
+  // Handle formats like "Inter, sans-serif" or "'JetBrains Mono', monospace"
+  const primary = fontFamily.split(',')[0].trim().replace(/['"]/g, '');
+  return primary;
+}
+
+/**
+ * Fetch font from Google Fonts and return as base64 for embedding in SVG
+ * Returns null for system fonts - we don't embed a fallback, we just use the system font name
+ */
+async function fetchGoogleFontAsBase64(fontFamily: string, weight: number): Promise<{ data: string; family: string } | null> {
+  const primaryFont = extractPrimaryFontFamily(fontFamily);
+  const cacheKey = `${primaryFont}-${weight}`;
+
+  // Check cache first
+  if (fontCache.has(cacheKey)) {
+    return { data: fontCache.get(cacheKey)!, family: primaryFont };
+  }
+
+  // Check if it's a supported Google Font
+  const googleFontName = SUPPORTED_GOOGLE_FONTS[primaryFont];
+  if (!googleFontName) {
+    // Not a Google Font (e.g., system-ui, Georgia, etc.)
+    // Don't embed a fallback - just return null and let the SVG use the system font
+    console.log(`[fetchGoogleFontAsBase64] Font "${primaryFont}" is not a Google Font - using system font`);
+    return null;
+  }
+
+  try {
+    // Fetch the CSS from Google Fonts API
+    // The browser will handle the Accept header automatically
+    const cssUrl = `${GOOGLE_FONTS_CSS_API}?family=${googleFontName}:wght@${weight}&display=swap`;
+    console.log(`[fetchGoogleFontAsBase64] Fetching CSS from: ${cssUrl}`);
+
+    const cssResponse = await fetch(cssUrl);
+
+    if (!cssResponse.ok) {
+      console.warn(`[fetchGoogleFontAsBase64] Failed to fetch Google Font CSS for ${primaryFont}: ${cssResponse.status}`);
+      return null;
+    }
+
+    const cssText = await cssResponse.text();
+    console.log(`[fetchGoogleFontAsBase64] Got CSS (${cssText.length} chars)`);
+
+    // Extract the font URL from the CSS
+    // Try woff2 first, then woff, then truetype
+    let fontUrl: string | undefined;
+    let format = 'woff2';
+
+    const woff2Match = cssText.match(/src:\s*url\(([^)]+)\)\s*format\(['"]woff2['"]\)/);
+    if (woff2Match) {
+      fontUrl = woff2Match[1];
+      format = 'woff2';
+    } else {
+      const woffMatch = cssText.match(/src:\s*url\(([^)]+)\)\s*format\(['"]woff['"]\)/);
+      if (woffMatch) {
+        fontUrl = woffMatch[1];
+        format = 'woff';
+      } else {
+        const ttfMatch = cssText.match(/src:\s*url\(([^)]+)\)\s*format\(['"]truetype['"]\)/);
+        if (ttfMatch) {
+          fontUrl = ttfMatch[1];
+          format = 'truetype';
+        } else {
+          // Last resort: any url
+          const anyUrlMatch = cssText.match(/src:\s*url\(([^)]+)\)/);
+          if (anyUrlMatch) {
+            fontUrl = anyUrlMatch[1];
+            format = 'woff2'; // assume modern format
+          }
+        }
+      }
+    }
+
+    if (!fontUrl) {
+      console.warn(`[fetchGoogleFontAsBase64] Could not find font URL in CSS for ${primaryFont}`);
+      return null;
+    }
+
+    console.log(`[fetchGoogleFontAsBase64] Fetching font from: ${fontUrl}`);
+
+    // Fetch the actual font file
+    const fontResponse = await fetch(fontUrl);
+    if (!fontResponse.ok) {
+      console.warn(`[fetchGoogleFontAsBase64] Failed to fetch font file for ${primaryFont}: ${fontResponse.status}`);
+      return null;
+    }
+
+    const arrayBuffer = await fontResponse.arrayBuffer();
+    const base64 = btoa(
+      new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+    );
+
+    console.log(`[fetchGoogleFontAsBase64] Successfully embedded ${primaryFont} (${base64.length} chars, format: ${format})`);
+
+    // Cache the result
+    fontCache.set(cacheKey, base64);
+    return { data: base64, family: primaryFont };
+  } catch (e) {
+    console.warn(`[fetchGoogleFontAsBase64] Failed to fetch Google Font ${primaryFont}:`, e);
+    return null;
+  }
+}
+
+/**
+ * Embeds a font into an existing SVG by adding @font-face to the style section.
+ * Extracts the font-family from the SVG and fetches/embeds it if it's a Google Font.
+ */
+export async function embedFontInSvg(svgContent: string, fontFamily: string): Promise<string> {
+  const primaryFont = extractPrimaryFontFamily(fontFamily);
+
+  // Check if it's a Google Font we can embed
+  if (!SUPPORTED_GOOGLE_FONTS[primaryFont]) {
+    console.log(`[embedFontInSvg] Font "${primaryFont}" is not a Google Font - returning SVG as-is`);
+    return svgContent;
+  }
+
+  // Fetch the font (use weight 400 as base, shellfie uses normal weight)
+  const fontResult = await fetchGoogleFontAsBase64(fontFamily, 400);
+  if (!fontResult) {
+    console.log(`[embedFontInSvg] Could not fetch font "${primaryFont}" - returning SVG as-is`);
+    return svgContent;
+  }
+
+  // Create @font-face rule
+  const format = fontResult.data.length > 10000 ? 'woff2' : 'truetype';
+  const fontFaceRule = `@font-face { font-family: '${fontResult.family}'; src: url('data:font/${format};base64,${fontResult.data}') format('${format === 'woff2' ? 'woff2' : 'truetype'}'); font-weight: normal; }`;
+
+  // Check if SVG already has a <style> element inside <defs>
+  const hasDefsStyle = /<defs[^>]*>[\s\S]*?<style/i.test(svgContent);
+  const hasDefs = /<defs[^>]*>/i.test(svgContent);
+
+  if (hasDefsStyle) {
+    // Insert font-face at the beginning of existing style content
+    return svgContent.replace(
+      /(<style[^>]*><!\[CDATA\[)/i,
+      `$1\n      ${fontFaceRule}\n`
+    );
+  } else if (hasDefs) {
+    // Add style element inside existing defs
+    return svgContent.replace(
+      /(<defs[^>]*>)/i,
+      `$1\n    <style><![CDATA[\n      ${fontFaceRule}\n    ]]></style>`
+    );
+  } else {
+    // Add defs with style after opening svg tag
+    return svgContent.replace(
+      /(<svg[^>]*>)/i,
+      `$1\n  <defs>\n    <style><![CDATA[\n      ${fontFaceRule}\n    ]]></style>\n  </defs>`
+    );
+  }
+}
+
 /**
  * Calculate dimensions with aspect ratio constraint for image backgrounds
  * Content is always centered within the expanded dimensions
@@ -342,18 +538,29 @@ export async function downloadRaster(
   format: Exclude<ExportFormat, 'svg'>,
   options: RasterExportOptions = {}
 ): Promise<void> {
+  console.log('[downloadRaster] called with format:', format, 'background:', options.background?.type);
+
   const { scale = 2, quality = 1.0, background } = options;
+
+  // Get SVG dimensions from the SVG's declared width/height or viewBox
+  // This ensures export matches the actual SVG dimensions
   const { width: svgWidth, height: svgHeight } = getSvgDimensions(svgContent);
+
+  console.log('[downloadRaster] SVG dimensions:', svgWidth, 'x', svgHeight);
+  console.log('[downloadRaster] aspectRatio:', background?.imageAspectRatio, 'padding:', background?.padding);
 
   // Calculate total dimensions including background padding and aspect ratio
   const padding = background?.type !== 'none' ? (background?.padding ?? 0) : 0;
   const aspectRatio = background?.type !== 'none' ? (background?.imageAspectRatio ?? 'auto') : 'auto';
+
   const { totalWidth, totalHeight, offsetX, offsetY } = calculateAspectRatioDimensions(
     svgWidth,
     svgHeight,
     aspectRatio,
     padding
   );
+
+  console.log('[downloadRaster] Calculated canvas:', { totalWidth, totalHeight, offsetX, offsetY, scale });
 
   const canvas = document.createElement('canvas');
   canvas.width = totalWidth * scale;
@@ -691,11 +898,20 @@ export async function compareToRasterBlob(
   const beforeDims = beforeSvg ? getSvgDimensions(beforeSvg) : { width: 400, height: 300 };
   const afterDims = afterSvg ? getSvgDimensions(afterSvg) : { width: 400, height: 300 };
 
-  // Calculate total canvas size
+  // Calculate base content dimensions (before aspect ratio adjustment)
   const maxHeight = Math.max(beforeDims.height, afterDims.height);
-  const padding = background?.type !== 'none' ? (background?.padding ?? 32) : 32;
-  const totalWidth = beforeDims.width + gap + afterDims.width + padding * 2;
-  const totalHeight = maxHeight + labelHeight + padding * 2;
+  const basePadding = background?.type !== 'none' ? (background?.padding ?? 32) : 32;
+  const contentWidth = beforeDims.width + gap + afterDims.width;
+  const contentHeight = maxHeight + labelHeight;
+
+  // Apply aspect ratio to get final canvas dimensions
+  const aspectRatio = background?.type !== 'none' ? (background?.imageAspectRatio ?? 'auto') : 'auto';
+  const { totalWidth, totalHeight, offsetX, offsetY } = calculateAspectRatioDimensions(
+    contentWidth,
+    contentHeight,
+    aspectRatio,
+    basePadding
+  );
 
   const canvas = document.createElement('canvas');
   canvas.width = totalWidth * scale;
@@ -711,49 +927,49 @@ export async function compareToRasterBlob(
     await drawBackground(ctx, background, totalWidth, totalHeight);
   }
 
-  // Draw labels with alignment
+  // Draw labels with alignment - offset by aspect ratio centering
   ctx.font = labelFont;
   ctx.fillStyle = labelColor;
   ctx.textBaseline = 'top';
 
-  // Calculate label x positions based on alignment
-  let beforeLabelX = padding;
-  let afterLabelX = padding + beforeDims.width + gap;
+  // Calculate label x positions based on alignment (using offset for centering)
+  let beforeLabelX = offsetX;
+  let afterLabelX = offsetX + beforeDims.width + gap;
 
   if (labelAlignment === 'center') {
     ctx.textAlign = 'center';
-    beforeLabelX = padding + beforeDims.width / 2;
-    afterLabelX = padding + beforeDims.width + gap + afterDims.width / 2;
+    beforeLabelX = offsetX + beforeDims.width / 2;
+    afterLabelX = offsetX + beforeDims.width + gap + afterDims.width / 2;
   } else if (labelAlignment === 'right') {
     ctx.textAlign = 'right';
-    beforeLabelX = padding + beforeDims.width;
-    afterLabelX = padding + beforeDims.width + gap + afterDims.width;
+    beforeLabelX = offsetX + beforeDims.width;
+    afterLabelX = offsetX + beforeDims.width + gap + afterDims.width;
   } else {
     ctx.textAlign = 'left';
   }
 
-  ctx.fillText(beforeLabel, beforeLabelX, padding);
-  ctx.fillText(afterLabel, afterLabelX, padding);
+  ctx.fillText(beforeLabel, beforeLabelX, offsetY);
+  ctx.fillText(afterLabel, afterLabelX, offsetY);
 
   // Reset text align for any future operations
   ctx.textAlign = 'left';
 
-  // Draw before SVG
+  // Draw before SVG - offset by aspect ratio centering
   if (beforeSvg) {
     const beforeImg = await loadSvgAsImage(beforeSvg);
-    ctx.drawImage(beforeImg, padding, padding + labelHeight);
+    ctx.drawImage(beforeImg, offsetX, offsetY + labelHeight);
   } else {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-    ctx.fillRect(padding, padding + labelHeight, beforeDims.width, beforeDims.height);
+    ctx.fillRect(offsetX, offsetY + labelHeight, beforeDims.width, beforeDims.height);
   }
 
-  // Draw after SVG
+  // Draw after SVG - offset by aspect ratio centering
   if (afterSvg) {
     const afterImg = await loadSvgAsImage(afterSvg);
-    ctx.drawImage(afterImg, padding + beforeDims.width + gap, padding + labelHeight);
+    ctx.drawImage(afterImg, offsetX + beforeDims.width + gap, offsetY + labelHeight);
   } else {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-    ctx.fillRect(padding + beforeDims.width + gap, padding + labelHeight, afterDims.width, afterDims.height);
+    ctx.fillRect(offsetX + beforeDims.width + gap, offsetY + labelHeight, afterDims.width, afterDims.height);
   }
 
   const mimeType = getMimeType(format);
@@ -774,7 +990,8 @@ export async function compareToRasterBlob(
 }
 
 /**
- * Creates a combined compare mode SVG string
+ * Creates a combined compare mode SVG string (sync version for static serving)
+ * Note: This uses Google Fonts import instead of embedded fonts for performance
  */
 export function createCompareSvg(
   beforeSvg: string,
@@ -796,27 +1013,39 @@ export function createCompareSvg(
   const beforeDims = beforeSvg ? getSvgDimensions(beforeSvg) : { width: 400, height: 300 };
   const afterDims = afterSvg ? getSvgDimensions(afterSvg) : { width: 400, height: 300 };
 
+  // Calculate base content dimensions (before aspect ratio adjustment)
   const maxHeight = Math.max(beforeDims.height, afterDims.height);
-  const padding = background?.type !== 'none' ? (background?.padding ?? 32) : 32;
-  const totalWidth = beforeDims.width + gap + afterDims.width + padding * 2;
-  const totalHeight = maxHeight + labelHeight + padding * 2;
+  const basePadding = background?.type !== 'none' ? (background?.padding ?? 32) : 32;
+  const contentWidth = beforeDims.width + gap + afterDims.width;
+  const contentHeight = maxHeight + labelHeight;
 
-  // Parse the font to extract size
+  // Apply aspect ratio to get final dimensions
+  const aspectRatio = background?.type !== 'none' ? (background?.imageAspectRatio ?? 'auto') : 'auto';
+  const { totalWidth, totalHeight, offsetX, offsetY } = calculateAspectRatioDimensions(
+    contentWidth,
+    contentHeight,
+    aspectRatio,
+    basePadding
+  );
+
+  // Parse the font to extract size and weight
   const fontSizeMatch = labelFont.match(/(\d+)px/);
   const fontSize = fontSizeMatch ? fontSizeMatch[1] : '16';
+  const fontWeightMatch = labelFont.match(/^(\d+)\s/);
+  const fontWeight = fontWeightMatch ? fontWeightMatch[1] : '600';
 
-  // Calculate label positions based on alignment
-  let beforeLabelX = padding;
-  let afterLabelX = padding + beforeDims.width + gap;
+  // Calculate label positions based on alignment (using offset for centering)
+  let beforeLabelX = offsetX;
+  let afterLabelX = offsetX + beforeDims.width + gap;
   let textAnchor = 'start';
 
   if (labelAlignment === 'center') {
-    beforeLabelX = padding + beforeDims.width / 2;
-    afterLabelX = padding + beforeDims.width + gap + afterDims.width / 2;
+    beforeLabelX = offsetX + beforeDims.width / 2;
+    afterLabelX = offsetX + beforeDims.width + gap + afterDims.width / 2;
     textAnchor = 'middle';
   } else if (labelAlignment === 'right') {
-    beforeLabelX = padding + beforeDims.width;
-    afterLabelX = padding + beforeDims.width + gap + afterDims.width;
+    beforeLabelX = offsetX + beforeDims.width;
+    afterLabelX = offsetX + beforeDims.width + gap + afterDims.width;
     textAnchor = 'end';
   }
 
@@ -829,31 +1058,165 @@ export function createCompareSvg(
     ? `@import url('${fontImportUrl}');`
     : '';
 
+  // Extract existing defs from inner SVGs (for fonts, etc.)
+  const beforeDefs = beforeSvg ? (beforeSvg.match(/<defs[^>]*>([\s\S]*?)<\/defs>/i)?.[1] || '') : '';
+  const afterDefs = afterSvg ? (afterSvg.match(/<defs[^>]*>([\s\S]*?)<\/defs>/i)?.[1] || '') : '';
+
   // Create combined SVG
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}">
   <defs>
-    <style>
+    <style><![CDATA[
       ${fontImportStyle}
-      .label { font: ${labelFont}; fill: ${labelColor}; text-anchor: ${textAnchor}; }
-    </style>
+      .label {
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: ${fontSize}px;
+        font-weight: ${fontWeight};
+        fill: ${labelColor};
+        text-anchor: ${textAnchor};
+      }
+    ]]></style>
+    ${beforeDefs}
+    ${afterDefs}
   </defs>
 
   <!-- Background -->
   ${backgroundSvg}
 
   <!-- Before label -->
-  <text x="${beforeLabelX}" y="${padding + parseInt(fontSize)}" class="label">${escapeXml(beforeLabel)}</text>
+  <text x="${beforeLabelX}" y="${offsetY + parseInt(fontSize)}" class="label">${escapeXml(beforeLabel)}</text>
 
   <!-- After label -->
-  <text x="${afterLabelX}" y="${padding + parseInt(fontSize)}" class="label">${escapeXml(afterLabel)}</text>
+  <text x="${afterLabelX}" y="${offsetY + parseInt(fontSize)}" class="label">${escapeXml(afterLabel)}</text>
 
   <!-- Before SVG -->
-  <g transform="translate(${padding}, ${padding + labelHeight})">
+  <g transform="translate(${offsetX}, ${offsetY + labelHeight})">
     ${beforeSvg ? extractSvgContent(beforeSvg) : `<rect width="${beforeDims.width}" height="${beforeDims.height}" fill="rgba(255,255,255,0.1)"/>`}
   </g>
 
   <!-- After SVG -->
-  <g transform="translate(${padding + beforeDims.width + gap}, ${padding + labelHeight})">
+  <g transform="translate(${offsetX + beforeDims.width + gap}, ${offsetY + labelHeight})">
+    ${afterSvg ? extractSvgContent(afterSvg) : `<rect width="${afterDims.width}" height="${afterDims.height}" fill="rgba(255,255,255,0.1)"/>`}
+  </g>
+</svg>`;
+}
+
+/**
+ * Creates a combined compare mode SVG string with embedded fonts (async version)
+ * This version embeds fonts as base64 for portable SVGs that work offline
+ */
+export async function createCompareSvgWithEmbeddedFonts(
+  beforeSvg: string,
+  afterSvg: string,
+  beforeLabel: string,
+  afterLabel: string,
+  options: Pick<CompareExportOptions, 'gap' | 'labelHeight' | 'labelColor' | 'labelFont' | 'labelAlignment' | 'background'>
+): Promise<string> {
+  const {
+    gap = 32,
+    labelHeight = 40,
+    labelColor = '#ffffff',
+    labelFont = '600 16px system-ui',
+    labelAlignment = 'left',
+    background,
+  } = options;
+
+  // Get dimensions for both SVGs
+  const beforeDims = beforeSvg ? getSvgDimensions(beforeSvg) : { width: 400, height: 300 };
+  const afterDims = afterSvg ? getSvgDimensions(afterSvg) : { width: 400, height: 300 };
+
+  // Calculate base content dimensions (before aspect ratio adjustment)
+  const maxHeight = Math.max(beforeDims.height, afterDims.height);
+  const basePadding = background?.type !== 'none' ? (background?.padding ?? 32) : 32;
+  const contentWidth = beforeDims.width + gap + afterDims.width;
+  const contentHeight = maxHeight + labelHeight;
+
+  // Apply aspect ratio to get final dimensions
+  const aspectRatio = background?.type !== 'none' ? (background?.imageAspectRatio ?? 'auto') : 'auto';
+  const { totalWidth, totalHeight, offsetX, offsetY } = calculateAspectRatioDimensions(
+    contentWidth,
+    contentHeight,
+    aspectRatio,
+    basePadding
+  );
+
+  // Parse the font to extract size, weight, and family
+  const fontSizeMatch = labelFont.match(/(\d+)px/);
+  const fontSize = fontSizeMatch ? fontSizeMatch[1] : '16';
+  const fontWeightMatch = labelFont.match(/^(\d+)\s/);
+  const fontWeight = fontWeightMatch ? fontWeightMatch[1] : '600';
+  // Extract font family from shorthand like "600 16px Inter, sans-serif"
+  const fontFamilyMatch = labelFont.match(/\d+px\s+(.+)$/);
+  const fontFamily = fontFamilyMatch ? fontFamilyMatch[1] : 'system-ui, -apple-system, sans-serif';
+
+  // Calculate label positions based on alignment (using offset for centering)
+  let beforeLabelX = offsetX;
+  let afterLabelX = offsetX + beforeDims.width + gap;
+  let textAnchor = 'start';
+
+  if (labelAlignment === 'center') {
+    beforeLabelX = offsetX + beforeDims.width / 2;
+    afterLabelX = offsetX + beforeDims.width + gap + afterDims.width / 2;
+    textAnchor = 'middle';
+  } else if (labelAlignment === 'right') {
+    beforeLabelX = offsetX + beforeDims.width;
+    afterLabelX = offsetX + beforeDims.width + gap + afterDims.width;
+    textAnchor = 'end';
+  }
+
+  // Generate background SVG element
+  const backgroundSvg = generateSvgBackground(background, totalWidth, totalHeight);
+
+  // Fetch and embed the user's selected font for SVG
+  let fontFaceStyle = '';
+  let effectiveFontFamily = fontFamily;
+  try {
+    const fontResult = await fetchGoogleFontAsBase64(fontFamily, parseInt(fontWeight));
+    if (fontResult) {
+      const format = fontResult.data.length > 10000 ? 'woff2' : 'truetype'; // woff2 from Google, ttf from local
+      fontFaceStyle = `@font-face { font-family: '${fontResult.family}'; src: url('data:font/${format};base64,${fontResult.data}') format('${format === 'woff2' ? 'woff2' : 'truetype'}'); font-weight: ${fontWeight}; }`;
+      effectiveFontFamily = `'${fontResult.family}', ${fontFamily}`;
+    }
+  } catch (e) {
+    console.warn('Could not embed font:', e);
+  }
+
+  // Extract existing defs from inner SVGs (for fonts, etc.)
+  const beforeDefs = beforeSvg ? (beforeSvg.match(/<defs[^>]*>([\s\S]*?)<\/defs>/i)?.[1] || '') : '';
+  const afterDefs = afterSvg ? (afterSvg.match(/<defs[^>]*>([\s\S]*?)<\/defs>/i)?.[1] || '') : '';
+
+  // Create combined SVG
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}">
+  <defs>
+    <style><![CDATA[
+      ${fontFaceStyle}
+      .label {
+        font-family: ${effectiveFontFamily};
+        font-size: ${fontSize}px;
+        font-weight: ${fontWeight};
+        fill: ${labelColor};
+        text-anchor: ${textAnchor};
+      }
+    ]]></style>
+    ${beforeDefs}
+    ${afterDefs}
+  </defs>
+
+  <!-- Background -->
+  ${backgroundSvg}
+
+  <!-- Before label -->
+  <text x="${beforeLabelX}" y="${offsetY + parseInt(fontSize)}" class="label">${escapeXml(beforeLabel)}</text>
+
+  <!-- After label -->
+  <text x="${afterLabelX}" y="${offsetY + parseInt(fontSize)}" class="label">${escapeXml(afterLabel)}</text>
+
+  <!-- Before SVG -->
+  <g transform="translate(${offsetX}, ${offsetY + labelHeight})">
+    ${beforeSvg ? extractSvgContent(beforeSvg) : `<rect width="${beforeDims.width}" height="${beforeDims.height}" fill="rgba(255,255,255,0.1)"/>`}
+  </g>
+
+  <!-- After SVG -->
+  <g transform="translate(${offsetX + beforeDims.width + gap}, ${offsetY + labelHeight})">
     ${afterSvg ? extractSvgContent(afterSvg) : `<rect width="${afterDims.width}" height="${afterDims.height}" fill="rgba(255,255,255,0.1)"/>`}
   </g>
 </svg>`;
@@ -882,6 +1245,8 @@ export async function downloadCompareRaster(
     labelAlignment = 'left',
   } = options;
 
+  console.log('[downloadCompareRaster] called with background:', background?.type, 'aspectRatio:', background?.imageAspectRatio, 'padding:', background?.padding);
+
   // Preload font before drawing to ensure it's available for Canvas
   await preloadFont(labelFont);
 
@@ -889,11 +1254,25 @@ export async function downloadCompareRaster(
   const beforeDims = beforeSvg ? getSvgDimensions(beforeSvg) : { width: 400, height: 300 };
   const afterDims = afterSvg ? getSvgDimensions(afterSvg) : { width: 400, height: 300 };
 
-  // Calculate total canvas size
+  console.log('[downloadCompareRaster] beforeDims:', beforeDims, 'afterDims:', afterDims, 'gap:', gap, 'labelHeight:', labelHeight);
+
+  // Calculate base content dimensions (before aspect ratio adjustment)
   const maxHeight = Math.max(beforeDims.height, afterDims.height);
-  const padding = background?.type !== 'none' ? (background?.padding ?? 32) : 32;
-  const totalWidth = beforeDims.width + gap + afterDims.width + padding * 2;
-  const totalHeight = maxHeight + labelHeight + padding * 2;
+  const basePadding = background?.type !== 'none' ? (background?.padding ?? 32) : 32;
+  const contentWidth = beforeDims.width + gap + afterDims.width;
+  const contentHeight = maxHeight + labelHeight;
+
+  // Apply aspect ratio to get final canvas dimensions
+  const aspectRatio = background?.type !== 'none' ? (background?.imageAspectRatio ?? 'auto') : 'auto';
+  const { totalWidth, totalHeight, offsetX, offsetY } = calculateAspectRatioDimensions(
+    contentWidth,
+    contentHeight,
+    aspectRatio,
+    basePadding
+  );
+
+  console.log('[downloadCompareRaster] basePadding:', basePadding, 'contentWidth:', contentWidth, 'contentHeight:', contentHeight);
+  console.log('[downloadCompareRaster] totalWidth:', totalWidth, 'totalHeight:', totalHeight, 'offsetX:', offsetX, 'offsetY:', offsetY);
 
   const canvas = document.createElement('canvas');
   canvas.width = totalWidth * scale;
@@ -909,51 +1288,51 @@ export async function downloadCompareRaster(
     await drawBackground(ctx, background, totalWidth, totalHeight);
   }
 
-  // Draw labels with alignment
+  // Draw labels with alignment - offset by aspect ratio centering
   ctx.font = labelFont;
   ctx.fillStyle = labelColor;
   ctx.textBaseline = 'top';
 
-  // Calculate label x positions based on alignment
-  let beforeLabelX = padding;
-  let afterLabelX = padding + beforeDims.width + gap;
+  // Calculate label x positions based on alignment (using offset for centering)
+  let beforeLabelX = offsetX;
+  let afterLabelX = offsetX + beforeDims.width + gap;
 
   if (labelAlignment === 'center') {
     ctx.textAlign = 'center';
-    beforeLabelX = padding + beforeDims.width / 2;
-    afterLabelX = padding + beforeDims.width + gap + afterDims.width / 2;
+    beforeLabelX = offsetX + beforeDims.width / 2;
+    afterLabelX = offsetX + beforeDims.width + gap + afterDims.width / 2;
   } else if (labelAlignment === 'right') {
     ctx.textAlign = 'right';
-    beforeLabelX = padding + beforeDims.width;
-    afterLabelX = padding + beforeDims.width + gap + afterDims.width;
+    beforeLabelX = offsetX + beforeDims.width;
+    afterLabelX = offsetX + beforeDims.width + gap + afterDims.width;
   } else {
     ctx.textAlign = 'left';
   }
 
-  ctx.fillText(beforeLabel, beforeLabelX, padding);
-  ctx.fillText(afterLabel, afterLabelX, padding);
+  ctx.fillText(beforeLabel, beforeLabelX, offsetY);
+  ctx.fillText(afterLabel, afterLabelX, offsetY);
 
   // Reset text align for any future operations
   ctx.textAlign = 'left';
 
-  // Draw before SVG
+  // Draw before SVG - offset by aspect ratio centering
   if (beforeSvg) {
     const beforeImg = await loadSvgAsImage(beforeSvg);
-    ctx.drawImage(beforeImg, padding, padding + labelHeight);
+    ctx.drawImage(beforeImg, offsetX, offsetY + labelHeight);
   } else {
     // Draw placeholder
     ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-    ctx.fillRect(padding, padding + labelHeight, beforeDims.width, beforeDims.height);
+    ctx.fillRect(offsetX, offsetY + labelHeight, beforeDims.width, beforeDims.height);
   }
 
-  // Draw after SVG
+  // Draw after SVG - offset by aspect ratio centering
   if (afterSvg) {
     const afterImg = await loadSvgAsImage(afterSvg);
-    ctx.drawImage(afterImg, padding + beforeDims.width + gap, padding + labelHeight);
+    ctx.drawImage(afterImg, offsetX + beforeDims.width + gap, offsetY + labelHeight);
   } else {
     // Draw placeholder
     ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-    ctx.fillRect(padding + beforeDims.width + gap, padding + labelHeight, afterDims.width, afterDims.height);
+    ctx.fillRect(offsetX + beforeDims.width + gap, offsetY + labelHeight, afterDims.width, afterDims.height);
   }
 
   const mimeType = getMimeType(format);
@@ -1026,9 +1405,16 @@ function generateSvgBackground(
       const toColor = isRadialReverse ? background.gradientFrom : background.gradientTo;
 
       if (isRadial) {
+        // Calculate radius to match CSS radial-gradient(circle, ...) behavior
+        // CSS circle gradient extends to the farthest corner, but for simple 50% 50% position
+        // it creates a circle that touches the nearest edge and extends beyond
+        // We use a large enough radius to cover the entire rectangle
+        const radius = Math.max(totalWidth, totalHeight);
+        const cx = totalWidth / 2;
+        const cy = totalHeight / 2;
         return `
           <defs>
-            <radialGradient id="bgGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+            <radialGradient id="bgGradient" gradientUnits="userSpaceOnUse" cx="${cx}" cy="${cy}" r="${radius / 2}" fx="${cx}" fy="${cy}">
               <stop offset="0%" stop-color="${fromColor}"/>
               <stop offset="100%" stop-color="${toColor}"/>
             </radialGradient>
@@ -1067,14 +1453,14 @@ function generateSvgBackground(
 /**
  * Downloads compare mode as SVG (creates a combined SVG)
  */
-export function downloadCompareSvg(
+export async function downloadCompareSvg(
   beforeSvg: string,
   afterSvg: string,
   beforeLabel: string,
   afterLabel: string,
   filename: string,
   options: Pick<CompareExportOptions, 'gap' | 'labelHeight' | 'labelColor' | 'labelFont' | 'labelAlignment' | 'background'>
-): void {
+): Promise<void> {
   const {
     gap = 32,
     labelHeight = 40,
@@ -1088,64 +1474,99 @@ export function downloadCompareSvg(
   const beforeDims = beforeSvg ? getSvgDimensions(beforeSvg) : { width: 400, height: 300 };
   const afterDims = afterSvg ? getSvgDimensions(afterSvg) : { width: 400, height: 300 };
 
+  // Calculate base content dimensions (before aspect ratio adjustment)
   const maxHeight = Math.max(beforeDims.height, afterDims.height);
-  const padding = background?.type !== 'none' ? (background?.padding ?? 32) : 32;
-  const totalWidth = beforeDims.width + gap + afterDims.width + padding * 2;
-  const totalHeight = maxHeight + labelHeight + padding * 2;
+  const basePadding = background?.type !== 'none' ? (background?.padding ?? 32) : 32;
+  const contentWidth = beforeDims.width + gap + afterDims.width;
+  const contentHeight = maxHeight + labelHeight;
 
-  // Parse the font to extract size
+  // Apply aspect ratio to get final dimensions
+  const aspectRatio = background?.type !== 'none' ? (background?.imageAspectRatio ?? 'auto') : 'auto';
+  const { totalWidth, totalHeight, offsetX, offsetY } = calculateAspectRatioDimensions(
+    contentWidth,
+    contentHeight,
+    aspectRatio,
+    basePadding
+  );
+
+  // Parse the font to extract size, weight, and family
   const fontSizeMatch = labelFont.match(/(\d+)px/);
   const fontSize = fontSizeMatch ? fontSizeMatch[1] : '16';
+  const fontWeightMatch = labelFont.match(/^(\d+)\s/);
+  const fontWeight = fontWeightMatch ? fontWeightMatch[1] : '600';
+  // Extract font family from shorthand like "600 16px Inter, sans-serif"
+  const fontFamilyMatch = labelFont.match(/\d+px\s+(.+)$/);
+  const fontFamily = fontFamilyMatch ? fontFamilyMatch[1] : 'system-ui, -apple-system, sans-serif';
 
-  // Calculate label positions based on alignment
-  let beforeLabelX = padding;
-  let afterLabelX = padding + beforeDims.width + gap;
+  // Calculate label positions based on alignment (using offset for centering)
+  let beforeLabelX = offsetX;
+  let afterLabelX = offsetX + beforeDims.width + gap;
   let textAnchor = 'start';
 
   if (labelAlignment === 'center') {
-    beforeLabelX = padding + beforeDims.width / 2;
-    afterLabelX = padding + beforeDims.width + gap + afterDims.width / 2;
+    beforeLabelX = offsetX + beforeDims.width / 2;
+    afterLabelX = offsetX + beforeDims.width + gap + afterDims.width / 2;
     textAnchor = 'middle';
   } else if (labelAlignment === 'right') {
-    beforeLabelX = padding + beforeDims.width;
-    afterLabelX = padding + beforeDims.width + gap + afterDims.width;
+    beforeLabelX = offsetX + beforeDims.width;
+    afterLabelX = offsetX + beforeDims.width + gap + afterDims.width;
     textAnchor = 'end';
   }
 
   // Generate background SVG element
   const backgroundSvg = generateSvgBackground(background, totalWidth, totalHeight);
 
-  // Get font import URL if using a Google Font
-  const fontImportUrl = getFontImportUrl(labelFont);
-  const fontImportStyle = fontImportUrl
-    ? `@import url('${fontImportUrl}');`
-    : '';
+  // Fetch and embed the user's selected font for SVG
+  let fontFaceStyle = '';
+  let effectiveFontFamily = fontFamily;
+  try {
+    const fontResult = await fetchGoogleFontAsBase64(fontFamily, parseInt(fontWeight));
+    if (fontResult) {
+      const format = fontResult.data.length > 10000 ? 'woff2' : 'truetype'; // woff2 from Google, ttf from local
+      fontFaceStyle = `@font-face { font-family: '${fontResult.family}'; src: url('data:font/${format};base64,${fontResult.data}') format('${format === 'woff2' ? 'woff2' : 'truetype'}'); font-weight: ${fontWeight}; }`;
+      effectiveFontFamily = `'${fontResult.family}', ${fontFamily}`;
+    }
+  } catch (e) {
+    console.warn('Could not embed font:', e);
+  }
+
+  // Extract existing defs from inner SVGs (for fonts, etc.)
+  const beforeDefs = beforeSvg ? (beforeSvg.match(/<defs[^>]*>([\s\S]*?)<\/defs>/i)?.[1] || '') : '';
+  const afterDefs = afterSvg ? (afterSvg.match(/<defs[^>]*>([\s\S]*?)<\/defs>/i)?.[1] || '') : '';
 
   // Create combined SVG
   const combinedSvg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}">
   <defs>
-    <style>
-      ${fontImportStyle}
-      .label { font: ${labelFont}; fill: ${labelColor}; text-anchor: ${textAnchor}; }
-    </style>
+    <style><![CDATA[
+      ${fontFaceStyle}
+      .label {
+        font-family: ${effectiveFontFamily};
+        font-size: ${fontSize}px;
+        font-weight: ${fontWeight};
+        fill: ${labelColor};
+        text-anchor: ${textAnchor};
+      }
+    ]]></style>
+    ${beforeDefs}
+    ${afterDefs}
   </defs>
 
   <!-- Background -->
   ${backgroundSvg}
 
   <!-- Before label -->
-  <text x="${beforeLabelX}" y="${padding + parseInt(fontSize)}" class="label">${escapeXml(beforeLabel)}</text>
+  <text x="${beforeLabelX}" y="${offsetY + parseInt(fontSize)}" class="label">${escapeXml(beforeLabel)}</text>
 
   <!-- After label -->
-  <text x="${afterLabelX}" y="${padding + parseInt(fontSize)}" class="label">${escapeXml(afterLabel)}</text>
+  <text x="${afterLabelX}" y="${offsetY + parseInt(fontSize)}" class="label">${escapeXml(afterLabel)}</text>
 
   <!-- Before SVG -->
-  <g transform="translate(${padding}, ${padding + labelHeight})">
+  <g transform="translate(${offsetX}, ${offsetY + labelHeight})">
     ${beforeSvg ? extractSvgContent(beforeSvg) : `<rect width="${beforeDims.width}" height="${beforeDims.height}" fill="rgba(255,255,255,0.1)"/>`}
   </g>
 
   <!-- After SVG -->
-  <g transform="translate(${padding + beforeDims.width + gap}, ${padding + labelHeight})">
+  <g transform="translate(${offsetX + beforeDims.width + gap}, ${offsetY + labelHeight})">
     ${afterSvg ? extractSvgContent(afterSvg) : `<rect width="${afterDims.width}" height="${afterDims.height}" fill="rgba(255,255,255,0.1)"/>`}
   </g>
 </svg>`;
@@ -1180,10 +1601,20 @@ export async function copyCompareToClipboard(
   const beforeDims = beforeSvg ? getSvgDimensions(beforeSvg) : { width: 400, height: 300 };
   const afterDims = afterSvg ? getSvgDimensions(afterSvg) : { width: 400, height: 300 };
 
+  // Calculate base content dimensions (before aspect ratio adjustment)
   const maxHeight = Math.max(beforeDims.height, afterDims.height);
-  const padding = background?.type !== 'none' ? (background?.padding ?? 32) : 32;
-  const totalWidth = beforeDims.width + gap + afterDims.width + padding * 2;
-  const totalHeight = maxHeight + labelHeight + padding * 2;
+  const basePadding = background?.type !== 'none' ? (background?.padding ?? 32) : 32;
+  const contentWidth = beforeDims.width + gap + afterDims.width;
+  const contentHeight = maxHeight + labelHeight;
+
+  // Apply aspect ratio to get final canvas dimensions
+  const aspectRatio = background?.type !== 'none' ? (background?.imageAspectRatio ?? 'auto') : 'auto';
+  const { totalWidth, totalHeight, offsetX, offsetY } = calculateAspectRatioDimensions(
+    contentWidth,
+    contentHeight,
+    aspectRatio,
+    basePadding
+  );
 
   const canvas = document.createElement('canvas');
   canvas.width = totalWidth * scale;
@@ -1199,43 +1630,43 @@ export async function copyCompareToClipboard(
     await drawBackground(ctx, background, totalWidth, totalHeight);
   }
 
-  // Draw labels with alignment
+  // Draw labels with alignment - offset by aspect ratio centering
   ctx.font = labelFont;
   ctx.fillStyle = labelColor;
   ctx.textBaseline = 'top';
 
-  // Calculate label x positions based on alignment
-  let beforeLabelX = padding;
-  let afterLabelX = padding + beforeDims.width + gap;
+  // Calculate label x positions based on alignment (using offset for centering)
+  let beforeLabelX = offsetX;
+  let afterLabelX = offsetX + beforeDims.width + gap;
 
   if (labelAlignment === 'center') {
     ctx.textAlign = 'center';
-    beforeLabelX = padding + beforeDims.width / 2;
-    afterLabelX = padding + beforeDims.width + gap + afterDims.width / 2;
+    beforeLabelX = offsetX + beforeDims.width / 2;
+    afterLabelX = offsetX + beforeDims.width + gap + afterDims.width / 2;
   } else if (labelAlignment === 'right') {
     ctx.textAlign = 'right';
-    beforeLabelX = padding + beforeDims.width;
-    afterLabelX = padding + beforeDims.width + gap + afterDims.width;
+    beforeLabelX = offsetX + beforeDims.width;
+    afterLabelX = offsetX + beforeDims.width + gap + afterDims.width;
   } else {
     ctx.textAlign = 'left';
   }
 
-  ctx.fillText(beforeLabel, beforeLabelX, padding);
-  ctx.fillText(afterLabel, afterLabelX, padding);
+  ctx.fillText(beforeLabel, beforeLabelX, offsetY);
+  ctx.fillText(afterLabel, afterLabelX, offsetY);
 
   // Reset text align for any future operations
   ctx.textAlign = 'left';
 
-  // Draw before SVG
+  // Draw before SVG - offset by aspect ratio centering
   if (beforeSvg) {
     const beforeImg = await loadSvgAsImage(beforeSvg);
-    ctx.drawImage(beforeImg, padding, padding + labelHeight);
+    ctx.drawImage(beforeImg, offsetX, offsetY + labelHeight);
   }
 
-  // Draw after SVG
+  // Draw after SVG - offset by aspect ratio centering
   if (afterSvg) {
     const afterImg = await loadSvgAsImage(afterSvg);
-    ctx.drawImage(afterImg, padding + beforeDims.width + gap, padding + labelHeight);
+    ctx.drawImage(afterImg, offsetX + beforeDims.width + gap, offsetY + labelHeight);
   }
 
   const blob = await new Promise<Blob | null>((res) =>
@@ -1279,7 +1710,12 @@ export function wrapSvgWithBackground(
   const backgroundSvg = generateSvgBackground(background, totalWidth, totalHeight);
   const innerContent = extractSvgContent(svgContent);
 
+  // Extract any existing defs (fonts, etc.) from the inner SVG
+  const defsMatch = svgContent.match(/<defs[^>]*>([\s\S]*?)<\/defs>/i);
+  const existingDefs = defsMatch ? defsMatch[1] : '';
+
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}">
+  <defs>${existingDefs}</defs>
   ${backgroundSvg}
   <g transform="translate(${offsetX}, ${offsetY})">
     <svg width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}">

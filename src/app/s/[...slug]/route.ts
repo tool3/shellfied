@@ -11,7 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import LZString from 'lz-string';
 import { resolveShortUrl } from '@/services/shortenerService';
-import { generateSvg, wrapSvgWithBackground } from '@/lib/generateSvg';
+import { generateSvg, generateCompareSvg as generateCompareSvgFromLib, wrapSvgWithBackground } from '@/lib/generateSvg';
 import { DEFAULT_BACKGROUND, DEFAULT_SETTINGS, DEFAULT_HEADER, DEFAULT_FOOTER, DEFAULT_WATERMARK } from '@/constants/defaults';
 import type { TemplateType, ControlsPosition, PaddingTuple, BackgroundType, GradientDirection, ImageAspectRatio, CompareLabelAlignment } from '@/types';
 
@@ -143,33 +143,7 @@ function parseCompressedState(compact: CompactState) {
   };
 }
 
-// Get SVG dimensions from SVG string
-function getSvgDimensions(svgContent: string): { width: number; height: number } {
-  const widthMatch = svgContent.match(/width="(\d+(?:\.\d+)?)"/);
-  const heightMatch = svgContent.match(/height="(\d+(?:\.\d+)?)"/);
-
-  let width = widthMatch ? parseFloat(widthMatch[1]) : 0;
-  let height = heightMatch ? parseFloat(heightMatch[1]) : 0;
-
-  // Fallback to viewBox
-  if (!width || !height) {
-    const viewBoxMatch = svgContent.match(/viewBox="[\d.]+\s+[\d.]+\s+([\d.]+)\s+([\d.]+)"/);
-    if (viewBoxMatch) {
-      width = width || parseFloat(viewBoxMatch[1]);
-      height = height || parseFloat(viewBoxMatch[2]);
-    }
-  }
-
-  return { width: width || 400, height: height || 300 };
-}
-
-// Extract inner content of SVG
-function extractSvgContent(svgString: string): string {
-  const match = svgString.match(/<svg[^>]*>([\s\S]*)<\/svg>/i);
-  return match ? match[1] : '';
-}
-
-// Escape XML special characters
+// Escape XML/HTML special characters
 function escapeXml(str: string): string {
   return str
     .replace(/&/g, '&amp;')
@@ -177,169 +151,6 @@ function escapeXml(str: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
-}
-
-// Map font family to Google Fonts URL
-function getFontImportUrl(fontFamily: string): string | null {
-  const fontMap: Record<string, string> = {
-    'Inter': 'Inter:wght@400;500;600;700',
-    'Roboto': 'Roboto:wght@400;500;700',
-    'Poppins': 'Poppins:wght@400;500;600;700',
-    'Montserrat': 'Montserrat:wght@400;500;600;700',
-    'Open Sans': 'Open+Sans:wght@400;500;600;700',
-    'Lato': 'Lato:wght@400;700',
-    'Oswald': 'Oswald:wght@400;500;600;700',
-    'Raleway': 'Raleway:wght@400;500;600;700',
-    'Nunito': 'Nunito:wght@400;500;600;700',
-    'Ubuntu': 'Ubuntu:wght@400;500;700',
-    'Rubik': 'Rubik:wght@400;500;600;700',
-    'Work Sans': 'Work+Sans:wght@400;500;600;700',
-    'Quicksand': 'Quicksand:wght@400;500;600;700',
-    'Bebas Neue': 'Bebas+Neue',
-    'Playfair Display': 'Playfair+Display:wght@400;500;600;700',
-    'Merriweather': 'Merriweather:wght@400;700',
-    'JetBrains Mono': 'JetBrains+Mono:wght@400;500;600;700',
-  };
-
-  // Extract the primary font name from the font-family string
-  const primaryFont = fontFamily.split(',')[0].trim().replace(/['"]/g, '');
-
-  if (fontMap[primaryFont]) {
-    // Use plain & - caller wraps in CDATA section for SVG compatibility
-    return `https://fonts.googleapis.com/css2?family=${fontMap[primaryFont]}&display=swap`;
-  }
-  return null;
-}
-
-// Generate SVG background element
-function generateSvgBackground(
-  background: ReturnType<typeof parseCompressedState>['background'],
-  totalWidth: number,
-  totalHeight: number,
-  borderRadius: number = 12
-): string {
-  if (!background || background.type === 'none') return '';
-
-  const GRADIENT_DIRECTIONS: Record<string, { x1: string; y1: string; x2: string; y2: string }> = {
-    'to-right': { x1: '0%', y1: '0%', x2: '100%', y2: '0%' },
-    'to-left': { x1: '100%', y1: '0%', x2: '0%', y2: '0%' },
-    'to-bottom': { x1: '0%', y1: '0%', x2: '0%', y2: '100%' },
-    'to-top': { x1: '0%', y1: '100%', x2: '0%', y2: '0%' },
-    'to-bottom-right': { x1: '0%', y1: '0%', x2: '100%', y2: '100%' },
-    'to-top-left': { x1: '100%', y1: '100%', x2: '0%', y2: '0%' },
-    'to-bottom-left': { x1: '100%', y1: '0%', x2: '0%', y2: '100%' },
-    'to-top-right': { x1: '0%', y1: '100%', x2: '100%', y2: '0%' },
-  };
-
-  switch (background.type) {
-    case 'solid':
-      return `<rect width="${totalWidth}" height="${totalHeight}" rx="${borderRadius}" fill="${background.color}"/>`;
-
-    case 'gradient': {
-      const isRadialReverse = background.gradientDirection === 'radial-reverse';
-      const isRadial = background.gradientDirection === 'radial' || isRadialReverse;
-      const fromColor = isRadialReverse ? background.gradientTo : background.gradientFrom;
-      const toColor = isRadialReverse ? background.gradientFrom : background.gradientTo;
-
-      if (isRadial) {
-        return `
-          <defs>
-            <radialGradient id="bgGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-              <stop offset="0%" stop-color="${fromColor}"/>
-              <stop offset="100%" stop-color="${toColor}"/>
-            </radialGradient>
-          </defs>
-          <rect width="${totalWidth}" height="${totalHeight}" rx="${borderRadius}" fill="url(#bgGradient)"/>`;
-      }
-      const dir = GRADIENT_DIRECTIONS[background.gradientDirection] || GRADIENT_DIRECTIONS['to-right'];
-      return `
-        <defs>
-          <linearGradient id="bgGradient" x1="${dir.x1}" y1="${dir.y1}" x2="${dir.x2}" y2="${dir.y2}">
-            <stop offset="0%" stop-color="${background.gradientFrom}"/>
-            <stop offset="100%" stop-color="${background.gradientTo}"/>
-          </linearGradient>
-        </defs>
-        <rect width="${totalWidth}" height="${totalHeight}" rx="${borderRadius}" fill="url(#bgGradient)"/>`;
-    }
-
-    default:
-      return '';
-  }
-}
-
-// Generate combined compare mode SVG
-function generateCompareSvg(
-  beforeSvg: string,
-  afterSvg: string,
-  beforeLabel: string,
-  afterLabel: string,
-  labelConfig: ReturnType<typeof parseCompressedState>['compareLabelConfig'],
-  background: ReturnType<typeof parseCompressedState>['background']
-): string {
-  const gap = 32;
-  const labelHeight = labelConfig.fontSize + 24;
-  const padding = background?.type !== 'none' ? (background?.padding ?? 32) : 32;
-
-  // Get dimensions for both SVGs
-  const beforeDims = beforeSvg ? getSvgDimensions(beforeSvg) : { width: 400, height: 300 };
-  const afterDims = afterSvg ? getSvgDimensions(afterSvg) : { width: 400, height: 300 };
-
-  const maxHeight = Math.max(beforeDims.height, afterDims.height);
-  const totalWidth = beforeDims.width + gap + afterDims.width + padding * 2;
-  const totalHeight = maxHeight + labelHeight + padding * 2;
-
-  // Calculate label positions based on alignment
-  let beforeLabelX = padding;
-  let afterLabelX = padding + beforeDims.width + gap;
-  let textAnchor = 'start';
-
-  if (labelConfig.alignment === 'center') {
-    beforeLabelX = padding + beforeDims.width / 2;
-    afterLabelX = padding + beforeDims.width + gap + afterDims.width / 2;
-    textAnchor = 'middle';
-  } else if (labelConfig.alignment === 'right') {
-    beforeLabelX = padding + beforeDims.width;
-    afterLabelX = padding + beforeDims.width + gap + afterDims.width;
-    textAnchor = 'end';
-  }
-
-  // Generate background SVG element
-  const backgroundSvg = generateSvgBackground(background, totalWidth, totalHeight);
-
-  // Get font import URL if using a Google Font
-  const fontImportUrl = getFontImportUrl(labelConfig.fontFamily);
-  const fontImportStyle = fontImportUrl
-    ? `@import url('${fontImportUrl}');`
-    : '';
-
-  // Create combined SVG - use CDATA section for style to avoid XML entity escaping issues
-  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}">
-  <defs>
-    <style><![CDATA[
-      ${fontImportStyle}
-      .label { font: ${labelConfig.fontWeight} ${labelConfig.fontSize}px ${labelConfig.fontFamily}; fill: ${labelConfig.color}; text-anchor: ${textAnchor}; }
-    ]]></style>
-  </defs>
-
-  <!-- Background -->
-  ${backgroundSvg}
-
-  <!-- Before label -->
-  <text x="${beforeLabelX}" y="${padding + labelConfig.fontSize}" class="label">${escapeXml(beforeLabel)}</text>
-
-  <!-- After label -->
-  <text x="${afterLabelX}" y="${padding + labelConfig.fontSize}" class="label">${escapeXml(afterLabel)}</text>
-
-  <!-- Before SVG -->
-  <g transform="translate(${padding}, ${padding + labelHeight})">
-    ${beforeSvg ? extractSvgContent(beforeSvg) : `<rect width="${beforeDims.width}" height="${beforeDims.height}" fill="rgba(255,255,255,0.1)" rx="8"/>`}
-  </g>
-
-  <!-- After SVG -->
-  <g transform="translate(${padding + beforeDims.width + gap}, ${padding + labelHeight})">
-    ${afterSvg ? extractSvgContent(afterSvg) : `<rect width="${afterDims.width}" height="${afterDims.height}" fill="rgba(255,255,255,0.1)" rx="8"/>`}
-  </g>
-</svg>`;
 }
 
 async function generateSvgResponse(id: string): Promise<NextResponse> {
@@ -363,8 +174,17 @@ async function generateSvgResponse(id: string): Promise<NextResponse> {
 
     // Check if compare mode
     if (opts.compareMode) {
-      // Generate both terminal SVGs
-      const sharedOptions = {
+      // generateCompareSvgFromLib handles width matching and SVG generation internally
+      svg = generateCompareSvgFromLib({
+        beforeContent: opts.beforeContent,
+        afterContent: opts.afterContent,
+        beforeLabel: opts.beforeLabel,
+        afterLabel: opts.afterLabel,
+        beforeTitle: opts.beforeTitle,
+        afterTitle: opts.afterTitle,
+        beforeLanguage: opts.beforeLanguage,
+        afterLanguage: opts.afterLanguage,
+        compareLabelConfig: opts.compareLabelConfig,
         template: opts.template,
         terminalTheme: opts.terminalTheme,
         fontSize: opts.fontSize,
@@ -373,66 +193,13 @@ async function generateSvgResponse(id: string): Promise<NextResponse> {
         showControls: opts.showControls,
         controlsPosition: opts.controlsPosition,
         borderRadius: opts.borderRadius,
+        width: opts.width,
         fontFamily: opts.fontFamily,
         header: opts.header,
         footer: opts.footer,
         watermark: opts.watermark,
-      };
-
-      const beforeSvg = opts.beforeContent ? generateSvg({
-        ...sharedOptions,
-        content: opts.beforeContent,
-        language: opts.beforeLanguage,
-        title: opts.beforeTitle,
-        width: opts.width,
-      }) : '';
-
-      const afterSvg = opts.afterContent ? generateSvg({
-        ...sharedOptions,
-        content: opts.afterContent,
-        language: opts.afterLanguage,
-        title: opts.afterTitle,
-        width: opts.width,
-      }) : '';
-
-      // Match widths if both have content
-      let finalBeforeSvg = beforeSvg;
-      let finalAfterSvg = afterSvg;
-
-      if (beforeSvg && afterSvg) {
-        const beforeDims = getSvgDimensions(beforeSvg);
-        const afterDims = getSvgDimensions(afterSvg);
-        const maxWidth = Math.max(beforeDims.width, afterDims.width);
-
-        if (beforeDims.width < maxWidth) {
-          finalBeforeSvg = generateSvg({
-            ...sharedOptions,
-            content: opts.beforeContent,
-            language: opts.beforeLanguage,
-            title: opts.beforeTitle,
-            width: maxWidth,
-          }) || beforeSvg;
-        }
-
-        if (afterDims.width < maxWidth) {
-          finalAfterSvg = generateSvg({
-            ...sharedOptions,
-            content: opts.afterContent,
-            language: opts.afterLanguage,
-            title: opts.afterTitle,
-            width: maxWidth,
-          }) || afterSvg;
-        }
-      }
-
-      svg = generateCompareSvg(
-        finalBeforeSvg,
-        finalAfterSvg,
-        opts.beforeLabel,
-        opts.afterLabel,
-        opts.compareLabelConfig,
-        opts.background
-      );
+        background: opts.background,
+      });
     } else {
       // Single mode
       if (!opts.content) {

@@ -50,7 +50,7 @@ const FORMAT_OPTIONS = [
 
 const SCALE_OPTIONS = [
   { value: '1', label: '1x' },
-  { value: '2', label: '2x (Recommended)' },
+  { value: '2', label: '2x' },
   { value: '3', label: '3x' },
 ];
 

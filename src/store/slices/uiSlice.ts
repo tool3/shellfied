@@ -29,6 +29,8 @@ export const createUISlice: StateCreator<AppStore, [], [], UIState> = (set, get)
     set({
       shareMode,
       isViewMode: shareMode === 'view',
+      // Set optimal export defaults for view mode (3x scale, 100% quality)
+      ...(shareMode === 'view' && { exportScale: 3, jpegQuality: 1.0 }),
     }),
   exitViewMode: () => {
     switchToEditMode();

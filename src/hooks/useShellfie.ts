@@ -58,6 +58,7 @@ export function useShellfie() {
         watermark: buildWatermarkConfig(watermark),
         width: width || undefined,
         fontFamily: fontFamily || undefined,
+        embedFont: true,
         header: buildHeaderOptions(header),
         footer: buildFooterOptions(footer),
       });
@@ -102,6 +103,7 @@ export function useShellfieSync() {
         watermark: buildWatermarkConfig(watermark),
         width: width || undefined,
         fontFamily: fontFamily || undefined,
+        embedFont: true,
         header: buildHeaderOptions(header),
         footer: buildFooterOptions(footer),
       });
@@ -165,6 +167,7 @@ export function useShellfieCompare() {
           padding,
           controls: showControls,
           fontFamily: fontFamily || undefined,
+          embedFont: true,
           width: width || undefined,
           watermark: buildWatermarkConfig(watermark),
           header: buildHeaderOptions(header),
@@ -251,6 +254,7 @@ export function useShellfieCompareSync() {
           padding,
           controls: showControls,
           fontFamily: fontFamily || undefined,
+          embedFont: true,
           width: width || undefined,
           watermark: buildWatermarkConfig(watermark),
           header: buildHeaderOptions(header),

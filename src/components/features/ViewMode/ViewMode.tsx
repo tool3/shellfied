@@ -2,10 +2,10 @@ import { memo, useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import { useStore, useStaticOutput } from '@/store';
 import { useShellfie, useShellfieCompare, useShellfieSync, useShellfieCompareSync } from '@/hooks/useShellfie';
 import { useExport } from '@/hooks/useExport';
-import { Button, Logo, Select, Slider } from '@/components/common';
-import { svgToRasterBlob, wrapSvgWithBackground, compareToRasterBlob, createCompareSvg } from '@/services/exportService';
+import { Button, Logo } from '@/components/common';
+import { svgToRasterBlob, wrapSvgWithBackground, compareToRasterBlob, createCompareSvgWithEmbeddedFonts } from '@/services/exportService';
 import { generateStaticUrl } from '@/utils/urlParams';
-import type { ImageAspectRatio, OutputFormat, ExportFormat, ExportScale } from '@/types';
+import type { ImageAspectRatio, OutputFormat, ExportFormat } from '@/types';
 import styles from './ViewMode.module.scss';
 
 const GRADIENT_DIRECTIONS: Record<string, string> = {
@@ -108,8 +108,8 @@ const StaticImageView = memo(function StaticImageView({
           };
 
           if (format === 'svg') {
-            // Create combined SVG
-            const combinedSvg = createCompareSvg(
+            // Create combined SVG with embedded fonts
+            const combinedSvg = await createCompareSvgWithEmbeddedFonts(
               beforeSvg,
               afterSvg,
               beforeLabel,
@@ -195,17 +195,11 @@ const StaticImageView = memo(function StaticImageView({
   );
 });
 
-const FORMAT_OPTIONS = [
+const FORMAT_OPTIONS: { value: ExportFormat; label: string }[] = [
   { value: 'svg', label: 'SVG' },
   { value: 'png', label: 'PNG' },
   { value: 'webp', label: 'WebP' },
   { value: 'jpeg', label: 'JPEG' },
-];
-
-const SCALE_OPTIONS = [
-  { value: '1', label: '1x' },
-  { value: '2', label: '2x' },
-  { value: '3', label: '3x' },
 ];
 
 export const ViewMode = memo(function ViewMode() {
@@ -217,10 +211,6 @@ export const ViewMode = memo(function ViewMode() {
   const brand = useStore((s) => s.brand);
   const exportFormat = useStore((s) => s.exportFormat);
   const setExportFormat = useStore((s) => s.setExportFormat);
-  const exportScale = useStore((s) => s.exportScale);
-  const setExportScale = useStore((s) => s.setExportScale);
-  const jpegQuality = useStore((s) => s.jpegQuality);
-  const setJpegQuality = useStore((s) => s.setJpegQuality);
   const staticOutput = useStaticOutput();
 
   const { svg, error, hasContent } = useShellfie();
@@ -528,37 +518,19 @@ export const ViewMode = memo(function ViewMode() {
         </div>
 
         <div className={styles.actions}>
-          <div className={styles.buttonRow}>
-            <Select
-              // label="Format"
-              options={FORMAT_OPTIONS}
-              value={exportFormat}
-              onChange={(value) => setExportFormat(value as ExportFormat)}
-              className={styles.formatSelect}
-            />
-            {exportFormat !== 'svg' && (
-              <Select
-                // label="Scale"
-                options={SCALE_OPTIONS}
-                value={String(exportScale)}
-                onChange={(value) => setExportScale(Number(value) as ExportScale)}
-                className={styles.scaleSelect}
-              />
-            )}
-            {exportFormat === 'jpeg' && (
-              <Slider
-                // label="Quality"
-                value={jpegQuality}
-                onChange={setJpegQuality}
-                min={0.6}
-                max={1.0}
-                step={0.1}
-                formatValue={(v) => `${Math.round(v * 100)}%`}
-                className={styles.qualitySlider}
-              />
-            )}
+          <div className={styles.formatToggle}>
+            {FORMAT_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={`${styles.formatButton} ${exportFormat === option.value ? styles.active : ''}`}
+                onClick={() => setExportFormat(option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
-          <div className={styles.row}> 
+          <div className={styles.row}>
             <Button
               variant="secondary"
               icon={isCopySuccess ? 'check' : 'copy'}
@@ -575,7 +547,6 @@ export const ViewMode = memo(function ViewMode() {
           <Button
             variant="primary"
             fullWidth
-            // size="lg"
             icon={isDownloadSuccess ? 'check' : 'download'}
             onClick={() => download()}
             disabled={isExporting}
@@ -596,16 +567,12 @@ export const ViewMode = memo(function ViewMode() {
           >
             Static
           </Button>
-        </div>
-        <div className={styles.optionsRow}>
-
           {exportError && (
             <div className={styles.exportError}>
               {exportError}
             </div>
           )}
         </div>
-
         <footer className={styles.footer}>
           <span>{brand.enabled ? brand.text : 'Created with'} </span>
           <a href={brand.enabled ? brand.url : '/'} rel="noopener noreferrer">
