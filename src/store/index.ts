@@ -200,6 +200,11 @@ function applyUrlState(
     result.background = { ...result.background, ...urlState.background };
   }
 
+  // Brand
+  if (urlState.brand) {
+    result.brand = { ...result.brand, ...urlState.brand };
+  }
+
   return result;
 }
 
