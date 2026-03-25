@@ -27,7 +27,7 @@ import sharp from 'sharp';
 import { initWasm, Resvg } from '@resvg/resvg-wasm';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
-import { generateSvg, generateCompareSvg, wrapSvgWithBackground } from '@/lib/generateSvg';
+import { generateSvg, generateCompareSvg, wrapSvgWithBackground, fetchServerFont } from '@/lib/generateSvg';
 import { DEFAULT_BACKGROUND, DEFAULT_SETTINGS, DEFAULT_HEADER, DEFAULT_FOOTER, DEFAULT_WATERMARK, DEFAULT_COMPARE_LABEL_CONFIG } from '@/constants/defaults';
 import type { TemplateType, ControlsPosition, PaddingTuple, BackgroundType, GradientDirection, ImageAspectRatio, CompareLabelAlignment } from '@/types';
 
@@ -93,13 +93,19 @@ async function svgToRaster(
   svg: string,
   format: Exclude<OutputFormat, 'svg'>,
   scale: number = 2,
-  quality: number = 90
+  quality: number = 90,
+  extraFontData?: { data: string; format: 'ttf' } | null,
 ): Promise<Buffer> {
   // Initialize WASM if needed
   await ensureWasmInitialized();
 
-  // Load all font weights for proper text rendering
+  // Load bundled JetBrains Mono font weights for proper text rendering
   const fontBuffers = await loadFontBuffers();
+
+  // Add the user's selected font if different from JetBrains Mono
+  if (extraFontData) {
+    fontBuffers.push(Buffer.from(extraFontData.data, 'base64'));
+  }
 
   // Use resvg for SVG to PNG conversion (handles embedded fonts properly)
   const resvg = new Resvg(svg, {
@@ -366,6 +372,9 @@ export async function GET(request: NextRequest) {
       const opts = parseCompressedState(compact);
 
       try {
+        // Pre-fetch the user's selected terminal font for embedding
+        const customFontData = await fetchServerFont(opts.fontFamily);
+
         let svg: string;
 
         // Handle compare mode
@@ -373,6 +382,9 @@ export async function GET(request: NextRequest) {
           if (!opts.beforeContent && !opts.afterContent) {
             return new NextResponse('Missing content in compare mode', { status: 400 });
           }
+
+          // Pre-fetch label font if it's a Google Font
+          const labelFontData = await fetchServerFont(opts.compareLabelConfig.fontFamily, opts.compareLabelConfig.fontWeight);
 
           svg = generateCompareSvg({
             beforeContent: opts.beforeContent,
@@ -397,6 +409,8 @@ export async function GET(request: NextRequest) {
             footer: opts.footer,
             watermark: opts.watermark,
             background: opts.background,
+            customFontData,
+            labelFontData,
           });
         } else {
           // Handle single mode
@@ -421,6 +435,7 @@ export async function GET(request: NextRequest) {
             header: opts.header,
             footer: opts.footer,
             watermark: opts.watermark,
+            customFontData,
           });
 
           // Only wrap with background for single mode (compare mode handles it internally)
@@ -447,8 +462,8 @@ export async function GET(request: NextRequest) {
           });
         }
 
-        // Convert to raster format
-        const rasterBuffer = await svgToRaster(svg, outputFormat);
+        // Convert to raster format (pass font data for resvg font resolution)
+        const rasterBuffer = await svgToRaster(svg, outputFormat, 2, 90, customFontData);
         return new NextResponse(new Uint8Array(rasterBuffer), {
           headers: {
             'Content-Type': getContentType(outputFormat),
@@ -573,6 +588,9 @@ export async function GET(request: NextRequest) {
   };
 
   try {
+    // Pre-fetch the user's selected font for embedding
+    const customFontData = await fetchServerFont(fontFamily);
+
     // Generate SVG
     let svg = generateSvg({
       content,
@@ -591,6 +609,7 @@ export async function GET(request: NextRequest) {
       header,
       footer,
       watermark,
+      customFontData,
     });
 
     if (!svg) {
@@ -620,8 +639,8 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Convert to raster format
-    const rasterBuffer = await svgToRaster(svg, outputFormat);
+    // Convert to raster format (pass font data for resvg font resolution)
+    const rasterBuffer = await svgToRaster(svg, outputFormat, 2, 90, customFontData);
     return new NextResponse(new Uint8Array(rasterBuffer), {
       headers: {
         'Content-Type': getContentType(outputFormat),

@@ -1,7 +1,7 @@
 import type { ExportFormat, BackgroundConfig, CompareExportOptions, ImageAspectRatio } from '@/types';
 
 // Cache for fetched font data - keyed by "fontFamily-weight"
-const fontCache: Map<string, string> = new Map();
+const fontCache: Map<string, { data: string; family: string; format: string }> = new Map();
 
 /**
  * Google Fonts API base URL for fetching font files
@@ -50,99 +50,123 @@ function extractPrimaryFontFamily(fontFamily: string): string {
 }
 
 /**
- * Fetch font from Google Fonts and return as base64 for embedding in SVG
- * Returns null for system fonts - we don't embed a fallback, we just use the system font name
+ * Map of bundled font files available at /fonts/ (served from /public/fonts/)
+ * These are fetched locally instead of from Google Fonts for reliability.
  */
-async function fetchGoogleFontAsBase64(fontFamily: string, weight: number): Promise<{ data: string; family: string } | null> {
+const BUNDLED_FONTS: Record<string, Record<number, string>> = {
+  'JetBrains Mono': {
+    400: '/fonts/JetBrainsMono-Regular.ttf',
+    500: '/fonts/JetBrainsMono-Medium.ttf',
+    600: '/fonts/JetBrainsMono-SemiBold.ttf',
+    700: '/fonts/JetBrainsMono-Bold.ttf',
+  },
+};
+
+/**
+ * Convert ArrayBuffer to base64 string
+ */
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+/**
+ * Fetch font from Google Fonts and return as base64 for embedding in SVG.
+ * For bundled fonts (JetBrains Mono), fetches from local /fonts/ directory.
+ * For Google Fonts, fetches the latin subset (last @font-face in CSS) which covers ASCII.
+ * Returns null for system fonts.
+ */
+async function fetchGoogleFontAsBase64(fontFamily: string, weight: number): Promise<{ data: string; family: string; format: string } | null> {
   const primaryFont = extractPrimaryFontFamily(fontFamily);
   const cacheKey = `${primaryFont}-${weight}`;
 
   // Check cache first
   if (fontCache.has(cacheKey)) {
-    return { data: fontCache.get(cacheKey)!, family: primaryFont };
+    return fontCache.get(cacheKey)!;
+  }
+
+  // For bundled fonts, fetch from local /fonts/ directory (more reliable, no subset issues)
+  const bundledPaths = BUNDLED_FONTS[primaryFont];
+  if (bundledPaths) {
+    const fontPath = bundledPaths[weight] || bundledPaths[400];
+    if (fontPath) {
+      try {
+        const response = await fetch(fontPath);
+        if (response.ok) {
+          const arrayBuffer = await response.arrayBuffer();
+          const base64 = arrayBufferToBase64(arrayBuffer);
+          const result = { data: base64, family: primaryFont, format: 'truetype' };
+          fontCache.set(cacheKey, result);
+          return result;
+        }
+      } catch {
+        // Fall through to Google Fonts
+      }
+    }
   }
 
   // Check if it's a supported Google Font
   const googleFontName = SUPPORTED_GOOGLE_FONTS[primaryFont];
   if (!googleFontName) {
-    // Not a Google Font (e.g., system-ui, Georgia, etc.)
-    // Don't embed a fallback - just return null and let the SVG use the system font
-    console.log(`[fetchGoogleFontAsBase64] Font "${primaryFont}" is not a Google Font - using system font`);
     return null;
   }
 
   try {
-    // Fetch the CSS from Google Fonts API
-    // The browser will handle the Accept header automatically
+    // Fetch CSS from Google Fonts API
     const cssUrl = `${GOOGLE_FONTS_CSS_API}?family=${googleFontName}:wght@${weight}&display=swap`;
-    console.log(`[fetchGoogleFontAsBase64] Fetching CSS from: ${cssUrl}`);
-
     const cssResponse = await fetch(cssUrl);
 
     if (!cssResponse.ok) {
-      console.warn(`[fetchGoogleFontAsBase64] Failed to fetch Google Font CSS for ${primaryFont}: ${cssResponse.status}`);
       return null;
     }
 
     const cssText = await cssResponse.text();
-    console.log(`[fetchGoogleFontAsBase64] Got CSS (${cssText.length} chars)`);
 
-    // Extract the font URL from the CSS
-    // Try woff2 first, then woff, then truetype
+    // Google Fonts returns multiple @font-face blocks for different unicode subsets.
+    // The LAST block is typically the latin subset which covers ASCII characters
+    // needed for code. We use matchAll to get all URLs and pick the last one.
     let fontUrl: string | undefined;
     let format = 'woff2';
 
-    const woff2Match = cssText.match(/src:\s*url\(([^)]+)\)\s*format\(['"]woff2['"]\)/);
-    if (woff2Match) {
-      fontUrl = woff2Match[1];
+    const woff2Matches = [...cssText.matchAll(/src:\s*url\(([^)]+)\)\s*format\(['"]woff2['"]\)/g)];
+    if (woff2Matches.length > 0) {
+      fontUrl = woff2Matches[woff2Matches.length - 1][1]; // Last = latin subset
       format = 'woff2';
     } else {
-      const woffMatch = cssText.match(/src:\s*url\(([^)]+)\)\s*format\(['"]woff['"]\)/);
-      if (woffMatch) {
-        fontUrl = woffMatch[1];
+      const woffMatches = [...cssText.matchAll(/src:\s*url\(([^)]+)\)\s*format\(['"]woff['"]\)/g)];
+      if (woffMatches.length > 0) {
+        fontUrl = woffMatches[woffMatches.length - 1][1];
         format = 'woff';
       } else {
-        const ttfMatch = cssText.match(/src:\s*url\(([^)]+)\)\s*format\(['"]truetype['"]\)/);
-        if (ttfMatch) {
-          fontUrl = ttfMatch[1];
+        const ttfMatches = [...cssText.matchAll(/src:\s*url\(([^)]+)\)\s*format\(['"]truetype['"]\)/g)];
+        if (ttfMatches.length > 0) {
+          fontUrl = ttfMatches[ttfMatches.length - 1][1];
           format = 'truetype';
-        } else {
-          // Last resort: any url
-          const anyUrlMatch = cssText.match(/src:\s*url\(([^)]+)\)/);
-          if (anyUrlMatch) {
-            fontUrl = anyUrlMatch[1];
-            format = 'woff2'; // assume modern format
-          }
         }
       }
     }
 
     if (!fontUrl) {
-      console.warn(`[fetchGoogleFontAsBase64] Could not find font URL in CSS for ${primaryFont}`);
       return null;
     }
-
-    console.log(`[fetchGoogleFontAsBase64] Fetching font from: ${fontUrl}`);
 
     // Fetch the actual font file
     const fontResponse = await fetch(fontUrl);
     if (!fontResponse.ok) {
-      console.warn(`[fetchGoogleFontAsBase64] Failed to fetch font file for ${primaryFont}: ${fontResponse.status}`);
       return null;
     }
 
     const arrayBuffer = await fontResponse.arrayBuffer();
-    const base64 = btoa(
-      new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
-    );
+    const base64 = arrayBufferToBase64(arrayBuffer);
 
-    console.log(`[fetchGoogleFontAsBase64] Successfully embedded ${primaryFont} (${base64.length} chars, format: ${format})`);
-
-    // Cache the result
-    fontCache.set(cacheKey, base64);
-    return { data: base64, family: primaryFont };
-  } catch (e) {
-    console.warn(`[fetchGoogleFontAsBase64] Failed to fetch Google Font ${primaryFont}:`, e);
+    const result = { data: base64, family: primaryFont, format };
+    fontCache.set(cacheKey, result);
+    return result;
+  } catch {
     return null;
   }
 }
@@ -167,9 +191,10 @@ export async function embedFontInSvg(svgContent: string, fontFamily: string): Pr
     return svgContent;
   }
 
-  // Create @font-face rule
-  const format = fontResult.data.length > 10000 ? 'woff2' : 'truetype';
-  const fontFaceRule = `@font-face { font-family: '${fontResult.family}'; src: url('data:font/${format};base64,${fontResult.data}') format('${format === 'woff2' ? 'woff2' : 'truetype'}'); font-weight: normal; }`;
+  // Create @font-face rule using the actual format from the fetch
+  const mimeType = fontResult.format === 'truetype' ? 'font/ttf' : `font/${fontResult.format}`;
+  const formatStr = fontResult.format === 'truetype' ? 'truetype' : fontResult.format;
+  const fontFaceRule = `@font-face { font-family: '${fontResult.family}'; src: url('data:${mimeType};base64,${fontResult.data}') format('${formatStr}'); font-weight: normal; }`;
 
   // Check if SVG already has a <style> element inside <defs>
   const hasDefsStyle = /<defs[^>]*>[\s\S]*?<style/i.test(svgContent);
@@ -1172,8 +1197,9 @@ export async function createCompareSvgWithEmbeddedFonts(
   try {
     const fontResult = await fetchGoogleFontAsBase64(fontFamily, parseInt(fontWeight));
     if (fontResult) {
-      const format = fontResult.data.length > 10000 ? 'woff2' : 'truetype'; // woff2 from Google, ttf from local
-      fontFaceStyle = `@font-face { font-family: '${fontResult.family}'; src: url('data:font/${format};base64,${fontResult.data}') format('${format === 'woff2' ? 'woff2' : 'truetype'}'); font-weight: ${fontWeight}; }`;
+      const fmtMime = fontResult.format === 'truetype' ? 'font/ttf' : `font/${fontResult.format}`;
+      const fmtStr = fontResult.format === 'truetype' ? 'truetype' : fontResult.format;
+      fontFaceStyle = `@font-face { font-family: '${fontResult.family}'; src: url('data:${fmtMime};base64,${fontResult.data}') format('${fmtStr}'); font-weight: ${fontWeight}; }`;
       effectiveFontFamily = `'${fontResult.family}', ${fontFamily}`;
     }
   } catch (e) {
@@ -1522,8 +1548,9 @@ export async function downloadCompareSvg(
   try {
     const fontResult = await fetchGoogleFontAsBase64(fontFamily, parseInt(fontWeight));
     if (fontResult) {
-      const format = fontResult.data.length > 10000 ? 'woff2' : 'truetype'; // woff2 from Google, ttf from local
-      fontFaceStyle = `@font-face { font-family: '${fontResult.family}'; src: url('data:font/${format};base64,${fontResult.data}') format('${format === 'woff2' ? 'woff2' : 'truetype'}'); font-weight: ${fontWeight}; }`;
+      const fmtMime = fontResult.format === 'truetype' ? 'font/ttf' : `font/${fontResult.format}`;
+      const fmtStr = fontResult.format === 'truetype' ? 'truetype' : fontResult.format;
+      fontFaceStyle = `@font-face { font-family: '${fontResult.family}'; src: url('data:${fmtMime};base64,${fontResult.data}') format('${fmtStr}'); font-weight: ${fontWeight}; }`;
       effectiveFontFamily = `'${fontResult.family}', ${fontFamily}`;
     }
   } catch (e) {
