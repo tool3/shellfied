@@ -43,7 +43,8 @@ export function useExport() {
       try {
         // Handle compare mode export
         if (compareMode) {
-          let { beforeSvg, afterSvg, beforeLabel, afterLabel } = generateCompare();
+          const { beforeLabel, afterLabel, ...compareSvgs } = generateCompare();
+          let { beforeSvg, afterSvg } = compareSvgs;
           if (!beforeSvg && !afterSvg) {
             throw new Error('No content to export');
           }
@@ -129,7 +130,8 @@ export function useExport() {
     try {
       // Handle compare mode copy
       if (compareMode) {
-        let { beforeSvg, afterSvg, beforeLabel, afterLabel } = generateCompare();
+        const { beforeLabel, afterLabel, ...compareCopySvgs } = generateCompare();
+        let { beforeSvg, afterSvg } = compareCopySvgs;
         if (!beforeSvg && !afterSvg) {
           throw new Error('No content to copy');
         }

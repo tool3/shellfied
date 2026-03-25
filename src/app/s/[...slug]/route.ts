@@ -11,7 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import LZString from 'lz-string';
 import { resolveShortUrl } from '@/services/shortenerService';
-import { generateSvg, generateCompareSvg as generateCompareSvgFromLib, wrapSvgWithBackground } from '@/lib/generateSvg';
+import { generateSvg, generateCompareSvg as generateCompareSvgFromLib, wrapSvgWithBackground, fetchServerFont } from '@/lib/generateSvg';
 import { DEFAULT_BACKGROUND, DEFAULT_SETTINGS, DEFAULT_HEADER, DEFAULT_FOOTER, DEFAULT_WATERMARK } from '@/constants/defaults';
 import type { TemplateType, ControlsPosition, PaddingTuple, BackgroundType, GradientDirection, ImageAspectRatio, CompareLabelAlignment } from '@/types';
 
@@ -170,10 +170,16 @@ async function generateSvgResponse(id: string): Promise<NextResponse> {
     const compact = JSON.parse(json) as CompactState;
     const opts = parseCompressedState(compact);
 
+    // Pre-fetch the user's selected terminal font for embedding
+    const customFontData = await fetchServerFont(opts.fontFamily);
+
     let svg: string;
 
     // Check if compare mode
     if (opts.compareMode) {
+      // Pre-fetch label font if it's a Google Font
+      const labelFontData = await fetchServerFont(opts.compareLabelConfig.fontFamily, opts.compareLabelConfig.fontWeight);
+
       // generateCompareSvgFromLib handles width matching and SVG generation internally
       svg = generateCompareSvgFromLib({
         beforeContent: opts.beforeContent,
@@ -199,6 +205,8 @@ async function generateSvgResponse(id: string): Promise<NextResponse> {
         footer: opts.footer,
         watermark: opts.watermark,
         background: opts.background,
+        customFontData,
+        labelFontData,
       });
     } else {
       // Single mode
@@ -223,6 +231,7 @@ async function generateSvgResponse(id: string): Promise<NextResponse> {
         header: opts.header,
         footer: opts.footer,
         watermark: opts.watermark,
+        customFontData,
       }) || '';
 
       if (!svg) {
