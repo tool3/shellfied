@@ -336,13 +336,14 @@ const GOOGLE_FONTS: Record<string, string> = {
 };
 
 /**
- * Preload a font for Canvas rendering using CSS Font Loading API
+ * Preload a font for Canvas rendering using CSS Font Loading API.
+ * Uses cached base64 font data from fetchGoogleFontAsBase64 when available
+ * (already fetched during embedFontInSvg), falling back to stylesheet loading.
  */
 async function preloadFont(fontString: string): Promise<void> {
   // Validate fontString - must have format "weight size family, fallback"
   // e.g., "600 16px Inter, sans-serif"
   if (!fontString || fontString.includes('undefined')) {
-    console.warn('Invalid font string passed to preloadFont:', fontString);
     return;
   }
 
@@ -357,13 +358,12 @@ async function preloadFont(fontString: string): Promise<void> {
     return; // System font or invalid, no need to preload
   }
 
-  // Check if font is already loaded - wrap in try/catch to handle invalid font strings
+  // Check if font is already loaded
   try {
     if (document.fonts.check(fontString)) {
       return;
     }
   } catch {
-    console.warn('Failed to check font:', fontString);
     return;
   }
 
@@ -371,26 +371,48 @@ async function preloadFont(fontString: string): Promise<void> {
   const weightMatch = fontString.match(/^(\d+)\s/);
   const weight = weightMatch ? weightMatch[1] : '400';
 
-  // Load via CSS Font Loading API
-  try {
-    const fontFace = new FontFace(
-      primaryFont,
-      `url(https://fonts.gstatic.com/s/${primaryFont.toLowerCase().replace(/\s+/g, '')}/v30/regular.woff2)`,
-      { weight }
-    );
-
-    // Try to load the font - fall back to loading via link element if this fails
-    await Promise.race([
-      fontFace.load().then(() => document.fonts.add(fontFace)),
-      loadFontViaStylesheet(primaryFont, weight),
-    ]);
-
-    // Wait for font to be ready
-    await document.fonts.ready;
-  } catch {
-    // Fallback: try loading via stylesheet
-    await loadFontViaStylesheet(primaryFont, weight);
+  // Try using cached font data from fetchGoogleFontAsBase64 (already fetched during
+  // embedFontInSvg earlier in the export flow). This is instant and reliable.
+  const cacheKey = `${primaryFont}-${parseInt(weight)}`;
+  const cached = fontCache.get(cacheKey);
+  if (cached) {
+    try {
+      const mimeType = cached.format === 'truetype' ? 'font/ttf' : `font/${cached.format}`;
+      const fontFace = new FontFace(
+        primaryFont,
+        `url('data:${mimeType};base64,${cached.data}')`,
+        { weight }
+      );
+      await fontFace.load();
+      document.fonts.add(fontFace);
+      await document.fonts.ready;
+      return;
+    } catch {
+      // Fall through to stylesheet loading
+    }
   }
+
+  // Fallback: fetch font and register, or load via stylesheet
+  try {
+    const fontResult = await fetchGoogleFontAsBase64(primaryFont, parseInt(weight));
+    if (fontResult) {
+      const mimeType = fontResult.format === 'truetype' ? 'font/ttf' : `font/${fontResult.format}`;
+      const fontFace = new FontFace(
+        primaryFont,
+        `url('data:${mimeType};base64,${fontResult.data}')`,
+        { weight }
+      );
+      await fontFace.load();
+      document.fonts.add(fontFace);
+      await document.fonts.ready;
+      return;
+    }
+  } catch {
+    // Fall through to stylesheet
+  }
+
+  // Last resort: stylesheet loading
+  await loadFontViaStylesheet(primaryFont, weight);
 }
 
 /**

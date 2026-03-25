@@ -24,6 +24,7 @@ import {
   DEFAULT_FOOTER,
   DEFAULT_BACKGROUND,
   DEFAULT_WATERMARK,
+  DEFAULT_BRAND,
 } from '@/constants/defaults';
 
 // URL parameter short names to minimize URL length
@@ -381,6 +382,16 @@ export interface UrlState {
     imageAspectRatio?: ImageAspectRatio;
     padding?: number;
   };
+
+  // Brand
+  brand?: {
+    enabled?: boolean;
+    text?: string;
+    name?: string;
+    url?: string;
+    showIcon?: boolean;
+    iconUrl?: string;
+  };
 }
 
 // Internal helper to build share URL params
@@ -633,6 +644,12 @@ interface CompactState {
   bgd?: string; // bgGradientDirection
   bgp?: number; // bgPadding
   bga?: string; // bgImageAspectRatio
+  rbe?: boolean; // brandEnabled
+  rbt?: string; // brandText
+  rbn?: string; // brandName
+  rbu?: string; // brandUrl
+  rbi?: boolean; // brandShowIcon
+  rbiu?: string; // brandIconUrl
 }
 
 // Build compact state for LZ compression
@@ -741,6 +758,15 @@ function buildCompactState(state: UrlState, mode: ShareMode, includeContent: boo
     }
     add('bgp', state.background.padding, DEFAULT_BACKGROUND.padding);
     add('bga', state.background.imageAspectRatio, DEFAULT_BACKGROUND.imageAspectRatio);
+  }
+
+  if (state.brand?.enabled) {
+    compact.rbe = true;
+    if (state.brand.text && state.brand.text !== DEFAULT_BRAND.text) compact.rbt = state.brand.text;
+    if (state.brand.name && state.brand.name !== DEFAULT_BRAND.name) compact.rbn = state.brand.name;
+    if (state.brand.url && state.brand.url !== DEFAULT_BRAND.url) compact.rbu = state.brand.url;
+    if (state.brand.showIcon !== undefined && state.brand.showIcon !== DEFAULT_BRAND.showIcon) compact.rbi = state.brand.showIcon;
+    if (state.brand.iconUrl) compact.rbiu = state.brand.iconUrl;
   }
 
   return compact;
@@ -874,6 +900,15 @@ function parseCompactState(compact: CompactState): UrlState {
     }
     if (compact.bgp !== undefined) state.background.padding = compact.bgp;
     if (compact.bga !== undefined) state.background.imageAspectRatio = compact.bga as ImageAspectRatio;
+  }
+
+  if (compact.rbe) {
+    state.brand = { enabled: true };
+    if (compact.rbt !== undefined) state.brand.text = compact.rbt;
+    if (compact.rbn !== undefined) state.brand.name = compact.rbn;
+    if (compact.rbu !== undefined) state.brand.url = compact.rbu;
+    if (compact.rbi !== undefined) state.brand.showIcon = compact.rbi;
+    if (compact.rbiu !== undefined) state.brand.iconUrl = compact.rbiu;
   }
 
   return state;
