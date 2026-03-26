@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTheme } from '@/hooks/useTheme';
 import { useIsViewMode, useStore, useHasHydrated } from '@/store';
-import { rehydrateCompressedContent } from '@/utils/urlParams';
+import { rehydrateCompressedContent, getShortId, resolveShortId } from '@/utils/urlParams';
 import { Header } from '@/components/layout';
 import { Editor, Preview, SettingsPanel, ExportPanel, ViewMode } from '@/components/features';
 import styles from './page.module.scss';
@@ -12,8 +12,55 @@ export function HomeClient() {
   useTheme();
   const isViewMode = useIsViewMode();
   const hasHydrated = useHasHydrated();
+  const [shortIdResolved, setShortIdResolved] = useState(!getShortId());
+  // Track whether we've mounted on the client to avoid SSR hydration mismatch.
+  // Server renders with isViewMode=false (no window), client may have isViewMode=true.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
-  // Rehydrate compressed URL content after initial mount
+  // Resolve short URL ID if present (?sid=SHORT_ID)
+  useEffect(() => {
+    const sid = getShortId();
+    if (!sid) return;
+
+    resolveShortId(sid).then((urlState) => {
+      if (urlState) {
+        const store = useStore.getState();
+        // Apply all resolved state to the store
+        if (urlState.content !== undefined) store.setContent(urlState.content);
+        if (urlState.language !== undefined) store.setLanguage(urlState.language);
+        if (urlState.template !== undefined) store.setTemplate(urlState.template);
+        if (urlState.terminalTheme !== undefined) store.setTerminalTheme(urlState.terminalTheme);
+        if (urlState.fontSize !== undefined) store.setFontSize(urlState.fontSize);
+        if (urlState.lineHeight !== undefined) store.setLineHeight(urlState.lineHeight);
+        if (urlState.padding !== undefined) store.setPadding(urlState.padding);
+        if (urlState.title !== undefined) store.setTitle(urlState.title);
+        if (urlState.showControls !== undefined) store.setShowControls(urlState.showControls);
+        if (urlState.controlsPosition !== undefined) store.setControlsPosition(urlState.controlsPosition);
+        if (urlState.borderRadius !== undefined) store.setBorderRadius(urlState.borderRadius);
+        if (urlState.width !== undefined) store.setWidth(urlState.width);
+        if (urlState.fontFamily !== undefined) store.setFontFamily(urlState.fontFamily);
+        if (urlState.compareMode !== undefined) store.setCompareMode(urlState.compareMode);
+        if (urlState.beforeContent !== undefined) store.setBeforeContent(urlState.beforeContent);
+        if (urlState.afterContent !== undefined) store.setAfterContent(urlState.afterContent);
+        if (urlState.beforeLabel !== undefined) store.setBeforeLabel(urlState.beforeLabel);
+        if (urlState.afterLabel !== undefined) store.setAfterLabel(urlState.afterLabel);
+        if (urlState.beforeLanguage !== undefined) store.setBeforeLanguage(urlState.beforeLanguage);
+        if (urlState.beforeTitle !== undefined) store.setBeforeTitle(urlState.beforeTitle);
+        if (urlState.afterTitle !== undefined) store.setAfterTitle(urlState.afterTitle);
+        if (urlState.afterLanguage !== undefined) store.setAfterLanguage(urlState.afterLanguage);
+        if (urlState.compareLabelConfig) store.setCompareLabelConfig(urlState.compareLabelConfig as Parameters<typeof store.setCompareLabelConfig>[0]);
+        if (urlState.watermark) store.setWatermark(urlState.watermark);
+        if (urlState.header) store.setHeader(urlState.header);
+        if (urlState.footer) store.setFooter(urlState.footer);
+        if (urlState.background) store.setBackground(urlState.background);
+        if (urlState.brand) store.setBrand(urlState.brand);
+      }
+      setShortIdResolved(true);
+    });
+  }, []);
+
+  // Rehydrate compressed URL content after initial mount (legacy ?d= and individual params)
   useEffect(() => {
     rehydrateCompressedContent().then((updates) => {
       if (updates) {
@@ -24,9 +71,14 @@ export function HomeClient() {
     });
   }, []);
 
-  // Wait for store hydration before rendering view mode
-  // This ensures URL params are applied before ViewMode tries to use them
-  if (isViewMode && !hasHydrated) {
+  // Wait for client mount before branching on isViewMode to avoid SSR hydration mismatch.
+  // Server has no access to URL params (window), so server always renders with isViewMode=false.
+  if (!mounted) {
+    return null;
+  }
+
+  // Wait for short URL data to load before rendering view mode
+  if (isViewMode && !shortIdResolved) {
     return (
       <div style={{
         display: 'flex',

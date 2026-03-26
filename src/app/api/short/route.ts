@@ -9,7 +9,34 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createShortUrl } from '@/services/shortenerService';
+import { createShortUrl, resolveShortUrl } from '@/services/shortenerService';
+
+/**
+ * GET /api/short?id=abc1234
+ * Resolves a short URL ID to its compressed data
+ */
+export async function GET(request: NextRequest) {
+  const id = request.nextUrl.searchParams.get('id');
+
+  if (!id || typeof id !== 'string') {
+    return NextResponse.json(
+      { success: false, error: 'Missing or invalid id parameter' },
+      { status: 400 }
+    );
+  }
+
+  const result = await resolveShortUrl(id);
+
+  if (!result.success) {
+    return NextResponse.json(result, { status: 404 });
+  }
+
+  return NextResponse.json(result, {
+    headers: {
+      'Cache-Control': 'public, max-age=31536000, immutable',
+    },
+  });
+}
 
 export async function POST(request: NextRequest) {
   try {

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
 import { useShallow } from 'zustand/react/shallow';
 import { useState, useEffect } from 'react';
 import { createEditorSlice } from './slices/editorSlice';
@@ -8,6 +8,34 @@ import { createUISlice } from './slices/uiSlice';
 import { DEFAULT_WATERMARK, DEFAULT_WATERMARK_STYLE, DEFAULT_WATERMARK_MARKUP, DEFAULT_BACKGROUND } from '@/constants/defaults';
 import { parseUrlParams, getShareMode, getOutputFormat, type UrlState } from '@/utils/urlParams';
 import type { AppStore } from './types';
+
+/**
+ * Safe localStorage wrapper that handles private/incognito mode gracefully.
+ * In some browsers (e.g. Safari private mode), localStorage throws on access.
+ */
+const safeStorage: StateStorage = {
+  getItem: (name: string): string | null => {
+    try {
+      return localStorage.getItem(name);
+    } catch {
+      return null;
+    }
+  },
+  setItem: (name: string, value: string): void => {
+    try {
+      localStorage.setItem(name, value);
+    } catch {
+      // Silently fail in private mode - state won't persist but app still works
+    }
+  },
+  removeItem: (name: string): void => {
+    try {
+      localStorage.removeItem(name);
+    } catch {
+      // Silently fail
+    }
+  },
+};
 
 // Parse URL params once at module load
 const initialUrlState = typeof window !== 'undefined' ? parseUrlParams() : null;
@@ -26,7 +54,7 @@ export const useStore = create<AppStore>()(
     }),
     {
       name: 'shellfied-storage',
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => safeStorage),
       onRehydrateStorage: () => {
         return () => {
           hasHydrated = true;

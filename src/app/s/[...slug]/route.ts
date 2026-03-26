@@ -397,7 +397,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     const compact = JSON.parse(json) as CompactState;
-    const redirectUrl = `/?d=${encodeURIComponent(result.data)}`;
+    const redirectUrl = `/?sid=${encodeURIComponent(slug)}`;
     const baseUrl = new URL(request.url).origin;
 
     const html = generateLandingPage(redirectUrl, compact, baseUrl);
@@ -411,7 +411,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     console.error('Error generating landing page:', error);
     // Fallback to redirect
-    const redirectUrl = `/?d=${encodeURIComponent(result.data)}`;
+    const redirectUrl = `/?sid=${encodeURIComponent(slug)}`;
     return NextResponse.redirect(new URL(redirectUrl, request.url));
   }
 }
