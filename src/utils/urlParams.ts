@@ -266,6 +266,11 @@ export type OutputFormat = 'svg' | 'png' | 'webp' | 'jpeg';
 export function getShareMode(): ShareMode | null {
   const params = new URLSearchParams(window.location.search);
 
+  // Check for short URL ID - always view mode
+  if (params.get('sid')) {
+    return 'view';
+  }
+
   // Check for LZ-compressed data first
   const compressedData = params.get('d');
   if (compressedData) {
@@ -287,6 +292,13 @@ export function getShareMode(): ShareMode | null {
   if (params.size > 0) return 'view';
 
   return null;
+}
+
+// Get short URL ID from URL params
+export function getShortId(): string | null {
+  if (typeof window === 'undefined') return null;
+  const params = new URLSearchParams(window.location.search);
+  return params.get('sid');
 }
 
 // Get output format from URL (for static image serving in view mode)
@@ -920,6 +932,11 @@ export function parseUrlParams(): UrlState | null {
 
   if (params.size === 0) return null;
 
+  // Short URL ID - return empty state (data will be fetched async by HomeClient)
+  if (params.get('sid')) {
+    return {};
+  }
+
   // Check for LZ-compressed data first
   const compressedData = params.get('d');
   if (compressedData) {
@@ -1372,4 +1389,36 @@ export async function rehydrateCompressedContent(): Promise<{
   }
 
   return hasUpdates ? updates : null;
+}
+
+/**
+ * Resolve a short URL ID by fetching from the API and returning parsed state.
+ * Used when the URL contains ?sid=SHORT_ID (redirected from /s/SHORT_ID).
+ */
+export async function resolveShortId(sid: string): Promise<UrlState | null> {
+  try {
+    const response = await fetch(`/api/short?id=${encodeURIComponent(sid)}`);
+    if (!response.ok) {
+      console.warn(`[resolveShortId] Failed to resolve short URL "${sid}": ${response.status}`);
+      return null;
+    }
+
+    const result = await response.json();
+    if (!result.success || !result.data) {
+      console.warn(`[resolveShortId] Short URL "${sid}" not found`);
+      return null;
+    }
+
+    // result.data is LZ-compressed state
+    const compact = decompressLZData(result.data);
+    if (!compact) {
+      console.warn(`[resolveShortId] Failed to decompress data for "${sid}"`);
+      return null;
+    }
+
+    return parseCompactState(compact);
+  } catch (error) {
+    console.warn(`[resolveShortId] Error resolving short URL "${sid}":`, error);
+    return null;
+  }
 }
