@@ -162,3 +162,7 @@ Quick visual verification checklist for all app features.
 8. Click Edit in view mode, verify editor loads with settings
 9. Toggle compare mode, verify dual editors appear
 10. Toggle dark/light mode, verify theme switches
+
+
+
+![cool](https://ray.so/aqHRCuV)

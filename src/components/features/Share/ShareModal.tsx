@@ -1,7 +1,7 @@
 import { memo, useCallback, useState, useEffect, useRef } from 'react';
 import { Button, Icon, Toggle, Input } from '@/components/common';
 import { useStore } from '@/store';
-import { validateUrlLength } from '@/utils/urlParams';
+import { validateUrlLength, generateShareUrlLZ, generateCompressedData } from '@/utils/urlParams';
 import styles from './ShareModal.module.scss';
 
 export interface ShortUrls {
@@ -44,8 +44,27 @@ export const ShareModal = memo(function ShareModal({
   const lastShortenedDataRef = useRef<string | null>(shortUrls ? compressedData : null);
   const hasAttemptedAutoCreate = useRef(!!shortUrls);
 
-  const viewValidation = validateUrlLength(viewUrl);
-  const editValidation = validateUrlLength(editUrl);
+  // Track whether brand was modified since the link was created
+  const [liveCompressedData, setLiveCompressedData] = useState(compressedData);
+  const [liveViewUrl, setLiveViewUrl] = useState(viewUrl);
+  const [liveEditUrl, setLiveEditUrl] = useState(editUrl);
+  const brandAtLinkCreation = useRef(JSON.stringify(brand));
+  const brandDirty = JSON.stringify(brand) !== brandAtLinkCreation.current;
+
+  const regenerateLink = useCallback(() => {
+    const state = useStore.getState();
+    const newCompressed = generateCompressedData(state, 'view');
+    setLiveViewUrl(generateShareUrlLZ(state, 'view'));
+    setLiveEditUrl(generateShareUrlLZ(state, 'edit'));
+    setLiveCompressedData(newCompressed);
+    brandAtLinkCreation.current = JSON.stringify(state.brand);
+    // Clear stale short URLs — auto-create will fire a new one
+    onShortUrlsChange(null);
+    hasAttemptedAutoCreate.current = false;
+  }, [onShortUrlsChange]);
+
+  const viewValidation = validateUrlLength(liveViewUrl);
+  const editValidation = validateUrlLength(liveEditUrl);
 
   const copyToClipboard = useCallback(
     async (url: string, type: 'view' | 'edit' | 'short' | 'svg') => {
@@ -73,7 +92,7 @@ export const ShareModal = memo(function ShareModal({
   const createShortUrl = useCallback(async () => {
     // Don't create if already shortening or if we already have URLs for this data
     if (isShortening) return;
-    if (shortUrls && lastShortenedDataRef.current === compressedData) return;
+    if (shortUrls && lastShortenedDataRef.current === liveCompressedData) return;
 
     setIsShortening(true);
     setShortenError(null);
@@ -82,7 +101,7 @@ export const ShareModal = memo(function ShareModal({
       const response = await fetch('/api/short', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: compressedData }),
+        body: JSON.stringify({ data: liveCompressedData }),
       });
 
       const result = await response.json();
@@ -92,7 +111,7 @@ export const ShareModal = memo(function ShareModal({
         return;
       }
 
-      lastShortenedDataRef.current = compressedData;
+      lastShortenedDataRef.current = liveCompressedData;
       onShortUrlsChange({
         shortUrl: result.shortUrl,
         svgUrl: result.svgUrl,
@@ -103,17 +122,17 @@ export const ShareModal = memo(function ShareModal({
     } finally {
       setIsShortening(false);
     }
-  }, [compressedData, onShortUrlsChange, isShortening, shortUrls]);
+  }, [liveCompressedData, onShortUrlsChange, isShortening, shortUrls]);
 
-  // Auto-create short URL when modal opens (only once per unique content)
+  // Auto-create short URL when modal opens or when data changes (brand update)
   useEffect(() => {
     // Skip if already have URLs for this content or already attempted
-    if (shortUrls && lastShortenedDataRef.current === compressedData) return;
+    if (shortUrls && lastShortenedDataRef.current === liveCompressedData) return;
     if (hasAttemptedAutoCreate.current) return;
 
     hasAttemptedAutoCreate.current = true;
     createShortUrl();
-  }, [createShortUrl, shortUrls, compressedData]);
+  }, [createShortUrl, shortUrls, liveCompressedData]);
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -256,20 +275,20 @@ export const ShareModal = memo(function ShareModal({
                   <span>Share Page</span>
                 </label>
                 <div className={styles.urlInput}>
-                  <input type="text" value={viewUrl} readOnly />
+                  <input type="text" value={liveViewUrl} readOnly />
                   <div className={styles.urlActions}>
                     <Button
                       variant="secondary"
                       size="sm"
                       icon={copiedView ? 'check' : 'copy'}
-                      onClick={() => copyToClipboard(viewUrl, 'view')}
+                      onClick={() => copyToClipboard(liveViewUrl, 'view')}
                       aria-label={copiedView ? 'Copied!' : 'Copy URL'}
                     />
                     <Button
                       variant="secondary"
                       size="sm"
                       icon="externalLink"
-                      onClick={() => openInNewTab(viewUrl)}
+                      onClick={() => openInNewTab(liveViewUrl)}
                       aria-label="Open in new tab"
                     />
                   </div>
@@ -283,20 +302,20 @@ export const ShareModal = memo(function ShareModal({
                   <span>Editor Link</span>
                 </label>
                 <div className={styles.urlInput}>
-                  <input type="text" value={editUrl} readOnly />
+                  <input type="text" value={liveEditUrl} readOnly />
                   <div className={styles.urlActions}>
                     <Button
                       variant="secondary"
                       size="sm"
                       icon={copiedEdit ? 'check' : 'copy'}
-                      onClick={() => copyToClipboard(editUrl, 'edit')}
+                      onClick={() => copyToClipboard(liveEditUrl, 'edit')}
                       aria-label={copiedEdit ? 'Copied!' : 'Copy URL'}
                     />
                     <Button
                       variant="secondary"
                       size="sm"
                       icon="externalLink"
-                      onClick={() => openInNewTab(editUrl)}
+                      onClick={() => openInNewTab(liveEditUrl)}
                       aria-label="Open in new tab"
                     />
                   </div>
@@ -316,15 +335,15 @@ export const ShareModal = memo(function ShareModal({
               )}
 
               <div className={styles.urlLength}>
-                <span>URL Length: {viewUrl.length.toLocaleString()} / 8,000 characters</span>
+                <span>URL Length: {liveViewUrl.length.toLocaleString()} / 8,000 characters</span>
                 <div className={styles.progressBar}>
                   <div
                     className={styles.progress}
                     style={{
-                      width: `${Math.min((viewUrl.length / 8000) * 100, 100)}%`,
+                      width: `${Math.min((liveViewUrl.length / 8000) * 100, 100)}%`,
                       backgroundColor: isInvalid
                         ? 'var(--color-error)'
-                        : viewUrl.length > 2000
+                        : liveViewUrl.length > 2000
                           ? 'var(--color-warning)'
                           : 'var(--color-success)',
                     }}
@@ -336,18 +355,30 @@ export const ShareModal = memo(function ShareModal({
 
           {/* Brand Section - Collapsible */}
           <div className={styles.brandSection}>
-            <button
-              type="button"
-              className={styles.brandSectionHeader}
-              onClick={() => setIsBrandExpanded(!isBrandExpanded)}
-            >
-              <div className={styles.brandSectionTitle}>
-                <Icon name="share" size={14} />
-                <span>Brand Settings</span>
-                {brand.enabled && <span className={styles.brandBadge}>On</span>}
-              </div>
-              <Icon name={isBrandExpanded ? 'chevronUp' : 'chevronDown'} size={16} />
-            </button>
+            <div className={styles.brandSectionRow}>
+              <button
+                type="button"
+                className={styles.brandSectionHeader}
+                onClick={() => setIsBrandExpanded(!isBrandExpanded)}
+              >
+                <div className={styles.brandSectionTitle}>
+                  <Icon name="share" size={14} />
+                  <span>Brand Settings</span>
+                  {brand.enabled && <span className={styles.brandBadge}>On</span>}
+                </div>
+                <Icon name={isBrandExpanded ? 'chevronUp' : 'chevronDown'} size={16} />
+              </button>
+              {brandDirty && shortUrls && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon="refresh"
+                  onClick={regenerateLink}
+                  aria-label="Regenerate link with updated brand"
+                  className={styles.brandRefreshButton}
+                />
+              )}
+            </div>
 
             {isBrandExpanded && (
               <div className={styles.brandSectionContent}>

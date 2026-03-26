@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { useStore } from '@/store';
 import { Button, Input, Toggle, Slider, Select, NumberSlider } from '@/components/common';
 import { ThemeSelector } from './ThemeSelector';
@@ -45,15 +45,26 @@ export const SettingsPanel = memo(function SettingsPanel() {
   const setLineHeight = useStore((s) => s.setLineHeight);
   const fontFamily = useStore((s) => s.fontFamily);
   const setFontFamily = useStore((s) => s.setFontFamily);
+  const width = useStore((s) => s.width);
+  const setWidth = useStore((s) => s.setWidth);
   const padding = useStore((s) => s.padding);
   const setPadding = useStore((s) => s.setPadding);
   const resetSettings = useStore((s) => s.resetSettings);
+
+  const [showIndividualPadding, setShowIndividualPadding] = useState(false);
 
   const handlePaddingChange = (index: number, value: number) => {
     const newPadding = [...padding] as PaddingTuple;
     newPadding[index] = value;
     setPadding(newPadding);
   };
+
+  const handleUniformPaddingChange = (value: number) => {
+    setPadding([value, value, value, value]);
+  };
+
+  const isUniformPadding = padding[0] === padding[1] && padding[1] === padding[2] && padding[2] === padding[3];
+  const uniformPaddingValue = isUniformPadding ? padding[0] : Math.round((padding[0] + padding[1] + padding[2] + padding[3]) / 4);
 
   return (
     <aside className={`${styles.panel} ${!isSettingsPanelOpen ? styles.hidden : ''}`}>
@@ -153,6 +164,15 @@ export const SettingsPanel = memo(function SettingsPanel() {
                 step={1}
                 formatValue={(v) => `${v}px`}
               />
+              <Slider
+                label="Width"
+                value={width ?? 0}
+                onChange={(v) => setWidth(v === 0 ? null : v)}
+                min={0}
+                max={1200}
+                step={10}
+                formatValue={(v) => v === 0 ? 'Auto' : `${v}px`}
+              />
               <WatermarkEditor />
             </div>
           </div>
@@ -206,36 +226,55 @@ export const SettingsPanel = memo(function SettingsPanel() {
             <h3 className={styles.sectionTitle}>Padding</h3>
           </div>
           <div className={styles.sectionContent}>
-            <div className={styles.sliderGrid}>
-              <NumberSlider
-                label="Top"
-                value={padding[0]}
-                onChange={(v) => handlePaddingChange(0, v)}
-                min={PADDING_MIN}
-                max={PADDING_MAX}
-              />
-              <NumberSlider
-                label="Right"
-                value={padding[1]}
-                onChange={(v) => handlePaddingChange(1, v)}
-                min={PADDING_MIN}
-                max={PADDING_MAX}
-              />
-              <NumberSlider
-                label="Bottom"
-                value={padding[2]}
-                onChange={(v) => handlePaddingChange(2, v)}
-                min={PADDING_MIN}
-                max={PADDING_MAX}
-              />
-              <NumberSlider
-                label="Left"
-                value={padding[3]}
-                onChange={(v) => handlePaddingChange(3, v)}
-                min={PADDING_MIN}
-                max={PADDING_MAX}
-              />
-            </div>
+            <NumberSlider
+              label="All"
+              value={uniformPaddingValue}
+              onChange={handleUniformPaddingChange}
+              min={PADDING_MIN}
+              max={PADDING_MAX}
+            />
+            <button
+              type="button"
+              className={styles.individualToggle}
+              onClick={() => setShowIndividualPadding(!showIndividualPadding)}
+            >
+              <span>{showIndividualPadding ? 'Hide' : 'Individual'}</span>
+              {!isUniformPadding && !showIndividualPadding && (
+                <span className={styles.mixedBadge}>Mixed</span>
+              )}
+            </button>
+            {showIndividualPadding && (
+              <div className={styles.sliderGrid}>
+                <NumberSlider
+                  label="Top"
+                  value={padding[0]}
+                  onChange={(v) => handlePaddingChange(0, v)}
+                  min={PADDING_MIN}
+                  max={PADDING_MAX}
+                />
+                <NumberSlider
+                  label="Right"
+                  value={padding[1]}
+                  onChange={(v) => handlePaddingChange(1, v)}
+                  min={PADDING_MIN}
+                  max={PADDING_MAX}
+                />
+                <NumberSlider
+                  label="Bottom"
+                  value={padding[2]}
+                  onChange={(v) => handlePaddingChange(2, v)}
+                  min={PADDING_MIN}
+                  max={PADDING_MAX}
+                />
+                <NumberSlider
+                  label="Left"
+                  value={padding[3]}
+                  onChange={(v) => handlePaddingChange(3, v)}
+                  min={PADDING_MIN}
+                  max={PADDING_MAX}
+                />
+              </div>
+            )}
           </div>
         </section>
 

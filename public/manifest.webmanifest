@@ -1,7 +1,7 @@
 {
-  "name": "Shellfied - Beautiful Code Screenshots",
+  "name": "Shellfied - Share Beautiful Code",
   "short_name": "Shellfied",
-  "description": "Create beautiful, shareable code screenshots and terminal SVGs",
+  "description": "Turn code and terminal output into beautiful, shareable snapshots",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0C0A09",

@@ -14,6 +14,25 @@ import 'prismjs/components/prism-ruby';
 // Languages that depend on core
 import 'prismjs/components/prism-bash';
 import 'prismjs/components/prism-typescript';
+
+// PrismJS doesn't highlight custom type references in TypeScript (e.g. `x: MyType`).
+// Add a grammar rule to catch capitalized identifiers after `:` or inside `<>` as class-name tokens.
+if (Prism.languages.typescript) {
+  Prism.languages.insertBefore('typescript', 'operator', {
+    'class-name-inline': {
+      pattern: /(?<=[\s:,<(])[A-Z]\w*(?=\s*[<>[\],;)=&|]|\s*$)/m,
+      alias: 'class-name',
+    },
+  });
+}
+if (Prism.languages.tsx) {
+  Prism.languages.insertBefore('tsx', 'operator', {
+    'class-name-inline': {
+      pattern: /(?<=[\s:,<(])[A-Z]\w*(?=\s*[<>[\],;)=&|]|\s*$)/m,
+      alias: 'class-name',
+    },
+  });
+}
 import 'prismjs/components/prism-python';
 import 'prismjs/components/prism-json';
 import 'prismjs/components/prism-java';
@@ -90,7 +109,9 @@ function processToken(token: PrismToken): string {
     return token;
   }
 
-  const color = TOKEN_COLORS[token.type] || '';
+  // Check alias first (e.g. 'class-name-inline' has alias 'class-name')
+  const alias = typeof token.alias === 'string' ? token.alias : Array.isArray(token.alias) ? token.alias[0] : undefined;
+  const color = TOKEN_COLORS[token.type] || (alias && TOKEN_COLORS[alias]) || '';
   const content = Array.isArray(token.content)
     ? token.content.map(processToken).join('')
     : typeof token.content === 'string'

@@ -38,6 +38,7 @@ function getStateHash(state: ReturnType<typeof useStore.getState>): string {
     beforeLanguage: state.beforeLanguage,
     afterLanguage: state.afterLanguage,
     compareLabelConfig: state.compareLabelConfig,
+    brand: state.brand,
   });
 }
 
