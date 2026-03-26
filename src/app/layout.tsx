@@ -209,30 +209,62 @@ const merriweather = Merriweather({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://shellfied.vercel.app'),
-  title: 'Shellfied - Beautiful code',
-  description: 'Create beautiful SVGs from your code and terminal output',
+  title: {
+    default: 'Shellfied - Beautiful Code Screenshots & Terminal SVGs',
+    template: '%s | Shellfied',
+  },
+  description: 'Create beautiful, shareable code screenshots and terminal SVGs. Supports 50+ themes, syntax highlighting, compare mode, and one-click export to PNG, SVG, or WebP. Free and open source.',
+  keywords: [
+    'code screenshot', 'terminal screenshot', 'code to image', 'code snippet',
+    'syntax highlighting', 'SVG generator', 'code beautifier', 'carbon alternative',
+    'ray.so alternative', 'code sharing', 'developer tools', 'code presentation',
+    'terminal SVG', 'shellfie', 'code to SVG', 'code to PNG',
+  ],
+  authors: [{ name: 'Shellfied' }],
+  creator: 'Shellfied',
+  publisher: 'Shellfied',
+  applicationName: 'Shellfied',
+  category: 'Developer Tools',
   openGraph: {
     type: 'website',
+    siteName: 'Shellfied',
     url: 'https://shellfied.vercel.app/',
-    title: 'Shellfied - Create and share beautiful code',
-    description: 'Create stunning SVGs from your code and terminal output.',
+    title: 'Shellfied - Beautiful Code Screenshots & Terminal SVGs',
+    description: 'Create beautiful, shareable code screenshots and terminal SVGs. 50+ themes, syntax highlighting, compare mode, and instant export.',
+    locale: 'en_US',
     images: [
       {
         url: '/og-image.svg',
         width: 1200,
         height: 630,
+        alt: 'Shellfied - Beautiful code screenshots',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Shellfied - Create and share beautiful code',
-    description: 'Create stunning SVGs from your code and terminal output.',
-    images: ['/og-image.svg'],
+    title: 'Shellfied - Beautiful Code Screenshots & Terminal SVGs',
+    description: 'Create beautiful, shareable code screenshots and terminal SVGs. 50+ themes, syntax highlighting, compare mode, and instant export.',
+    images: [{ url: '/og-image.svg', alt: 'Shellfied - Beautiful code screenshots' }],
   },
   icons: {
     icon: '/favicon.svg',
     apple: '/apple-touch-icon.png',
+  },
+  manifest: '/manifest.webmanifest',
+  alternates: {
+    canonical: 'https://shellfied.vercel.app',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
 };
 
@@ -266,6 +298,36 @@ export default function RootLayout({
         </Script>
       </head>
       <body suppressHydrationWarning>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'WebApplication',
+              name: 'Shellfied',
+              url: 'https://shellfied.vercel.app',
+              description: 'Create beautiful, shareable code screenshots and terminal SVGs. Supports 50+ themes, syntax highlighting, compare mode, and one-click export.',
+              applicationCategory: 'DeveloperApplication',
+              operatingSystem: 'Any',
+              browserRequirements: 'Requires a modern web browser',
+              offers: {
+                '@type': 'Offer',
+                price: '0',
+                priceCurrency: 'USD',
+              },
+              featureList: [
+                'Code syntax highlighting',
+                'Terminal SVG generation',
+                '50+ color themes',
+                'Side-by-side compare mode',
+                'Export to PNG, SVG, WebP, JPEG',
+                'Custom backgrounds and gradients',
+                'Shareable short URLs',
+                'Open Graph image generation',
+              ],
+            }),
+          }}
+        />
         {children}
       </body>
     </html>

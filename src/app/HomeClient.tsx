@@ -1,22 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useSyncExternalStore, useState } from 'react';
 import { useTheme } from '@/hooks/useTheme';
-import { useIsViewMode, useStore, useHasHydrated } from '@/store';
+import { useIsViewMode, useStore } from '@/store';
 import { rehydrateCompressedContent, getShortId, resolveShortId } from '@/utils/urlParams';
 import { Header } from '@/components/layout';
 import { Editor, Preview, SettingsPanel, ExportPanel, ViewMode } from '@/components/features';
 import styles from './page.module.scss';
 
+// SSR-safe mount detection without useEffect + setState
+const emptySubscribe = () => () => {};
+const useIsMounted = () => useSyncExternalStore(emptySubscribe, () => true, () => false);
+
 export function HomeClient() {
   useTheme();
   const isViewMode = useIsViewMode();
-  const hasHydrated = useHasHydrated();
   const [shortIdResolved, setShortIdResolved] = useState(!getShortId());
-  // Track whether we've mounted on the client to avoid SSR hydration mismatch.
-  // Server renders with isViewMode=false (no window), client may have isViewMode=true.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useIsMounted();
 
   // Resolve short URL ID if present (?sid=SHORT_ID)
   useEffect(() => {
