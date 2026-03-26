@@ -210,10 +210,10 @@ const merriweather = Merriweather({
 export const metadata: Metadata = {
   metadataBase: new URL('https://shellfied.vercel.app'),
   title: {
-    default: 'Shellfied - Beautiful Code Screenshots & Terminal SVGs',
+    default: 'Shellfied - Share Beautiful Code',
     template: '%s | Shellfied',
   },
-  description: 'Create beautiful, shareable code screenshots and terminal SVGs. Supports 50+ themes, syntax highlighting, compare mode, and one-click export to PNG, SVG, or WebP. Free and open source.',
+  description: 'Turn code and terminal output into beautiful, shareable snapshots. 50+ themes, syntax highlighting, compare mode, and one-click export to PNG, SVG, or WebP. Use it on the web, as a CLI, or as a library.',
   keywords: [
     'code screenshot', 'terminal screenshot', 'code to image', 'code snippet',
     'syntax highlighting', 'SVG generator', 'code beautifier', 'carbon alternative',
@@ -229,23 +229,23 @@ export const metadata: Metadata = {
     type: 'website',
     siteName: 'Shellfied',
     url: 'https://shellfied.vercel.app/',
-    title: 'Shellfied - Beautiful Code Screenshots & Terminal SVGs',
-    description: 'Create beautiful, shareable code screenshots and terminal SVGs. 50+ themes, syntax highlighting, compare mode, and instant export.',
+    title: 'Shellfied - Share Beautiful Code',
+    description: 'Turn code and terminal output into beautiful, shareable snapshots. 50+ themes, syntax highlighting, compare mode, and instant export.',
     locale: 'en_US',
     images: [
       {
         url: '/og-image.svg',
         width: 1200,
         height: 630,
-        alt: 'Shellfied - Beautiful code screenshots',
+        alt: 'Shellfied - Share beautiful code',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Shellfied - Beautiful Code Screenshots & Terminal SVGs',
-    description: 'Create beautiful, shareable code screenshots and terminal SVGs. 50+ themes, syntax highlighting, compare mode, and instant export.',
-    images: [{ url: '/og-image.svg', alt: 'Shellfied - Beautiful code screenshots' }],
+    title: 'Shellfied - Share Beautiful Code',
+    description: 'Turn code and terminal output into beautiful, shareable snapshots. 50+ themes, syntax highlighting, compare mode, and instant export.',
+    images: [{ url: '/og-image.svg', alt: 'Shellfied - Share beautiful code' }],
   },
   icons: {
     icon: '/favicon.svg',
@@ -306,7 +306,7 @@ export default function RootLayout({
               '@type': 'WebApplication',
               name: 'Shellfied',
               url: 'https://shellfied.vercel.app',
-              description: 'Create beautiful, shareable code screenshots and terminal SVGs. Supports 50+ themes, syntax highlighting, compare mode, and one-click export.',
+              description: 'Turn code and terminal output into beautiful, shareable snapshots. Use it on the web, as a CLI, or as a library.',
               applicationCategory: 'DeveloperApplication',
               operatingSystem: 'Any',
               browserRequirements: 'Requires a modern web browser',

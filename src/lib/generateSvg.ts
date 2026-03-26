@@ -464,6 +464,17 @@ import 'prismjs/components/prism-css';
 import 'prismjs/components/prism-ruby';
 import 'prismjs/components/prism-bash';
 import 'prismjs/components/prism-typescript';
+
+// PrismJS doesn't highlight custom type references in TypeScript (e.g. `x: MyType`).
+if (Prism.languages.typescript) {
+  Prism.languages.insertBefore('typescript', 'operator', {
+    'class-name-inline': {
+      pattern: /(?<=[\s:,<(])[A-Z]\w*(?=\s*[<>[\],;)=&|]|\s*$)/m,
+      alias: 'class-name',
+    },
+  });
+}
+
 import 'prismjs/components/prism-python';
 import 'prismjs/components/prism-json';
 import 'prismjs/components/prism-java';
@@ -541,7 +552,8 @@ function processToken(token: PrismToken): string {
     return token;
   }
 
-  const color = TOKEN_COLORS[token.type] || '';
+  const alias = typeof token.alias === 'string' ? token.alias : Array.isArray(token.alias) ? token.alias[0] : undefined;
+  const color = TOKEN_COLORS[token.type] || (alias && TOKEN_COLORS[alias]) || '';
   const content = Array.isArray(token.content)
     ? token.content.map(processToken).join('')
     : typeof token.content === 'string'
