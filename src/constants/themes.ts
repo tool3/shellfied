@@ -1,4 +1,5 @@
 import { themes, createTheme, type Theme } from 'shellfie';
+import { presetThemes } from './presetThemes';
 
 // Custom themes not included in shellfie
 export const nightOwl = createTheme({
@@ -80,10 +81,11 @@ const customThemes: Record<string, Theme> = {
   materialDark,
 };
 
-// Combine shellfie themes with custom themes
+// Combine shellfie themes with custom themes and preset themes
 const allThemes: Record<string, Theme> = {
   ...themes,
   ...customThemes,
+  ...presetThemes,
 };
 
 export interface TerminalThemeConfig {
@@ -141,6 +143,36 @@ function toLabel(name: string): string {
     nightOwl: 'Night Owl',
     cobalt2: 'Cobalt2',
     vscode: 'VS Code',
+    // Preset themes
+    presetVercel: 'Vercel',
+    presetSupabase: 'Supabase',
+    presetTailwind: 'Tailwind',
+    presetOpenAI: 'OpenAI',
+    presetClerk: 'Clerk',
+    presetPrisma: 'Prisma',
+    presetMintlify: 'Mintlify',
+    presetElevenLabs: 'ElevenLabs',
+    presetResend: 'Resend',
+    presetTriggerDev: 'Trigger.dev',
+    presetNuxt: 'Nuxt',
+    presetBrowserbase: 'Browserbase',
+    presetCloudflare: 'Cloudflare',
+    presetGemini: 'Gemini',
+    presetStripe: 'Stripe',
+    presetFirecrawl: 'Firecrawl',
+    presetBreeze: 'Breeze',
+    presetCandy: 'Candy',
+    presetCrimson: 'Crimson',
+    presetFalcon: 'Falcon',
+    presetMeadow: 'Meadow',
+    presetMidnight: 'Midnight',
+    presetRaindrop: 'Raindrop',
+    presetSunset: 'Sunset',
+    presetNoir: 'Noir',
+    presetIce: 'Ice',
+    presetSand: 'Sand',
+    presetForest: 'Forest',
+    presetMono: 'Mono',
   };
 
   if (specialLabels[name]) {

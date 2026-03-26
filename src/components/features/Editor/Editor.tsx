@@ -98,12 +98,12 @@ export const Editor = memo(function Editor() {
               Exit Compare
             </Button>
             <LabelSettings />
-          </div>
-          <div className={styles.toolbarRight}>
             <Button variant="ghost" icon="trash" size="sm" onClick={handleClearCompare} aria-label="Clear both editors">
               Clear
             </Button>
           </div>
+          {/* <div className={styles.toolbarRight}>
+          </div> */}
         </div>
 
         <div className={styles.compareContainer}>
@@ -168,12 +168,12 @@ export const Editor = memo(function Editor() {
           >
             Compare
           </Button>
-        </div>
-        <div className={styles.toolbarRight}>
           <Button variant="ghost" icon="trash" size="sm" onClick={clearContent} aria-label="Clear editor">
             Clear
           </Button>
         </div>
+        {/* <div className={styles.toolbarRight}>
+        </div> */}
       </div>
 
       <div className={styles.editorContainer}>

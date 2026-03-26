@@ -7,6 +7,7 @@ import {
   DEFAULT_JPEG_QUALITY,
   DEFAULT_BRAND,
 } from '@/constants/defaults';
+import { PRESET_MAP } from '@/constants/presets';
 
 export const createSettingsSlice: StateCreator<AppStore, [], [], SettingsState> = (set, get) => ({
   ...DEFAULT_SETTINGS,
@@ -50,6 +51,20 @@ export const createSettingsSlice: StateCreator<AppStore, [], [], SettingsState> 
   setExportScale: (exportScale) => set({ exportScale }),
   setJpegQuality: (jpegQuality) => set({ jpegQuality }),
   setBrand: (brandUpdate) => set({ brand: { ...get().brand, ...brandUpdate } }),
+  applyPreset: (presetId) => {
+    const preset = PRESET_MAP[presetId];
+    if (!preset) return;
+    const { settings } = preset;
+    set({
+      template: settings.template,
+      terminalTheme: settings.terminalTheme,
+      showControls: settings.showControls,
+      borderRadius: settings.borderRadius,
+      fontFamily: settings.fontFamily,
+      padding: settings.padding,
+      background: { ...get().background, ...settings.background },
+    });
+  },
   resetSettings: () =>
     set({
       ...DEFAULT_SETTINGS,
