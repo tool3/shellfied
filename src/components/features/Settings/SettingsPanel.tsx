@@ -3,6 +3,7 @@ import { useStore } from '@/store';
 import { Button, Input, Toggle, Slider, Select, NumberSlider } from '@/components/common';
 import { ThemeSelector } from './ThemeSelector';
 import { TemplateSelector } from './TemplateSelector';
+import { PresetSelector } from './PresetSelector';
 import { WatermarkEditor } from './WatermarkEditor';
 import { BackgroundSection } from './BackgroundSection';
 import { HeaderSection, FooterSection } from './HeaderFooterSection';
@@ -69,7 +70,6 @@ export const SettingsPanel = memo(function SettingsPanel() {
   return (
     <aside className={`${styles.panel} ${!isSettingsPanelOpen ? styles.hidden : ''}`}>
       <div className={styles.header}>
-        <h2 className={styles.title}>Settings</h2>
         <Button
           variant="ghost"
           size="sm"
@@ -81,6 +81,16 @@ export const SettingsPanel = memo(function SettingsPanel() {
       </div>
 
       <div className={styles.content}>
+        {/* Preset Section */}
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h3 className={styles.sectionTitle}>Preset</h3>
+          </div>
+          <div className={styles.sectionContent}>
+            <PresetSelector />
+          </div>
+        </section>
+
         {/* Template Section */}
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
