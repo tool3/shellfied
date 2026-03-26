@@ -1,0 +1,25 @@
+{
+  "name": "Shellfied - Beautiful Code Screenshots",
+  "short_name": "Shellfied",
+  "description": "Create beautiful, shareable code screenshots and terminal SVGs",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0C0A09",
+  "theme_color": "#0C0A09",
+  "lang": "en",
+  "scope": "/",
+  "orientation": "any",
+  "categories": ["developer", "utilities", "productivity"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

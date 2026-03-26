@@ -106,15 +106,13 @@ export const Preview = memo(function Preview() {
         if (svgEl) {
           const width = svgEl.clientWidth || svgEl.getBoundingClientRect().width;
           const height = svgEl.clientHeight || svgEl.getBoundingClientRect().height;
-          console.log('[Preview] Measured SVG dimensions:', width, 'x', height);
+          
           // Only update if dimensions actually changed to prevent loops
           setSvgDimensions(prev =>
             prev.width !== width || prev.height !== height
               ? { width, height }
               : prev
           );
-        } else {
-          console.log('[Preview] Could not find SVG element in wrapper');
         }
       });
     }
@@ -150,7 +148,7 @@ export const Preview = memo(function Preview() {
     const aspectRatio = background.imageAspectRatio;
     const padding = background.padding;
 
-    console.log('[Preview backgroundStyle] aspectRatio:', aspectRatio, 'padding:', padding, 'svgDimensions:', svgDimensions);
+    
 
     // Calculate expanded dimensions if we have measured the SVG and have a non-auto aspect ratio
     let expandedStyle: React.CSSProperties = {};
@@ -161,7 +159,7 @@ export const Preview = memo(function Preview() {
         aspectRatio,
         padding
       );
-      console.log('[Preview backgroundStyle] Calculated:', { width, height, paddingX, paddingY });
+      
       expandedStyle = {
         width,
         height,
@@ -171,7 +169,6 @@ export const Preview = memo(function Preview() {
         justifyContent: 'center',
       };
     } else {
-      console.log('[Preview backgroundStyle] Using default padding (no aspect ratio expansion)');
       expandedStyle = { padding };
     }
 
