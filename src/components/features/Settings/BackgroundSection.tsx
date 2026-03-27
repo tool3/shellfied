@@ -6,7 +6,7 @@ import {
   BACKGROUND_PADDING_MAX,
   GRADIENT_PRESETS,
 } from '@/constants/defaults';
-import type { BackgroundType, GradientDirection, ImageAspectRatio } from '@/types';
+import type { BackgroundType, BackgroundAnimation, GradientDirection, ImageAspectRatio } from '@/types';
 import styles from './SettingsPanel.module.scss';
 
 // Direction mapping: base direction -> reversed direction
@@ -208,6 +208,22 @@ export const BackgroundSection = memo(function BackgroundSection() {
 
           {background.type !== 'none' && (
             <>
+              <Select
+                label="Animation"
+                options={[
+                  { value: 'none', label: 'None' },
+                  { value: 'particles', label: 'Particles' },
+                  { value: 'border-pulse', label: 'Pulsing Border' },
+                  { value: 'waves', label: 'Waves' },
+                  { value: 'border-gradient', label: 'Border Gradient' },
+                  { value: 'border-shimmer', label: 'Border Shimmer' },
+                  { value: 'aurora', label: 'Aurora' },
+                  { value: 'grid', label: 'Drifting Grid' },
+                ]}
+                value={background.animation || 'none'}
+                onChange={(v) => setBackground({ animation: v === 'none' ? null : v as BackgroundAnimation })}
+                fullWidth
+              />
               <Slider
                 label="Padding"
                 value={background.padding}

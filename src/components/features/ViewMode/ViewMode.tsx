@@ -5,6 +5,8 @@ import { useExport } from '@/hooks/useExport';
 import { Button, Logo } from '@/components/common';
 import { svgToRasterBlob, wrapSvgWithBackground, compareToRasterBlob, createCompareSvgWithEmbeddedFonts } from '@/services/exportService';
 import { generateStaticUrl } from '@/utils/urlParams';
+import { generateAnimationSvgElement } from '@/lib/backgroundAnimations';
+import { generateOverlaySvgElement } from '@/lib/backgroundOverlays';
 import type { ImageAspectRatio, OutputFormat, ExportFormat } from '@/types';
 import styles from './ViewMode.module.scss';
 
@@ -204,6 +206,7 @@ const FORMAT_OPTIONS: { value: ExportFormat; label: string }[] = [
 
 export const ViewMode = memo(function ViewMode() {
   const background = useStore((s) => s.background);
+  const borderRadius = useStore((s) => s.borderRadius);
   const compareMode = useStore((s) => s.compareMode);
   const compareLabelConfig = useStore((s) => s.compareLabelConfig);
   const exitViewMode = useStore((s) => s.exitViewMode);
@@ -462,8 +465,18 @@ export const ViewMode = memo(function ViewMode() {
     const emptyPaneStyle: React.CSSProperties =
       sharedWidth > 0 ? { width: sharedWidth, minWidth: sharedWidth } : {};
 
+    const vcTotalW = compareDimensions.width + background.padding * 2;
+    const vcTotalH = compareDimensions.height + background.padding * 2;
+    const compareOverlaySvg = background.overlay && background.type !== 'none' && compareDimensions.width > 0
+      ? generateOverlaySvgElement(background.overlay, vcTotalW, vcTotalH, background.padding, borderRadius)
+      : '';
+    const compareAnimSvg = background.animation && background.type !== 'none' && compareDimensions.width > 0
+      ? generateAnimationSvgElement(background.animation, vcTotalW, vcTotalH, background.padding, borderRadius)
+      : '';
     return (
       <div className={styles.backgroundWrapper} style={compareBackgroundStyle}>
+        {compareOverlaySvg && <div className={styles.bgAnimation} dangerouslySetInnerHTML={{ __html: compareOverlaySvg }} />}
+        {compareAnimSvg && <div className={styles.bgAnimation} dangerouslySetInnerHTML={{ __html: compareAnimSvg }} />}
         <div ref={compareWrapperRef} className={styles.comparePanes}>
           <div className={styles.comparePane}>
             <span className={styles.compareLabel} style={labelStyle}>
@@ -503,8 +516,18 @@ export const ViewMode = memo(function ViewMode() {
       );
     }
 
+    const vTotalW = svgDimensions.width + background.padding * 2;
+    const vTotalH = svgDimensions.height + background.padding * 2;
+    const singleOverlaySvg = background.overlay && background.type !== 'none' && svgDimensions.width > 0
+      ? generateOverlaySvgElement(background.overlay, vTotalW, vTotalH, background.padding, borderRadius)
+      : '';
+    const singleAnimSvg = background.animation && background.type !== 'none' && svgDimensions.width > 0
+      ? generateAnimationSvgElement(background.animation, vTotalW, vTotalH, background.padding, borderRadius)
+      : '';
     return (
       <div className={styles.backgroundWrapper} style={backgroundStyle}>
+        {singleOverlaySvg && <div className={styles.bgAnimation} dangerouslySetInnerHTML={{ __html: singleOverlaySvg }} />}
+        {singleAnimSvg && <div className={styles.bgAnimation} dangerouslySetInnerHTML={{ __html: singleAnimSvg }} />}
         <div ref={svgWrapperRef} className={styles.svgWrapper} dangerouslySetInnerHTML={{ __html: svg }} />
       </div>
     );

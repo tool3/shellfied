@@ -103,6 +103,7 @@ export function HomeClient() {
       <Header />
       <main className={styles.main}>
         <div className={styles.workspace}>
+          <SettingsPanel />
           <div className={styles.editorPane}>
             <Editor />
           </div>
@@ -113,7 +114,6 @@ export function HomeClient() {
             </div>
           </div>
         </div>
-        <SettingsPanel />
       </main>
       <footer className={styles.footer}>
         <span>Powered by </span>

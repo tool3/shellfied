@@ -85,6 +85,7 @@ export const useStore = create<AppStore>()(
         jpegQuality: state.jpegQuality,
         colorMode: state.colorMode,
         brand: state.brand,
+        activePreset: state.activePreset,
         // Compare mode
         compareMode: state.compareMode,
         beforeContent: state.beforeContent,
@@ -129,6 +130,14 @@ export const useStore = create<AppStore>()(
         // Ensure imageAspectRatio exists (added in later version)
         if (background && !background.imageAspectRatio) {
           background = { ...background, imageAspectRatio: 'auto' };
+        }
+        // Ensure animation field exists (added in later version)
+        if (background && background.animation === undefined) {
+          background = { ...background, animation: null };
+        }
+        // Ensure overlay field exists (added in later version)
+        if (background && background.overlay === undefined) {
+          background = { ...background, overlay: null };
         }
 
         // Base merged state from persistence

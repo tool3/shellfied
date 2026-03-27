@@ -1,4 +1,5 @@
 import { memo, useCallback, useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Button, Icon, Toggle, Input } from '@/components/common';
 import { useStore } from '@/store';
 import { validateUrlLength, generateShareUrlLZ, generateCompressedData } from '@/utils/urlParams';
@@ -143,7 +144,7 @@ export const ShareModal = memo(function ShareModal({
   const warning = viewValidation.warning || editValidation.warning;
   const isInvalid = !viewValidation.isValid || !editValidation.isValid;
 
-  return (
+  return createPortal(
     <div className={styles.backdrop} onClick={handleBackdropClick}>
       <div className={styles.modal}>
         <div className={styles.header}>
@@ -436,6 +437,7 @@ export const ShareModal = memo(function ShareModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 });

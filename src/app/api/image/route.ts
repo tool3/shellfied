@@ -29,7 +29,7 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { generateSvg, generateCompareSvg, wrapSvgWithBackground, fetchServerFont } from '@/lib/generateSvg';
 import { DEFAULT_BACKGROUND, DEFAULT_SETTINGS, DEFAULT_HEADER, DEFAULT_FOOTER, DEFAULT_WATERMARK, DEFAULT_COMPARE_LABEL_CONFIG } from '@/constants/defaults';
-import type { TemplateType, ControlsPosition, PaddingTuple, BackgroundType, GradientDirection, ImageAspectRatio, CompareLabelAlignment } from '@/types';
+import type { TemplateType, ControlsPosition, PaddingTuple, BackgroundType, BackgroundConfig, GradientDirection, ImageAspectRatio, CompareLabelAlignment } from '@/types';
 
 // Track WASM initialization
 let wasmInitialized = false;
@@ -208,6 +208,8 @@ interface CompactState {
   bgd?: string; // bgGradientDirection
   bgp?: number; // bgPadding
   bga?: string; // bgImageAspectRatio
+  ban?: string; // bgAnimation
+  bov?: string; // bgOverlay
 }
 
 // Decompress LZ-string data
@@ -259,6 +261,8 @@ const URL_PARAM_MAP = {
   bgGradientDirection: 'bgd',
   bgPadding: 'bgp',
   bgImageAspectRatio: 'bga',
+  bgAnimation: 'ban',
+  bgOverlay: 'bov',
 } as const;
 
 // URL-safe Base64 decoding
@@ -357,6 +361,8 @@ function parseCompressedState(compact: CompactState) {
       padding: compact.bgp ?? DEFAULT_BACKGROUND.padding,
       imageAspectRatio: (compact.bga || DEFAULT_BACKGROUND.imageAspectRatio) as ImageAspectRatio,
       image: null,
+      animation: (compact.ban as BackgroundConfig['animation']) || null,
+      overlay: (compact.bov as BackgroundConfig['overlay']) || null,
     },
   };
 }
@@ -585,6 +591,8 @@ export async function GET(request: NextRequest) {
     padding: bgPadding,
     imageAspectRatio: bgImageAspectRatio,
     image: null, // Images are not supported in URL sharing (too large)
+    animation: (getParam(searchParams, 'bgAnimation') as BackgroundConfig['animation']) || null,
+    overlay: (getParam(searchParams, 'bgOverlay') as BackgroundConfig['overlay']) || null,
   };
 
   try {

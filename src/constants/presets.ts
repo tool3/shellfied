@@ -1,15 +1,4 @@
 import type { TemplateType, PaddingTuple, BackgroundConfig } from '@/types';
-import {
-  createVercelBg,
-  createGridlinesBg,
-  createDotGridBg,
-  createStarFieldBg,
-  createVerticalLinesBg,
-  createElevenLabsBg,
-  createGlowBorderBg,
-  createPatternOverlayBg,
-  createNoiseTextureBg,
-} from './presetBackgrounds';
 
 export interface PresetConfig {
   id: string;
@@ -57,9 +46,11 @@ const vercel: PresetConfig = {
     fontFamily: FONT_DEFAULT,
     padding: [16, 24, 16, 24],
     background: {
-      type: 'image',
-      image: createVercelBg(),
+      type: 'solid',
+      color: '#191919',
+      image: null,
       padding: 64,
+      overlay: 'vercel-grid',
     },
   },
 };
@@ -99,9 +90,11 @@ const tailwind: PresetConfig = {
     fontFamily: FONT_FIRA,
     padding: [16, 24, 16, 24],
     background: {
-      type: 'image',
-      image: createGridlinesBg('#1e293b', '#0f172a', 800, 600, 40),
+      type: 'solid',
+      color: '#0f172a',
+      image: null,
       padding: 64,
+      overlay: 'tailwind-beams',
     },
   },
 };
@@ -143,9 +136,11 @@ const clerk: PresetConfig = {
     fontFamily: FONT_DEFAULT,
     padding: [16, 24, 16, 24],
     background: {
-      type: 'image',
-      image: createPatternOverlayBg('#111111', '#555555'),
+      type: 'solid',
+      color: '#222222',
+      image: null,
       padding: 64,
+      overlay: 'clerk-halftone',
     },
   },
 };
@@ -164,9 +159,13 @@ const prisma: PresetConfig = {
     fontFamily: FONT_JETBRAINS,
     padding: [16, 24, 16, 24],
     background: {
-      type: 'image',
-      image: createGlowBorderBg('#0c1d26', '#3e4083', '#16544f'),
+      type: 'gradient',
+      gradientFrom: '#0c1d26',
+      gradientTo: '#0a0c17',
+      gradientDirection: 'to-bottom-right',
+      image: null,
       padding: 64,
+      overlay: 'prisma-glow',
     },
   },
 };
@@ -185,9 +184,11 @@ const mintlify: PresetConfig = {
     fontFamily: FONT_DEFAULT,
     padding: [16, 24, 16, 24],
     background: {
-      type: 'image',
-      image: createPatternOverlayBg('#121212', '#333333'),
+      type: 'solid',
+      color: '#070a08',
+      image: null,
       padding: 64,
+      overlay: 'mintlify-lines',
     },
   },
 };
@@ -206,9 +207,11 @@ const elevenLabs: PresetConfig = {
     fontFamily: FONT_ROBOTO,
     padding: [16, 24, 16, 24],
     background: {
-      type: 'image',
-      image: createElevenLabsBg(),
+      type: 'solid',
+      color: '#111111',
+      image: null,
       padding: 64,
+      overlay: 'elevenlabs-grid',
     },
   },
 };
@@ -231,7 +234,9 @@ const resend: PresetConfig = {
       gradientFrom: '#B1B1B1',
       gradientTo: '#181818',
       gradientDirection: 'to-bottom',
+      image: null,
       padding: 64,
+      overlay: 'resend-topo',
     },
   },
 };
@@ -250,9 +255,11 @@ const triggerDev: PresetConfig = {
     fontFamily: FONT_DEFAULT,
     padding: [16, 24, 16, 24],
     background: {
-      type: 'image',
-      image: createDotGridBg('#aaaaaa', '#121317', 20, 1),
+      type: 'solid',
+      color: '#121317',
+      image: null,
       padding: 64,
+      overlay: 'triggerdev-lines',
     },
   },
 };
@@ -271,9 +278,11 @@ const nuxt: PresetConfig = {
     fontFamily: FONT_DEFAULT,
     padding: [16, 24, 16, 24],
     background: {
-      type: 'image',
-      image: createStarFieldBg('#0b0c11', '#ffffff', 120, 0.15),
+      type: 'solid',
+      color: '#0b0c11',
+      image: null,
       padding: 64,
+      overlay: 'nuxt-glow',
     },
   },
 };
@@ -292,9 +301,11 @@ const browserbase: PresetConfig = {
     fontFamily: FONT_SPACE,
     padding: [16, 24, 16, 24],
     background: {
-      type: 'image',
-      image: createVerticalLinesBg('#ffffff', '#000000', 7, true),
+      type: 'solid',
+      color: '#000000',
+      image: null,
       padding: 64,
+      overlay: 'browserbase-lines',
     },
   },
 };
@@ -313,9 +324,11 @@ const cloudflare: PresetConfig = {
     fontFamily: FONT_IBM_PLEX,
     padding: [16, 24, 16, 24],
     background: {
-      type: 'image',
-      image: createGridlinesBg('#262626', '#0c0c0c', 800, 600, 50),
+      type: 'solid',
+      color: '#0c0c0c',
+      image: null,
       padding: 64,
+      overlay: 'cloudflare-grid',
     },
   },
 };
@@ -330,13 +343,15 @@ const gemini: PresetConfig = {
     template: 'minimal',
     terminalTheme: 'presetGemini',
     showControls: false,
-    borderRadius: 24,
+    borderRadius: 26,
     fontFamily: FONT_DEFAULT,
     padding: [16, 24, 16, 24],
     background: {
-      type: 'image',
-      image: createStarFieldBg('#0e1016', '#ffffff', 200, 0.8),
+      type: 'solid',
+      color: '#0e1016',
+      image: null,
       padding: 64,
+      overlay: 'gemini-stars',
     },
   },
 };
@@ -355,9 +370,11 @@ const stripe: PresetConfig = {
     fontFamily: FONT_SOURCE_CODE,
     padding: [16, 24, 16, 24],
     background: {
-      type: 'image',
-      image: createVerticalLinesBg('#0f395e', '#0a2540', 5, false),
+      type: 'solid',
+      color: '#0a2540',
+      image: null,
       padding: 64,
+      overlay: 'stripe-lines',
     },
   },
 };
@@ -376,8 +393,10 @@ const firecrawl: PresetConfig = {
     fontFamily: FONT_DEFAULT,
     padding: [16, 24, 16, 24],
     background: {
-      type: 'image',
-      image: createGridlinesBg('#222', '#000000', 800, 600, 60),
+      type: 'solid',
+      color: '#000000',
+      image: null,
+      overlay: 'firecrawl-grid',
       padding: 64,
     },
   },
@@ -585,9 +604,11 @@ const noir: PresetConfig = {
     fontFamily: FONT_DEFAULT,
     padding: [16, 24, 16, 24],
     background: {
-      type: 'image',
-      image: createNoiseTextureBg('#1a1a1a'),
+      type: 'solid',
+      color: '#1a1a1a',
+      image: null,
       padding: 64,
+      overlay: 'noir-noise',
     },
   },
 };
@@ -606,9 +627,11 @@ const ice: PresetConfig = {
     fontFamily: FONT_DEFAULT,
     padding: [16, 24, 16, 24],
     background: {
-      type: 'image',
-      image: createDotGridBg('rgba(0,0,0,0.5)', '#e8f8fb', 17, 1),
+      type: 'solid',
+      color: '#e8f8fb',
+      image: null,
       padding: 64,
+      overlay: 'ice-dots',
     },
   },
 };

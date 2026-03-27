@@ -30,6 +30,14 @@ export type GradientDirection =
 
 export type ImageAspectRatio = 'auto' | '1:1' | '4:3' | '3:2' | '16:9' | '9:16' | '3:4' | '2:3';
 
+export type BackgroundAnimation = 'particles' | 'border-pulse' | 'waves' | 'border-gradient' | 'border-shimmer' | 'aurora' | 'grid';
+
+export type BackgroundOverlay =
+  | 'prisma-glow' | 'nuxt-glow' | 'vercel-grid' | 'elevenlabs-grid' | 'cloudflare-grid' | 'tailwind-beams'
+  | 'clerk-halftone' | 'mintlify-lines' | 'resend-topo' | 'triggerdev-lines'
+  | 'firecrawl-grid' | 'browserbase-lines' | 'stripe-lines'
+  | 'gemini-stars' | 'noir-noise' | 'ice-dots';
+
 export interface BackgroundConfig {
   type: BackgroundType;
   color: string;
@@ -39,6 +47,8 @@ export interface BackgroundConfig {
   image: string | null;
   imageAspectRatio: ImageAspectRatio;
   padding: number;
+  animation: BackgroundAnimation | null;
+  overlay: BackgroundOverlay | null;
 }
 
 export interface HeaderConfig {

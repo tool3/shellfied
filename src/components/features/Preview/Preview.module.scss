@@ -91,7 +91,9 @@
 
 .backgroundWrapper {
   display: block;
+  position: relative;
   border-radius: var(--radius-lg);
+  overflow: hidden;
 }
 
 .svgWrapper {
@@ -161,10 +163,12 @@
 // Compare mode styles
 .comparePreview {
   display: flex;
+  position: relative;
   align-items: center;
   justify-content: center;
   padding: var(--space-lg);
   border-radius: var(--radius-lg);
+  overflow: hidden;
 }
 
 .comparePanes {
@@ -203,4 +207,30 @@
     font-size: var(--font-size-sm);
     color: rgba(255, 255, 255, 0.5);
   }
+}
+
+// ============================================================
+// Background Animation Overlay
+// ============================================================
+
+.bgAnimation {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: inherit;
+  overflow: hidden;
+
+  svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+// Ensure SVG content renders above animation overlay
+.backgroundWrapper > .svgWrapper,
+.comparePreview > .comparePanes {
+  position: relative;
+  z-index: 1;
 }

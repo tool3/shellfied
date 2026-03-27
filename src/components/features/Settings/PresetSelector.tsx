@@ -3,13 +3,14 @@ import { useStore } from '@/store';
 import { PARTNER_PRESETS, GENERIC_PRESETS, type PresetConfig } from '@/constants/presets';
 import styles from './PresetSelector.module.scss';
 
-function PresetCard({ preset, onClick }: { preset: PresetConfig; onClick: () => void }) {
+function PresetCard({ preset, isSelected, onClick }: { preset: PresetConfig; isSelected: boolean; onClick: () => void }) {
   return (
     <button
       type="button"
-      className={styles.presetCard}
+      className={`${styles.presetCard} ${isSelected ? styles.selected : ''}`}
       onClick={onClick}
       aria-label={`Apply ${preset.name} preset`}
+      aria-pressed={isSelected}
     >
       <div
         className={styles.preview}
@@ -26,6 +27,7 @@ function PresetCard({ preset, onClick }: { preset: PresetConfig; onClick: () => 
 
 export const PresetSelector = memo(function PresetSelector() {
   const applyPreset = useStore((s) => s.applyPreset);
+  const activePreset = useStore((s) => s.activePreset);
 
   return (
     <div className={styles.presetSelector}>
@@ -36,6 +38,7 @@ export const PresetSelector = memo(function PresetSelector() {
             <PresetCard
               key={preset.id}
               preset={preset}
+              isSelected={activePreset === preset.id}
               onClick={() => applyPreset(preset.id)}
             />
           ))}
@@ -49,6 +52,7 @@ export const PresetSelector = memo(function PresetSelector() {
             <PresetCard
               key={preset.id}
               preset={preset}
+              isSelected={activePreset === preset.id}
               onClick={() => applyPreset(preset.id)}
             />
           ))}
