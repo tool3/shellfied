@@ -28,6 +28,8 @@ export const DEFAULT_BACKGROUND: BackgroundConfig = {
   image: null,
   imageAspectRatio: 'auto',
   padding: 32,
+  animation: null,
+  overlay: null,
 };
 
 // Default monospace font stack for code rendering in SVG

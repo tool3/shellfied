@@ -86,6 +86,7 @@ export interface SettingsState {
   setExportFormat: (format: ExportFormat) => void;
   setExportScale: (scale: ExportScale) => void;
   setJpegQuality: (quality: number) => void;
+  activePreset: string | null;
   setBrand: (brand: Partial<BrandConfig>) => void;
   applyPreset: (presetId: string) => void;
   resetSettings: () => void;

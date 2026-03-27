@@ -15,6 +15,7 @@ export const createSettingsSlice: StateCreator<AppStore, [], [], SettingsState> 
   exportFormat: DEFAULT_EXPORT_FORMAT,
   exportScale: DEFAULT_EXPORT_SCALE,
   jpegQuality: DEFAULT_JPEG_QUALITY,
+  activePreset: null,
   brand: DEFAULT_BRAND,
 
   setTemplate: (template) => {
@@ -56,6 +57,7 @@ export const createSettingsSlice: StateCreator<AppStore, [], [], SettingsState> 
     if (!preset) return;
     const { settings } = preset;
     set({
+      activePreset: presetId,
       template: settings.template,
       terminalTheme: settings.terminalTheme,
       showControls: settings.showControls,
@@ -68,6 +70,7 @@ export const createSettingsSlice: StateCreator<AppStore, [], [], SettingsState> 
   resetSettings: () =>
     set({
       ...DEFAULT_SETTINGS,
+      activePreset: null,
       customThemes: get().customThemes, // Preserve custom themes on reset
       exportFormat: DEFAULT_EXPORT_FORMAT,
       exportScale: DEFAULT_EXPORT_SCALE,

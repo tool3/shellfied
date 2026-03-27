@@ -3,6 +3,8 @@ import { useStore } from '@/store';
 import { useShellfie, useShellfieCompare } from '@/hooks/useShellfie';
 import { usePanZoom } from '@/hooks/usePanZoom';
 import { Button } from '@/components/common';
+import { generateAnimationSvgElement } from '@/lib/backgroundAnimations';
+import { generateOverlaySvgElement } from '@/lib/backgroundOverlays';
 import type { ImageAspectRatio } from '@/types';
 import styles from './Preview.module.scss';
 
@@ -76,6 +78,7 @@ export const Preview = memo(function Preview() {
   const previewZoom = useStore((s) => s.previewZoom);
   const setPreviewZoom = useStore((s) => s.setPreviewZoom);
   const background = useStore((s) => s.background);
+  const borderRadius = useStore((s) => s.borderRadius);
   const compareMode = useStore((s) => s.compareMode);
   const compareLabelConfig = useStore((s) => s.compareLabelConfig);
 
@@ -327,8 +330,18 @@ export const Preview = memo(function Preview() {
       // Calculate empty pane style to match the other terminal's width
       const emptyPaneStyle: React.CSSProperties = sharedWidth > 0 ? { width: sharedWidth, minWidth: sharedWidth } : {};
 
+      const cTotalW = compareDimensions.width + background.padding * 2;
+      const cTotalH = compareDimensions.height + background.padding * 2;
+      const compareOverlaySvg = background.overlay && background.type !== 'none'
+        ? generateOverlaySvgElement(background.overlay, cTotalW, cTotalH, background.padding, borderRadius)
+        : '';
+      const compareAnimSvg = background.animation && background.type !== 'none'
+        ? generateAnimationSvgElement(background.animation, cTotalW, cTotalH, background.padding, borderRadius)
+        : '';
       return (
         <div className={styles.comparePreview} style={compareBackgroundStyle}>
+          {compareOverlaySvg && <div className={styles.bgAnimation} dangerouslySetInnerHTML={{ __html: compareOverlaySvg }} />}
+          {compareAnimSvg && <div className={styles.bgAnimation} dangerouslySetInnerHTML={{ __html: compareAnimSvg }} />}
           <div ref={compareWrapperRef} className={styles.comparePanes}>
             <div className={styles.comparePane}>
               <span className={styles.compareLabel} style={labelStyle}>{beforeLabel}</span>
@@ -383,8 +396,18 @@ export const Preview = memo(function Preview() {
     }
 
     if (svg) {
+      const totalW = svgDimensions.width + background.padding * 2;
+      const totalH = svgDimensions.height + background.padding * 2;
+      const overlaySvg = background.overlay && background.type !== 'none'
+        ? generateOverlaySvgElement(background.overlay, totalW, totalH, background.padding, borderRadius)
+        : '';
+      const animSvg = background.animation && background.type !== 'none'
+        ? generateAnimationSvgElement(background.animation, totalW, totalH, background.padding, borderRadius)
+        : '';
       return (
         <div className={styles.backgroundWrapper} style={backgroundStyle}>
+          {overlaySvg && <div className={styles.bgAnimation} dangerouslySetInnerHTML={{ __html: overlaySvg }} />}
+          {animSvg && <div className={styles.bgAnimation} dangerouslySetInnerHTML={{ __html: animSvg }} />}
           <div ref={svgWrapperRef} className={styles.svgWrapper} dangerouslySetInnerHTML={{ __html: svg }} suppressHydrationWarning />
         </div>
       );

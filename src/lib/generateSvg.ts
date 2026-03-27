@@ -194,6 +194,8 @@ import type {
   GradientDirection,
   ImageAspectRatio,
 } from '@/types';
+import { generateAnimationSvg } from '@/lib/backgroundAnimations';
+import { generateOverlaySvg } from '@/lib/backgroundOverlays';
 
 // Re-export custom themes from themes.ts
 const nightOwl = createTheme({
@@ -913,7 +915,8 @@ function generateSvgBackground(
  */
 export function wrapSvgWithBackground(
   svgContent: string,
-  background: BackgroundConfig
+  background: BackgroundConfig,
+  borderRadius = 8
 ): string {
   if (background.type === 'none') {
     return svgContent;
@@ -930,6 +933,8 @@ export function wrapSvgWithBackground(
   );
 
   const backgroundSvg = generateSvgBackground(background, totalWidth, totalHeight);
+  const overlaySvg = generateOverlaySvg(background.overlay, totalWidth, totalHeight, padding, borderRadius);
+  const animationSvg = generateAnimationSvg(background.animation, totalWidth, totalHeight, padding, borderRadius);
   const innerContent = extractSvgContent(svgContent);
 
   // Extract any existing defs (fonts, etc.) from the inner SVG
@@ -939,6 +944,8 @@ export function wrapSvgWithBackground(
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}">
   <defs>${existingDefs}</defs>
   ${backgroundSvg}
+  ${overlaySvg}
+  ${animationSvg}
   <g transform="translate(${offsetX}, ${offsetY})">
     <svg width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}">
       ${innerContent}
@@ -1111,6 +1118,8 @@ export function generateCompareSvg(options: GenerateCompareSvgOptions): string {
 
   // Generate background SVG element
   const backgroundSvg = background ? generateSvgBackground(background, totalWidth, totalHeight) : '';
+  const ovlSvg = background?.overlay ? generateOverlaySvg(background.overlay, totalWidth, totalHeight, background.padding ?? 0) : '';
+  const animSvg = background?.animation ? generateAnimationSvg(background.animation, totalWidth, totalHeight, background.padding ?? 0) : '';
 
   // Create combined SVG - all fonts embedded as base64, no @import needed
   const combinedSvg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}">
@@ -1129,6 +1138,8 @@ export function generateCompareSvg(options: GenerateCompareSvgOptions): string {
 
   <!-- Background -->
   ${backgroundSvg}
+  ${ovlSvg}
+  ${animSvg}
 
   <!-- Before label -->
   <text x="${beforeLabelX}" y="${offsetY + compareLabelConfig.fontSize}" class="label">${escapeXml(beforeLabel)}</text>

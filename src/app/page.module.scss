@@ -62,8 +62,10 @@
     background-repeat: repeat;
   }
 
-  // Ensure children are above the noise
-  > * {
+  // Ensure panes are above the noise texture
+  > .editorPane,
+  > .previewPane,
+  > .exportPane {
     position: relative;
     z-index: 1;
   }

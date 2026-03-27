@@ -10,6 +10,8 @@ import type {
   GradientDirection,
   ImageAspectRatio,
   WatermarkType,
+  BackgroundAnimation,
+  BackgroundOverlay,
   CompareLabelAlignment,
 } from '@/types';
 import {
@@ -393,6 +395,8 @@ export interface UrlState {
     gradientDirection?: GradientDirection;
     imageAspectRatio?: ImageAspectRatio;
     padding?: number;
+    animation?: BackgroundAnimation | null;
+    overlay?: BackgroundOverlay | null;
   };
 
   // Brand
@@ -656,6 +660,8 @@ interface CompactState {
   bgd?: string; // bgGradientDirection
   bgp?: number; // bgPadding
   bga?: string; // bgImageAspectRatio
+  ban?: string; // bgAnimation
+  bov?: string; // bgOverlay
   rbe?: boolean; // brandEnabled
   rbt?: string; // brandText
   rbn?: string; // brandName
@@ -770,6 +776,12 @@ function buildCompactState(state: UrlState, mode: ShareMode, includeContent: boo
     }
     add('bgp', state.background.padding, DEFAULT_BACKGROUND.padding);
     add('bga', state.background.imageAspectRatio, DEFAULT_BACKGROUND.imageAspectRatio);
+    if (state.background.animation) {
+      compact.ban = state.background.animation;
+    }
+    if (state.background.overlay) {
+      compact.bov = state.background.overlay;
+    }
   }
 
   if (state.brand?.enabled) {
@@ -912,6 +924,8 @@ function parseCompactState(compact: CompactState): UrlState {
     }
     if (compact.bgp !== undefined) state.background.padding = compact.bgp;
     if (compact.bga !== undefined) state.background.imageAspectRatio = compact.bga as ImageAspectRatio;
+    if (compact.ban !== undefined) state.background.animation = compact.ban as BackgroundAnimation;
+    if (compact.bov !== undefined) state.background.overlay = compact.bov as BackgroundOverlay;
   }
 
   if (compact.rbe) {
