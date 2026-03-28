@@ -23,23 +23,25 @@ import {
   BORDER_RADIUS_MAX,
   FONT_FAMILY_OPTIONS,
 } from '@/constants/defaults';
+import { ShareModal, type ShortUrls } from '@/components/features/Share';
+import { generateShareUrlLZ, generateCompressedData } from '@/utils/urlParams';
 import styles from './Toolbar.module.scss';
 
 type ToolbarTab = 'preset' | 'theme' | 'background' | 'window' | 'padding' | 'export' | null;
 
-const TOOLBAR_ITEMS: { id: ToolbarTab; label: string; icon: React.ReactNode; dividerBefore?: boolean }[] = [
+// Menu items (centered pill)
+const MENU_ITEMS: { id: ToolbarTab; label: string; icon: React.ReactNode }[] = [
   { id: 'preset', label: 'Preset', icon: <PaletteIcon /> },
   { id: 'theme', label: 'Theme', icon: <PaintbrushIcon /> },
   { id: 'background', label: 'BG', icon: <ImageIcon /> },
   { id: 'window', label: 'Window', icon: <MonitorIcon /> },
   { id: 'padding', label: 'Padding', icon: <PaddingIcon /> },
-  { id: 'export', label: 'Export', icon: <Icon name="download" size={18} />, dividerBefore: true },
 ];
 
-// Mobile pages: 3 items per page
+// Mobile pages: split menu items across swipeable pages
 const MOBILE_PAGES = [
   ['preset', 'theme', 'background'],
-  ['window', 'padding', 'export'],
+  ['window', 'padding'],
 ] as ToolbarTab[][];
 
 const FORMAT_OPTIONS = [
@@ -242,12 +244,76 @@ const PaddingPopoverContent = memo(function PaddingPopoverContent() {
   );
 });
 
+const ShareModalWrapper = memo(function ShareModalWrapper({ onClose }: { onClose: () => void }) {
+  const [shortUrls, setShortUrls] = useState<ShortUrls | null>(null);
+  const store = useStore.getState();
+  const shareUrl = generateShareUrlLZ({
+    content: store.content,
+    language: store.language,
+    template: store.template,
+    terminalTheme: store.terminalTheme,
+    title: store.title,
+    showControls: store.showControls,
+    controlsPosition: store.controlsPosition,
+    borderRadius: store.borderRadius,
+    fontFamily: store.fontFamily,
+    fontSize: store.fontSize,
+    lineHeight: store.lineHeight,
+    padding: store.padding,
+    background: store.background,
+    width: store.width,
+  }, 'view');
+  const compressedData = generateCompressedData({
+    content: store.content,
+    language: store.language,
+    template: store.template,
+    terminalTheme: store.terminalTheme,
+    title: store.title,
+    showControls: store.showControls,
+    controlsPosition: store.controlsPosition,
+    borderRadius: store.borderRadius,
+    fontFamily: store.fontFamily,
+    fontSize: store.fontSize,
+    lineHeight: store.lineHeight,
+    padding: store.padding,
+    background: store.background,
+    width: store.width,
+  });
+
+  return (
+    <ShareModal
+      viewUrl={shareUrl}
+      editUrl={generateShareUrlLZ({
+        content: store.content,
+        language: store.language,
+        template: store.template,
+        terminalTheme: store.terminalTheme,
+        title: store.title,
+        showControls: store.showControls,
+        controlsPosition: store.controlsPosition,
+        borderRadius: store.borderRadius,
+        fontFamily: store.fontFamily,
+        fontSize: store.fontSize,
+        lineHeight: store.lineHeight,
+        padding: store.padding,
+        background: store.background,
+        width: store.width,
+      }, 'edit')}
+      compressedData={compressedData}
+      shortUrls={shortUrls}
+      onShortUrlsChange={setShortUrls}
+      onClose={onClose}
+    />
+  );
+});
+
 const ExportPopoverContent = memo(function ExportPopoverContent() {
   const content = useStore((s) => s.content);
   const { compareMode, beforeContent, afterContent } = useCompareState();
   const { exportFormat, exportScale, jpegQuality } = useExportSettings();
   const { setExportFormat, setExportScale, setJpegQuality } = useExportActions();
   const { download, copyToClipboard, isExporting, isDownloadSuccess, isCopySuccess } = useExport();
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const hasContent = compareMode ? Boolean(beforeContent.trim() || afterContent.trim()) : Boolean(content.trim());
   const isRasterFormat = exportFormat !== 'svg';
@@ -261,9 +327,13 @@ const ExportPopoverContent = memo(function ExportPopoverContent() {
       </div>
       {isJpeg && <Slider label="Quality" value={jpegQuality} onChange={setJpegQuality} min={0.6} max={1.0} step={0.1} formatValue={(v) => `${Math.round(v * 100)}%`} />}
       <div className={styles.exportButtons}>
+        <Button variant="primary" icon="share" onClick={() => setShowShareModal(true)} disabled={!hasContent} fullWidth>Share</Button>
         <Button variant="primary" icon={isDownloadSuccess ? 'check' : 'download'} onClick={() => download()} disabled={!hasContent || isExporting} isLoading={isExporting} fullWidth>Download</Button>
         <Button variant="ghost" icon={isCopySuccess ? 'check' : 'copy'} onClick={() => copyToClipboard()} disabled={!hasContent || isExporting} fullWidth>{isCopySuccess ? 'Copied!' : 'Copy'}</Button>
       </div>
+      {showShareModal && (
+        <ShareModalWrapper onClose={() => setShowShareModal(false)} />
+      )}
     </div>
   );
 });
@@ -289,16 +359,23 @@ function PaddingIcon() {
 export const Toolbar = memo(function Toolbar() {
   const [activeTab, setActiveTab] = useState<ToolbarTab>(null);
   const [mobilePage, setMobilePage] = useState(0);
+  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const touchStartRef = useRef<number>(0);
 
-  const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
-
-  const handleTabClick = useCallback((tab: ToolbarTab) => {
-    setActiveTab((prev) => (prev === tab ? null : tab));
+  const handleTabClick = useCallback((tab: ToolbarTab, el: HTMLButtonElement) => {
+    setActiveTab((prev) => {
+      if (prev === tab) {
+        setAnchorEl(null);
+        return null;
+      }
+      setAnchorEl(el);
+      return tab;
+    });
   }, []);
 
   const handleClose = useCallback(() => {
     setActiveTab(null);
+    setAnchorEl(null);
   }, []);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -315,37 +392,40 @@ export const Toolbar = memo(function Toolbar() {
     }
   }, []);
 
-  const getRef = useCallback((id: string) => (el: HTMLButtonElement | null) => {
-    itemRefs.current[id] = el;
-  }, []);
+  const renderItem = (item: { id: ToolbarTab; label: string; icon: React.ReactNode }) => (
+    <button
+      key={item.id}
+      className={`${styles.item} ${activeTab === item.id ? styles.itemActive : ''}`}
+      onClick={(e) => handleTabClick(item.id, e.currentTarget)}
+      type="button"
+    >
+      <span className={styles.itemIcon}>{item.icon}</span>
+      <span className={styles.itemLabel}>{item.label}</span>
+    </button>
+  );
 
   const anchorRef = useRef<HTMLButtonElement | null>(null);
-  if (activeTab) {
-    anchorRef.current = itemRefs.current[activeTab] ?? null;
-  }
+  anchorRef.current = anchorEl;
 
   return (
     <>
-      {/* Desktop toolbar */}
-      <div className={styles.toolbar}>
-        {TOOLBAR_ITEMS.map((item) => (
-          <div key={item.id} style={{ display: 'contents' }}>
-            {item.dividerBefore && <div className={styles.divider} />}
-            <button
-              ref={getRef(item.id!)}
-              className={`${styles.item} ${activeTab === item.id ? styles.itemActive : ''}`}
-              onClick={() => handleTabClick(item.id)}
-              type="button"
-            >
-              <span className={styles.itemIcon}>{item.icon}</span>
-              <span className={styles.itemLabel}>{item.label}</span>
-            </button>
-          </div>
-        ))}
+      {/* Desktop: centered menu pill + export button to the right */}
+      <div className={styles.desktopBar}>
+        <div className={styles.toolbar}>
+          {MENU_ITEMS.map(renderItem)}
+        </div>
+        <button
+          className={`${styles.exportButton} ${activeTab === 'export' ? styles.itemActive : ''}`}
+          onClick={(e) => handleTabClick('export', e.currentTarget)}
+          type="button"
+        >
+          <span className={styles.itemIcon}><Icon name="download" size={18} /></span>
+          <span className={styles.itemLabel}>Export</span>
+        </button>
       </div>
 
-      {/* Mobile: toolbar pill + share button on same row */}
-      <div className={styles.mobileToolbar}>
+      {/* Mobile: swipeable menu pill + export button to the right */}
+      <div className={styles.mobileBar}>
         <div
           className={styles.mobilePill}
           onTouchStart={handleTouchStart}
@@ -353,19 +433,8 @@ export const Toolbar = memo(function Toolbar() {
         >
           <div className={styles.mobileItems}>
             {MOBILE_PAGES[mobilePage].map((tabId) => {
-              const item = TOOLBAR_ITEMS.find((i) => i.id === tabId)!;
-              return (
-                <button
-                  key={item.id}
-                  ref={getRef(item.id!)}
-                  className={`${styles.item} ${activeTab === item.id ? styles.itemActive : ''}`}
-                  onClick={() => handleTabClick(item.id)}
-                  type="button"
-                >
-                  <span className={styles.itemIcon}>{item.icon}</span>
-                  <span className={styles.itemLabel}>{item.label}</span>
-                </button>
-              );
+              const item = MENU_ITEMS.find((i) => i.id === tabId)!;
+              return renderItem(item);
             })}
           </div>
           <div className={styles.dots}>
@@ -380,10 +449,18 @@ export const Toolbar = memo(function Toolbar() {
             ))}
           </div>
         </div>
+        <button
+          className={`${styles.exportButton} ${activeTab === 'export' ? styles.itemActive : ''}`}
+          onClick={(e) => handleTabClick('export', e.currentTarget)}
+          type="button"
+        >
+          <span className={styles.itemIcon}><Icon name="download" size={18} /></span>
+          <span className={styles.itemLabel}>Export</span>
+        </button>
       </div>
 
       {/* Popovers */}
-      {activeTab && anchorRef.current && (
+      {activeTab && anchorEl && (
         <ToolbarPopover
           anchorRef={anchorRef}
           onClose={handleClose}
