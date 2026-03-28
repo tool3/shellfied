@@ -99,7 +99,7 @@
 }
 
 // ============================================================
-// Mobile bar: swipeable pill + export to the right
+// Mobile bar: centered pill, share FAB floats independently
 // ============================================================
 .mobileBar {
   display: none;
@@ -107,41 +107,40 @@
   @include breakpoint-down("lg") {
     position: fixed;
     bottom: 16px;
-    left: 16px;
-    right: 68px; // room for share FAB
+    left: 0;
+    right: 0;
     z-index: 50;
     display: flex;
-    align-items: flex-end;
-    gap: 8px;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    pointer-events: none;
+
+    > * {
+      pointer-events: auto;
+    }
   }
 }
 
 .mobilePill {
   @include glass-panel;
   border-radius: 9999px;
-  padding: 6px;
+  padding: 4px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  flex: 1;
-  min-width: 0;
-  gap: 2px;
 }
 
 .mobileItems {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 100%;
 }
 
 // ============================================================
-// Dots (page indicator)
+// Dots (page indicator, sits below the pill)
 // ============================================================
 .dots {
   display: flex;
   gap: 4px;
-  padding-bottom: 2px;
 }
 
 .dot {
