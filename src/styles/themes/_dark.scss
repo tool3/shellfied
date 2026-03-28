@@ -1,58 +1,47 @@
-// Obsidian Minimalist Editorial — Dark-only palette
-// Based on the "Silent Curator" design system (Stitch)
-
 [data-theme='dark'] {
-  // --- Surfaces (near-blacks with tonal depth) ---
-  --color-bg-primary: #0e0e0e;       // surface
-  --color-bg-secondary: #131313;      // surface-container-low
-  --color-bg-tertiary: #1a1919;       // surface-container
-  --color-bg-elevated: #202020;       // surface-container-high
-  --color-bg-sunken: #000000;         // surface-container-lowest
-  --color-bg-bright: #2c2c2c;        // surface-bright (hover states)
-  --color-bg-hover: rgba(231, 229, 228, 0.04);
-  --color-bg-active: rgba(231, 229, 228, 0.08);
+  // --- Background Colors (warm dark tones, not pure black) ---
+  --color-bg-primary: #0C0A09;
+  --color-bg-secondary: #1C1917;
+  --color-bg-tertiary: #292524;
+  --color-bg-elevated: #1C1917;
+  --color-bg-hover: rgba(255, 247, 237, 0.06);
+  --color-bg-active: rgba(255, 247, 237, 0.1);
 
-  // --- Text (warm off-whites, no pure #fff) ---
-  --color-text-primary: #e7e5e4;      // on-surface
-  --color-text-secondary: #acabaa;    // on-surface-variant
-  --color-text-tertiary: #767575;     // outline
-  --color-text-inverted: #0e0e0e;
+  // --- Text Colors (warm off-whites, WCAG AA compliant) ---
+  --color-text-primary: #FAFAF9;
+  --color-text-secondary: #A8A29E;
+  --color-text-tertiary: #8E8883;
+  --color-text-inverted: #0C0A09;
 
-  // --- Borders (ghost borders — never opaque) ---
-  --color-border-primary: rgba(72, 72, 72, 0.15);   // outline-variant at 15%
-  --color-border-secondary: rgba(72, 72, 72, 0.25);
-  --color-border-focus: var(--color-accent-dim);
+  // --- Border Colors (warm tinted) ---
+  --color-border-primary: rgba(168, 162, 158, 0.15);
+  --color-border-secondary: rgba(168, 162, 158, 0.25);
+  --color-border-focus: var(--color-brand-dark);
 
-  // --- Accent (configurable brand color) ---
+  // --- Brand Colors ---
   --color-brand: var(--color-brand-dark);
   --color-brand-primary: var(--color-brand-dark);
   --color-brand-primary-hover: var(--color-brand-dark-hover);
   --color-brand-primary-active: var(--color-brand-dark-active);
 
-  // --- Semantic ---
+  // --- Semantic Colors ---
   --color-success: #4ADE80;
   --color-warning: #FBBF24;
-  --color-error: #ee7d77;
+  --color-error: #F87171;
   --color-info: #60A5FA;
 
-  // --- Shadows (ambient, low opacity, deep blur) ---
-  --shadow-color: rgba(0, 0, 0, 0.6);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5);
-  --shadow-xl: 0 40px 100px rgba(0, 0, 0, 0.8);
+  // --- Shadows (warmer, more atmospheric) ---
+  --shadow-color: rgba(12, 10, 9, 0.5);
+  --shadow-sm: 0 1px 2px var(--shadow-color), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px var(--shadow-color), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px var(--shadow-color), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 20px 25px -5px var(--shadow-color), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
 
-  // --- Accent tokens ---
+  // --- Accent ---
   --color-accent: var(--color-brand-dark);
   --color-accent-subtle: var(--color-brand-dark-subtle);
-  --color-accent-dim: #909fb5;
 
-  // --- Glow ---
-  --glow-brand: 0 0 20px rgba(198, 198, 200, 0.15);
-  --glow-brand-intense: 0 0 30px rgba(198, 198, 200, 0.25);
-
-  // --- Glass panels ---
-  --glass-bg: rgba(32, 32, 32, 0.6);
-  --glass-border: rgba(72, 72, 72, 0.15);
-  --glass-blur: 40px;
+  // --- Glow effects for micro-interactions ---
+  --glow-brand: 0 0 20px rgba(52, 211, 153, 0.3);
+  --glow-brand-intense: 0 0 30px rgba(52, 211, 153, 0.5);
 }

@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import {
-  Manrope,
+  Outfit,
   Syne,
   JetBrains_Mono,
   Fira_Code,
@@ -31,10 +31,10 @@ import Script from 'next/script';
 import '@/styles/main.scss';
 
 // Font configurations
-const manrope = Manrope({
+const outfit = Outfit({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700', '800'],
-  variable: '--font-manrope',
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-outfit',
   display: 'swap',
 });
 
@@ -269,7 +269,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0e0e0e',
+  themeColor: '#0C0A09',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -282,7 +282,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" data-theme="dark" className={`${manrope.variable} ${syne.variable} ${jetbrainsMono.variable} ${firaCode.variable} ${sourceCodePro.variable} ${ibmPlexMono.variable} ${robotoMono.variable} ${ubuntuMono.variable} ${spaceMono.variable} ${inter.variable} ${roboto.variable} ${poppins.variable} ${montserrat.variable} ${openSans.variable} ${lato.variable} ${oswald.variable} ${raleway.variable} ${nunito.variable} ${ubuntu.variable} ${rubik.variable} ${workSans.variable} ${quicksand.variable} ${bebasNeue.variable} ${playfairDisplay.variable} ${merriweather.variable}`}>
+    <html lang="en" className={`${outfit.variable} ${syne.variable} ${jetbrainsMono.variable} ${firaCode.variable} ${sourceCodePro.variable} ${ibmPlexMono.variable} ${robotoMono.variable} ${ubuntuMono.variable} ${spaceMono.variable} ${inter.variable} ${roboto.variable} ${poppins.variable} ${montserrat.variable} ${openSans.variable} ${lato.variable} ${oswald.variable} ${raleway.variable} ${nunito.variable} ${ubuntu.variable} ${rubik.variable} ${workSans.variable} ${quicksand.variable} ${bebasNeue.variable} ${playfairDisplay.variable} ${merriweather.variable}`}>
       <head>
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-V5WTZ111PR"

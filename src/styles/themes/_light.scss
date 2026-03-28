@@ -1,2 +1,47 @@
-// Light theme removed — Obsidian is dark-only.
-// File kept empty to avoid SCSS import errors.
+[data-theme='light'] {
+  // --- Background Colors (warm cream tones, not pure white) ---
+  --color-bg-primary: #FFFBF5;
+  --color-bg-secondary: #FEF7ED;
+  --color-bg-tertiary: #FDF4E7;
+  --color-bg-elevated: #FFFFFF;
+  --color-bg-hover: rgba(249, 115, 22, 0.06);
+  --color-bg-active: rgba(249, 115, 22, 0.1);
+
+  // --- Text Colors (warm charcoals) ---
+  --color-text-primary: #1C1917;
+  --color-text-secondary: #57534E;
+  --color-text-tertiary: #78716C;
+  --color-text-inverted: #FFFBF5;
+
+  // --- Border Colors (warm tinted) ---
+  --color-border-primary: rgba(28, 25, 23, 0.1);
+  --color-border-secondary: rgba(28, 25, 23, 0.18);
+  --color-border-focus: var(--color-brand-light);
+
+  // --- Brand Colors ---
+  --color-brand: var(--color-brand-light);
+  --color-brand-primary: var(--color-brand-light);
+  --color-brand-primary-hover: var(--color-brand-light-hover);
+  --color-brand-primary-active: var(--color-brand-light-active);
+
+  // --- Semantic Colors ---
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  --color-info: #3B82F6;
+
+  // --- Shadows (warmer, layered for depth) ---
+  --shadow-color: rgba(28, 25, 23, 0.08);
+  --shadow-sm: 0 1px 2px var(--shadow-color), 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px var(--shadow-color), 0 2px 4px -1px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 15px -3px var(--shadow-color), 0 4px 6px -2px rgba(0, 0, 0, 0.06);
+  --shadow-xl: 0 20px 25px -5px var(--shadow-color), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+  // --- Accent ---
+  --color-accent: var(--color-brand-light);
+  --color-accent-subtle: var(--color-brand-light-subtle);
+
+  // --- Glow effects for micro-interactions ---
+  --glow-brand: 0 0 20px rgba(249, 115, 22, 0.2);
+  --glow-brand-intense: 0 0 30px rgba(249, 115, 22, 0.35);
+}
