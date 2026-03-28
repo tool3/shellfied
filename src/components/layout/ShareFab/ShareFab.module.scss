@@ -24,40 +24,34 @@
   }
 }
 
+// Desktop: hidden (share lives in export popover)
+// Mobile: glass pill to the right of the bottom bar
 .fab {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 9999px;
-  background: rgba(28, 28, 28, 0.7);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  border: none;
-  transition: transform 150ms ease;
-  @include liquid-glass-border;
+  display: none;
 
-  &:hover {
-    transform: scale(1.05);
-  }
-
-  &:active {
-    transform: scale(0.95);
-  }
-
-  // Mobile: right side, aligned vertically with mobile toolbar
   @include breakpoint-down("lg") {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
     bottom: 16px;
     right: 16px;
+    z-index: 50;
     width: 44px;
     height: 44px;
+    border-radius: 9999px;
+    background: rgba(28, 28, 28, 0.7);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    color: var(--color-text-primary);
+    cursor: pointer;
+    border: none;
+    transition: transform 150ms ease;
+    @include liquid-glass-border;
+
+    &:active {
+      transform: scale(0.95);
+    }
   }
 }

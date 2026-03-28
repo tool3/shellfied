@@ -4,9 +4,7 @@
 }
 
 // ============================================================
-// Apple Liquid Glass border mixin
-// Light source from upper-left: bright top-left edge fading to
-// transparent bottom-right, giving a 3D refractive look.
+// Apple Liquid Glass border
 // ============================================================
 @mixin liquid-glass-border {
   border: 1px solid transparent;
@@ -34,9 +32,6 @@
   }
 }
 
-// ============================================================
-// Glass panel base
-// ============================================================
 @mixin glass-panel {
   background: rgba(28, 28, 28, 0.7);
   backdrop-filter: blur(40px);
@@ -46,41 +41,77 @@
 }
 
 // ============================================================
-// Desktop Toolbar
+// Desktop bar: centered menu + export to the right
 // ============================================================
-.toolbar {
+.desktopBar {
   position: fixed;
   bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
   z-index: 50;
-  @include glass-panel;
-  border-radius: 9999px;
-  padding: 6px;
   display: flex;
   align-items: center;
+  justify-content: center;
+  gap: 12px;
+  pointer-events: none; // let clicks pass through the container
 
-  // Hide on mobile
+  > * {
+    pointer-events: auto; // but children are clickable
+  }
+
   @include breakpoint-down("lg") {
     display: none;
   }
 }
 
+// The centered menu pill
+.toolbar {
+  @include glass-panel;
+  border-radius: 9999px;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+}
+
+// The export button (same glass style, standalone pill)
+.exportButton {
+  @include glass-panel;
+  border-radius: 9999px;
+  padding: 8px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--color-text-tertiary);
+  transition: all 150ms ease;
+  font-family: inherit;
+  user-select: none;
+
+  &:hover {
+    color: var(--color-text-secondary);
+  }
+
+  &.itemActive {
+    color: var(--color-text-primary);
+    background: rgba(50, 50, 50, 0.8);
+  }
+}
+
 // ============================================================
-// Mobile Toolbar (swipeable pages + dot indicators)
-// Same pill height as desktop, compact
+// Mobile bar: swipeable pill + export to the right
 // ============================================================
-.mobileToolbar {
+.mobileBar {
   display: none;
 
   @include breakpoint-down("lg") {
-    display: flex;
-    align-items: center;
     position: fixed;
     bottom: 16px;
     left: 16px;
-    right: 72px; // room for share FAB (44px + 16px right + 12px gap)
+    right: 68px; // room for share FAB
     z-index: 50;
+    display: flex;
+    align-items: flex-end;
     gap: 8px;
   }
 }
