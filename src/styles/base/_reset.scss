@@ -40,15 +40,12 @@
   --font-size-2xl: #{v.$font-size-2xl};
   --font-size-3xl: #{v.$font-size-3xl};
 
-  // Brand Colors
-  --color-brand-dark: #{v.$brand-dark};
-  --color-brand-dark-hover: #{v.$brand-dark-hover};
-  --color-brand-dark-active: #{v.$brand-dark-active};
-  --color-brand-dark-subtle: #{v.$brand-dark-subtle};
-  --color-brand-light: #{v.$brand-light};
-  --color-brand-light-hover: #{v.$brand-light-hover};
-  --color-brand-light-active: #{v.$brand-light-active};
-  --color-brand-light-subtle: #{v.$brand-light-subtle};
+  // Brand / Accent Colors
+  --color-brand-dark: #{v.$accent};
+  --color-brand-dark-hover: #{v.$accent-hover};
+  --color-brand-dark-active: #{v.$accent-active};
+  --color-brand-dark-subtle: #{v.$accent-subtle};
+  --color-accent-dim: #{v.$accent-dim};
 }
 
 *,

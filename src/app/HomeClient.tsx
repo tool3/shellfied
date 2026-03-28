@@ -4,8 +4,8 @@ import { useEffect, useSyncExternalStore, useState } from 'react';
 import { useTheme } from '@/hooks/useTheme';
 import { useIsViewMode, useStore } from '@/store';
 import { rehydrateCompressedContent, getShortId, resolveShortId } from '@/utils/urlParams';
-import { Header } from '@/components/layout';
-import { Editor, Preview, SettingsPanel, ExportPanel, ViewMode } from '@/components/features';
+import { Header, Toolbar, ShareFab } from '@/components/layout';
+import { Editor, Preview, ViewMode } from '@/components/features';
 import styles from './page.module.scss';
 
 // SSR-safe mount detection without useEffect + setState
@@ -102,29 +102,15 @@ export function HomeClient() {
     <div className={styles.app}>
       <Header />
       <main className={styles.main}>
-        <div className={styles.workspace}>
-          <SettingsPanel />
-          <div className={styles.editorPane}>
-            <Editor />
-          </div>
-          <div className={styles.previewPane}>
-            <Preview />
-            <div className={styles.exportPane} data-export-pane>
-              <ExportPanel />
-            </div>
-          </div>
+        <div className={styles.editorPane}>
+          <Editor />
+        </div>
+        <div className={styles.previewPane}>
+          <Preview />
         </div>
       </main>
-      <footer className={styles.footer}>
-        <span>Powered by </span>
-        <a
-          href="https://github.com/tool3/shellfie"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          shellfie
-        </a>
-      </footer>
+      <Toolbar />
+      <ShareFab />
     </div>
   );
 }
