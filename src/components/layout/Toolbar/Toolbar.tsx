@@ -38,10 +38,10 @@ const MENU_ITEMS: { id: ToolbarTab; label: string; icon: React.ReactNode }[] = [
   { id: 'padding', label: 'Padding', icon: <PaddingIcon /> },
 ];
 
-// Mobile pages: split menu items across swipeable pages
+// Mobile pages: all items across swipeable pages (3 per page)
 const MOBILE_PAGES = [
   ['preset', 'theme', 'background'],
-  ['window', 'padding'],
+  ['window', 'padding', 'export'],
 ] as ToolbarTab[][];
 
 const FORMAT_OPTIONS = [
@@ -424,7 +424,7 @@ export const Toolbar = memo(function Toolbar() {
         </button>
       </div>
 
-      {/* Mobile: swipeable menu pill + export button to the right */}
+      {/* Mobile: centered swipeable pill with dots below */}
       <div className={styles.mobileBar}>
         <div
           className={styles.mobilePill}
@@ -433,30 +433,37 @@ export const Toolbar = memo(function Toolbar() {
         >
           <div className={styles.mobileItems}>
             {MOBILE_PAGES[mobilePage].map((tabId) => {
-              const item = MENU_ITEMS.find((i) => i.id === tabId)!;
+              const item = MENU_ITEMS.find((i) => i.id === tabId);
+              if (!item) {
+                // Export lives in the swipeable pages too
+                if (tabId === 'export') return (
+                  <button
+                    key="export"
+                    className={`${styles.item} ${activeTab === 'export' ? styles.itemActive : ''}`}
+                    onClick={(e) => handleTabClick('export', e.currentTarget)}
+                    type="button"
+                  >
+                    <span className={styles.itemIcon}><Icon name="download" size={18} /></span>
+                    <span className={styles.itemLabel}>Export</span>
+                  </button>
+                );
+                return null;
+              }
               return renderItem(item);
             })}
           </div>
-          <div className={styles.dots}>
-            {MOBILE_PAGES.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                className={`${styles.dot} ${i === mobilePage ? styles.dotActive : ''}`}
-                onClick={() => setMobilePage(i)}
-                aria-label={`Page ${i + 1}`}
-              />
-            ))}
-          </div>
         </div>
-        <button
-          className={`${styles.exportButton} ${activeTab === 'export' ? styles.itemActive : ''}`}
-          onClick={(e) => handleTabClick('export', e.currentTarget)}
-          type="button"
-        >
-          <span className={styles.itemIcon}><Icon name="download" size={18} /></span>
-          <span className={styles.itemLabel}>Export</span>
-        </button>
+        <div className={styles.dots}>
+          {MOBILE_PAGES.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              className={`${styles.dot} ${i === mobilePage ? styles.dotActive : ''}`}
+              onClick={() => setMobilePage(i)}
+              aria-label={`Page ${i + 1}`}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Popovers */}
