@@ -7,11 +7,24 @@
   }
 }
 
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .app {
   display: flex;
   flex-direction: column;
   height: 100vh;
   height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
   overflow: hidden;
   animation: fadeIn 0.3s ease;
 }
@@ -21,32 +34,141 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  padding: var(--space-md);
-  gap: var(--space-md);
+}
 
-  // Mobile: stack evenly, no scroll, leave room for toolbar
-  @include breakpoint-down("lg") {
-    flex-direction: column;
-    padding: var(--space-sm);
-    gap: var(--space-sm);
-    padding-bottom: 88px; // toolbar height + gap
+.workspace {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  gap: 0;
+  overflow: auto;
+  position: relative;
+  @include custom-scrollbar;
+
+  // Subtle noise texture for the workspace background
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    // opacity: 0.35;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    // background-image: url('../../public//assets/noise-opacity.png');
+    background-repeat: repeat;
+  }
+
+  // Ensure panes are above the noise texture
+  > .editorPane,
+  > .previewPane,
+  > .exportPane {
+    position: relative;
+    z-index: 1;
+  }
+
+  @include breakpoint("lg") {
+    flex-direction: row;
+    padding: var(--space-lg);
+    gap: var(--space-lg);
+    overflow: hidden;
   }
 }
 
 .editorPane {
-  flex: 1;
-  min-width: 0;
-  min-height: 0;
+  flex: 0 0 auto;
+  min-height: 300px;
+  max-height: 50vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  padding: var(--space-md);
+  padding-bottom: 0;
+
+  @include breakpoint("lg") {
+    flex: 0 0 40%;
+    max-width: 40%;
+    min-height: 0;
+    max-height: none;
+    padding: 0;
+  }
 }
 
 .previewPane {
-  flex: 1;
-  min-width: 0;
-  min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  flex: 0 0 auto;
+  min-height: 300px;
+  gap: var(--space-md);
+  overflow: visible;
+  padding: var(--space-md);
+
+  @include breakpoint("lg") {
+    flex: 1;
+    min-height: 0;
+    padding: 0;
+    gap: var(--space-md);
+    overflow: hidden;
+  }
+}
+
+.exportPane {
+  flex-shrink: 0;
+  animation: slideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s backwards;
+
+  @include breakpoint("lg") {
+    display: none;
+  }
+}
+
+.footer {
+  display: none;
+
+  @include breakpoint("lg") {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xs);
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-tertiary);
+    background-color: var(--color-bg-secondary);
+    border-top: 1px solid var(--color-border-primary);
+    flex-shrink: 0;
+    animation: fadeIn 0.4s ease 0.5s backwards;
+
+    a {
+      color: var(--color-brand-primary);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.15s ease;
+      position: relative;
+
+      // Underline animation on hover
+      &::after {
+        content: "";
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 100%;
+        height: 1px;
+        background-color: var(--color-brand-primary);
+        transform: scaleX(0);
+        transform-origin: right;
+        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+
+      &:hover {
+        color: var(--color-brand-primary-hover);
+
+        &::after {
+          transform: scaleX(1);
+          transform-origin: left;
+        }
+      }
+    }
+  }
 }
