@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Obsidian Snippet Editor</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-container": "#1a1919",
+                        "background": "#0e0e0e",
+                        "tertiary-container": "#edeaea",
+                        "on-primary-container": "#d0d0d2",
+                        "surface-container-high": "#202020",
+                        "tertiary-fixed-dim": "#e8e5e4",
+                        "on-primary-fixed": "#3e3f41",
+                        "on-surface-variant": "#acabaa",
+                        "primary": "#c6c6c8",
+                        "on-secondary-container": "#b2c0d8",
+                        "on-secondary-fixed": "#324053",
+                        "surface": "#0e0e0e",
+                        "secondary-fixed": "#d5e3fc",
+                        "error-container": "#7f2927",
+                        "surface-tint": "#c6c6c8",
+                        "primary-fixed-dim": "#d4d4d6",
+                        "on-background": "#e7e5e4",
+                        "tertiary-fixed": "#f6f3f2",
+                        "primary-fixed": "#e2e2e4",
+                        "surface-container-highest": "#262626",
+                        "surface-dim": "#0e0e0e",
+                        "inverse-primary": "#5d5f61",
+                        "on-primary-fixed-variant": "#5a5c5d",
+                        "primary-container": "#454749",
+                        "on-tertiary-fixed": "#4a4949",
+                        "on-secondary-fixed-variant": "#4e5c71",
+                        "surface-container-lowest": "#000000",
+                        "on-tertiary-fixed-variant": "#676666",
+                        "surface-variant": "#262626",
+                        "tertiary": "#fcf9f8",
+                        "inverse-surface": "#fcf8f8",
+                        "on-secondary": "#122133",
+                        "secondary": "#909fb5",
+                        "on-surface": "#e7e5e4",
+                        "tertiary-dim": "#edeaea",
+                        "on-error-container": "#ff9993",
+                        "on-primary": "#3e4042",
+                        "outline-variant": "#484848",
+                        "surface-container-low": "#131313",
+                        "primary-dim": "#b8b9bb",
+                        "secondary-dim": "#909fb5",
+                        "secondary-fixed-dim": "#c7d5ed",
+                        "secondary-container": "#2e3c4f",
+                        "outline": "#767575",
+                        "error-dim": "#bb5551",
+                        "on-tertiary": "#605f5e",
+                        "on-tertiary-container": "#575656",
+                        "surface-bright": "#2c2c2c",
+                        "inverse-on-surface": "#565554",
+                        "on-error": "#490106",
+                        "error": "#ee7d77"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope", "sans-serif"],
+                        "body": ["Manrope", "sans-serif"],
+                        "label": ["Manrope", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #050505;
+            color: #e7e5e4;
+            font-family: 'Manrope', sans-serif;
+            overflow: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .editor-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .editor-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .editor-scrollbar::-webkit-scrollbar-thumb {
+            background: #262626;
+            border-radius: 10px;
+        }
+        .glass-panel {
+            background: rgba(32, 32, 32, 0.6);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+        }
+    </style>
+</head>
+<body class="antialiased select-none">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-[#050505] dark:bg-[#050505] tonal-shift bg-[#121212] flat no shadows">
+<div class="flex items-center gap-8">
+<span class="text-lg font-bold tracking-tighter text-zinc-100 font-manrope">Obsidian</span>
+<nav class="hidden md:flex gap-6 items-center">
+<a class="text-zinc-500 hover:text-zinc-200 transition-colors text-sm font-medium" href="#">Files</a>
+<a class="text-zinc-100 font-semibold text-sm" href="#">Editor</a>
+<a class="text-zinc-500 hover:text-zinc-200 transition-colors text-sm font-medium" href="#">Snippets</a>
+<a class="text-zinc-500 hover:text-zinc-200 transition-colors text-sm font-medium" href="#">Extensions</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center bg-surface-container-low px-3 py-1.5 rounded-lg border border-outline-variant/10">
+<span class="material-symbols-outlined text-sm text-zinc-500 mr-2">search</span>
+<input class="bg-transparent border-none outline-none text-xs text-on-surface w-32 focus:w-48 transition-all" placeholder="Search snippets..." type="text"/>
+</div>
+<div class="flex gap-3">
+<button class="material-symbols-outlined text-zinc-500 hover:text-zinc-100 transition-colors">history</button>
+<button class="material-symbols-outlined text-zinc-500 hover:text-zinc-100 transition-colors">settings</button>
+</div>
+</div>
+</header>
+<main class="flex h-screen pt-16 pb-24">
+<!-- Sidebar Navigation (Collapsed Editorial Style) -->
+<aside class="w-16 bg-surface-container-lowest flex flex-col items-center py-6 gap-8 border-r border-outline-variant/5">
+<button class="w-10 h-10 rounded-xl bg-primary text-on-primary flex items-center justify-center">
+<span class="material-symbols-outlined">add</span>
+</button>
+<div class="flex flex-col gap-6">
+<span class="material-symbols-outlined text-zinc-500 hover:text-zinc-100 cursor-pointer" style="font-variation-settings: 'FILL' 1;">folder</span>
+<span class="material-symbols-outlined text-zinc-500 hover:text-zinc-100 cursor-pointer">grid_view</span>
+<span class="material-symbols-outlined text-zinc-500 hover:text-zinc-100 cursor-pointer">star</span>
+<span class="material-symbols-outlined text-zinc-500 hover:text-zinc-100 cursor-pointer">cloud_done</span>
+</div>
+</aside>
+<!-- Main Workspace Split -->
+<div class="flex-1 flex overflow-hidden">
+<!-- Left: Code Editor -->
+<section class="flex-1 bg-[#121212] flex flex-col relative overflow-hidden">
+<div class="h-10 flex items-center px-4 bg-[#0e0e0e]/50 text-[10px] uppercase tracking-widest text-zinc-500 font-label border-b border-white/5">
+<span>main.tsx — TypeScript</span>
+</div>
+<div class="flex-1 p-6 font-mono text-sm leading-relaxed overflow-y-auto editor-scrollbar">
+<div class="flex gap-4">
+<div class="text-zinc-700 text-right select-none w-8 pt-1">
+                            1<br/>2<br/>3<br/>4<br/>5<br/>6<br/>7<br/>8<br/>9<br/>10<br/>11<br/>12<br/>13<br/>14
+                        </div>
+<div class="flex-1 text-zinc-400">
+<span class="text-secondary">import</span> React <span class="text-secondary">from</span> <span class="text-zinc-100">'react'</span>;<br/>
+<span class="text-secondary">import</span> { motion } <span class="text-secondary">from</span> <span class="text-zinc-100">'framer-motion'</span>;<br/><br/>
+<span class="text-secondary">export const</span> ObsidianCard = () <span class="text-secondary">=&gt;</span> {<br/>
+                              <span class="text-secondary">return</span> (<br/>
+                                <span class="text-white">&lt;</span><span class="text-zinc-100">motion.div</span><br/>
+                                  initial<span class="text-white">={{</span> opacity: 0 <span class="text-white">}}</span><br/>
+                                  animate<span class="text-white">={{</span> opacity: 1 <span class="text-white">}}</span><br/>
+                                  className<span class="text-white">=</span><span class="text-zinc-100">"bg-zinc-900 rounded-xl"</span><br/>
+                                <span class="text-white">&gt;</span><br/>
+                                  <span class="text-zinc-500">// Silent Curator Layout</span><br/>
+                                  <span class="text-white">&lt;</span><span class="text-zinc-100">Content</span> <span class="text-white">/&gt;</span><br/>
+                                <span class="text-white">&lt;/</span><span class="text-zinc-100">motion.div</span><br/>
+                              );<br/>
+                            };
+                        </div>
+</div>
+</div>
+</section>
+<!-- Right: Preview Area -->
+<section class="flex-1 bg-surface-container-lowest flex items-center justify-center p-12 relative overflow-hidden">
+<!-- Background Gradient Decoration -->
+<div class="absolute inset-0 bg-gradient-to-tr from-[#050505] via-[#0e0e0e] to-[#1a1919] opacity-100"></div>
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-secondary/5 rounded-full blur-[120px]"></div>
+<!-- macOS Style Window Preview -->
+<div class="relative w-full max-w-lg aspect-video glass-panel rounded-xl shadow-[0_40px_100px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden ring-1 ring-white/10">
+<!-- Window Header -->
+<div class="h-10 flex items-center px-4 bg-white/5 border-b border-white/5 justify-between">
+<div class="flex gap-2">
+<div class="w-3 h-3 rounded-full bg-red-500/50"></div>
+<div class="w-3 h-3 rounded-full bg-amber-500/50"></div>
+<div class="w-3 h-3 rounded-full bg-emerald-500/50"></div>
+</div>
+<span class="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">Localhost:3000</span>
+<div class="w-12"></div>
+</div>
+<!-- Mock Preview Content -->
+<div class="flex-1 p-8 flex items-center justify-center">
+<div class="w-full max-w-[280px] p-6 bg-zinc-900/50 rounded-2xl border border-white/5 shadow-2xl space-y-4">
+<div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-zinc-500"></div>
+<div class="space-y-2">
+<div class="h-4 w-3/4 bg-zinc-800 rounded-full"></div>
+<div class="h-3 w-1/2 bg-zinc-800/50 rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- BottomNavBar (The Controls) -->
+<nav class="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center p-1.5 bg-zinc-900/60 dark:bg-zinc-900/60 backdrop-blur-xl w-fit max-w-md rounded-full border border-zinc-800/50 shadow-2xl shadow-black/50 glassmorphism-blur">
+<div class="flex flex-col items-center justify-center bg-zinc-800 text-zinc-100 rounded-full px-5 py-2 active:scale-90 transition-transform cursor-pointer">
+<span class="material-symbols-outlined text-[18px]">palette</span>
+<span class="text-[10px] uppercase tracking-[0.05em] font-manrope mt-0.5">Theme</span>
+</div>
+<div class="flex flex-col items-center justify-center text-zinc-500 px-5 py-2 hover:text-zinc-300 transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-[18px]">aspect_ratio</span>
+<span class="text-[10px] uppercase tracking-[0.05em] font-manrope mt-0.5">Padding</span>
+</div>
+<div class="flex flex-col items-center justify-center text-zinc-500 px-5 py-2 hover:text-zinc-300 transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-[18px]">desktop_windows</span>
+<span class="text-[10px] uppercase tracking-[0.05em] font-manrope mt-0.5">Window</span>
+</div>
+<div class="h-6 w-[1px] bg-zinc-800 mx-2"></div>
+<div class="flex flex-col items-center justify-center text-zinc-100 bg-primary/20 rounded-full px-5 py-2 hover:bg-primary/30 transition-colors cursor-pointer group">
+<span class="material-symbols-outlined text-[18px] text-primary">download</span>
+<span class="text-[10px] uppercase tracking-[0.05em] font-manrope mt-0.5 text-primary">Export</span>
+</div>
+</nav>
+<!-- Floating Action Button Contextual -->
+<button class="fixed bottom-8 right-8 w-14 h-14 rounded-full bg-primary text-on-primary shadow-2xl shadow-primary/20 flex items-center justify-center hover:scale-105 transition-transform active:scale-95">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">share</span>
+</button>
+</body></html>
