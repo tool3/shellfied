@@ -74,17 +74,19 @@ function ToolbarPopover({
 }: ToolbarPopoverProps) {
   const popoverRef = useRef<HTMLDivElement>(null);
 
-  // Position using bottom (distance from viewport bottom) so we don't need
-  // to measure popover height. The popover sits above the anchor.
+  // Position the popover so its bottom edge sits just above the toolbar.
+  // Find the toolbar container (parent with glass styling) to get its top edge.
+  const toolbarEl = anchorEl.closest(`.${styles.toolbar}`) || anchorEl.closest(`.${styles.mobilePill}`) || anchorEl.parentElement;
+  const toolbarRect = toolbarEl ? toolbarEl.getBoundingClientRect() : anchorEl.getBoundingClientRect();
   const anchorRect = anchorEl.getBoundingClientRect();
   const gap = 12;
   const pad = 16;
   const popoverWidth = wide ? 360 : 320;
 
-  // bottom = distance from viewport bottom to anchor top + gap
-  const bottom = window.innerHeight - anchorRect.top + gap;
+  // bottom = distance from viewport bottom to toolbar's top edge + gap
+  const bottom = window.innerHeight - toolbarRect.top + gap;
 
-  // center horizontally on anchor, clamped to viewport
+  // center horizontally on the clicked button, clamped to viewport
   let left = anchorRect.left + anchorRect.width / 2 - popoverWidth / 2;
   left = Math.max(pad, Math.min(left, window.innerWidth - pad - popoverWidth));
 
