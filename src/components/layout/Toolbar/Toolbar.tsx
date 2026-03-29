@@ -29,20 +29,21 @@ import styles from './Toolbar.module.scss';
 
 type ToolbarTab = 'preset' | 'theme' | 'background' | 'window' | 'padding' | 'export' | null;
 
-// Menu items (centered pill)
+// All menu items (export is part of the menu, not separate)
 const MENU_ITEMS: { id: ToolbarTab; label: string; icon: React.ReactNode }[] = [
   { id: 'preset', label: 'Preset', icon: <PaletteIcon /> },
   { id: 'theme', label: 'Theme', icon: <PaintbrushIcon /> },
   { id: 'background', label: 'BG', icon: <ImageIcon /> },
   { id: 'window', label: 'Window', icon: <MonitorIcon /> },
   { id: 'padding', label: 'Padding', icon: <PaddingIcon /> },
+  { id: 'export', label: 'Export', icon: <DownloadIcon /> },
 ];
 
-// Mobile pages: all items across swipeable pages (3 per page)
-const MOBILE_PAGES = [
+// Mobile pages: 3 per page
+const MOBILE_PAGES: ToolbarTab[][] = [
   ['preset', 'theme', 'background'],
   ['window', 'padding', 'export'],
-] as ToolbarTab[][];
+];
 
 const FORMAT_OPTIONS = [
   { value: 'svg', label: 'SVG' },
@@ -59,71 +60,59 @@ const SCALE_OPTIONS = [
 
 // --- Popover Component ---
 interface ToolbarPopoverProps {
-  anchorEl: HTMLElement | null;
+  anchorEl: HTMLElement;
   onClose: () => void;
   wide?: boolean;
   children: React.ReactNode;
 }
 
-const ToolbarPopover = memo(function ToolbarPopover({
+function ToolbarPopover({
   anchorEl,
   onClose,
   wide = false,
   children,
 }: ToolbarPopoverProps) {
-  const popoverRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
 
-  // Position the popover above the anchor element
-  useEffect(() => {
-    if (!anchorEl) return;
+  // Callback ref: fires when the DOM node mounts, then we measure
+  const popoverCallbackRef = useCallback((node: HTMLDivElement | null) => {
+    if (!node || !anchorEl) return;
+    const anchorRect = anchorEl.getBoundingClientRect();
+    const popoverRect = node.getBoundingClientRect();
+    const gap = 12;
+    const pad = 16;
 
-    // Use rAF to ensure the popover has rendered and has dimensions
-    const frame = requestAnimationFrame(() => {
-      const popover = popoverRef.current;
-      if (!popover) return;
+    let left = anchorRect.left + anchorRect.width / 2 - popoverRect.width / 2;
+    let top = anchorRect.top - popoverRect.height - gap;
 
-      const anchorRect = anchorEl.getBoundingClientRect();
-      const popoverRect = popover.getBoundingClientRect();
-      const gap = 12;
-      const pad = 16;
+    // Clamp horizontally
+    left = Math.max(pad, Math.min(left, window.innerWidth - pad - popoverRect.width));
+    // Clamp vertically
+    top = Math.max(pad, top);
 
-      let left = anchorRect.left + anchorRect.width / 2 - popoverRect.width / 2;
-      const top = anchorRect.top - popoverRect.height - gap;
-
-      if (left < pad) left = pad;
-      if (left + popoverRect.width > window.innerWidth - pad) {
-        left = window.innerWidth - pad - popoverRect.width;
-      }
-
-      setPosition({ top: Math.max(pad, top), left });
-    });
-
-    return () => cancelAnimationFrame(frame);
+    setPos({ top, left });
   }, [anchorEl]);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
 
   return createPortal(
     <>
       <div className={styles.popoverOverlay} onClick={onClose} />
       <div
-        ref={popoverRef}
-        className={`${styles.popover} ${wide ? styles.popoverWide : ''}`}
-        style={position ? { top: position.top, left: position.left } : { visibility: 'hidden' as const }}
+        ref={popoverCallbackRef}
+        className={`${styles.popover} ${wide ? styles.popoverWide : ''} ${pos ? styles.popoverVisible : ''}`}
+        style={pos ? { top: pos.top, left: pos.left } : undefined}
       >
         {children}
       </div>
     </>,
     document.body
   );
-});
+}
 
 // --- Popover Content Components ---
 
@@ -361,6 +350,9 @@ function MonitorIcon() {
 function PaddingIcon() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6" /><path d="m12 12 4 10 1.7-4.3L22 16Z" /></svg>;
 }
+function DownloadIcon() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>;
+}
 
 // --- Main Toolbar ---
 export const Toolbar = memo(function Toolbar() {
@@ -414,59 +406,47 @@ export const Toolbar = memo(function Toolbar() {
 
   return (
     <>
-      {/* Desktop: centered menu pill + export button to the right */}
+      {/* Desktop: single centered pill with all items + share */}
       <div className={styles.desktopBar}>
         <div className={styles.toolbar}>
           {MENU_ITEMS.map(renderItem)}
+          <div className={styles.divider} />
+          <button
+            type="button"
+            className={styles.item}
+            onClick={() => setShowMobileShare(true)}
+          >
+            <span className={styles.itemIcon}><Icon name="share" size={18} /></span>
+            <span className={styles.itemLabel}>Share</span>
+          </button>
         </div>
-        <button
-          className={`${styles.exportButton} ${activeTab === 'export' ? styles.itemActive : ''}`}
-          onClick={(e) => handleTabClick('export', e.currentTarget)}
-          type="button"
-        >
-          <span className={styles.itemIcon}><Icon name="download" size={18} /></span>
-          <span className={styles.itemLabel}>Export</span>
-        </button>
       </div>
 
-      {/* Mobile: pill + dots + share, all in one row */}
+      {/* Mobile: swipeable pill + dots below centered + share to right */}
       <div className={styles.mobileBar}>
-        <div
-          className={styles.mobilePill}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-        >
-          <div className={styles.mobileItems}>
+        <div className={styles.mobileColumn}>
+          <div
+            className={styles.mobilePill}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
             {MOBILE_PAGES[mobilePage].map((tabId) => {
               const item = MENU_ITEMS.find((i) => i.id === tabId);
-              if (!item && tabId === 'export') {
-                return (
-                  <button
-                    key="export"
-                    className={`${styles.item} ${activeTab === 'export' ? styles.itemActive : ''}`}
-                    onClick={(e) => handleTabClick('export', e.currentTarget)}
-                    type="button"
-                  >
-                    <span className={styles.itemIcon}><Icon name="download" size={18} /></span>
-                    <span className={styles.itemLabel}>Export</span>
-                  </button>
-                );
-              }
               if (!item) return null;
               return renderItem(item);
             })}
           </div>
-        </div>
-        <div className={styles.dots}>
-          {MOBILE_PAGES.map((_, i) => (
-            <button
-              key={i}
-              type="button"
-              className={`${styles.dot} ${i === mobilePage ? styles.dotActive : ''}`}
-              onClick={() => setMobilePage(i)}
-              aria-label={`Page ${i + 1}`}
-            />
-          ))}
+          <div className={styles.dots}>
+            {MOBILE_PAGES.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                className={`${styles.dot} ${i === mobilePage ? styles.dotActive : ''}`}
+                onClick={() => setMobilePage(i)}
+                aria-label={`Page ${i + 1}`}
+              />
+            ))}
+          </div>
         </div>
         <button
           type="button"
@@ -494,7 +474,7 @@ export const Toolbar = memo(function Toolbar() {
         </ToolbarPopover>
       )}
 
-      {/* Mobile share modal */}
+      {/* Share modal */}
       {showMobileShare && (
         <ShareModalWrapper onClose={() => setShowMobileShare(false)} />
       )}
