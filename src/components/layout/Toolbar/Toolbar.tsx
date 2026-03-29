@@ -115,7 +115,7 @@ function ToolbarPopover({
     <div
       ref={popoverRef}
       className={`${styles.popover} ${wide ? styles.popoverWide : ''}`}
-      style={{ bottom, left }}
+      style={{ bottom, left, top: 'auto' }}
     >
       {children}
     </div>,
