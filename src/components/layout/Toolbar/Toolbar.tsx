@@ -72,55 +72,64 @@ function ToolbarPopover({
   wide = false,
   children,
 }: ToolbarPopoverProps) {
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const [ready, setReady] = useState(false);
 
-  // Callback ref: fires when the DOM node mounts, then we measure
-  const popoverCallbackRef = useCallback((node: HTMLDivElement | null) => {
+  // Position after mount: render offscreen first, measure, then move into place
+  useEffect(() => {
+    const node = popoverRef.current;
     if (!node || !anchorEl) return;
-    const anchorRect = anchorEl.getBoundingClientRect();
-    const popoverRect = node.getBoundingClientRect();
-    const gap = 12;
-    const pad = 16;
 
-    let left = anchorRect.left + anchorRect.width / 2 - popoverRect.width / 2;
-    let top = anchorRect.top - popoverRect.height - gap;
+    // Double rAF to ensure browser has laid out the content
+    const f1 = requestAnimationFrame(() => {
+      const f2 = requestAnimationFrame(() => {
+        const anchorRect = anchorEl.getBoundingClientRect();
+        const popoverRect = node.getBoundingClientRect();
+        const gap = 12;
+        const pad = 16;
 
-    left = Math.max(pad, Math.min(left, window.innerWidth - pad - popoverRect.width));
-    top = Math.max(pad, top);
+        let left = anchorRect.left + anchorRect.width / 2 - popoverRect.width / 2;
+        let top = anchorRect.top - popoverRect.height - gap;
 
-    setPos({ top, left });
+        left = Math.max(pad, Math.min(left, window.innerWidth - pad - popoverRect.width));
+        top = Math.max(pad, top);
+
+        node.style.top = `${top}px`;
+        node.style.left = `${left}px`;
+        setReady(true);
+      });
+      return () => cancelAnimationFrame(f2);
+    });
+    return () => cancelAnimationFrame(f1);
   }, [anchorEl]);
 
-  // Close on click-outside: listen on mousedown (not click) with a frame
-  // delay so the opening click doesn't immediately close the popover
+  // Click outside to close (deferred by one frame to skip opening click)
   useEffect(() => {
-    let active = false;
-    const frame = requestAnimationFrame(() => { active = true; });
+    let listening = false;
+    const frame = requestAnimationFrame(() => { listening = true; });
 
-    const handleMouseDown = (e: MouseEvent) => {
-      if (!active) return;
-      const popover = document.querySelector(`.${styles.popoverVisible}`);
-      if (popover && popover.contains(e.target as Node)) return;
+    const onMouseDown = (e: MouseEvent) => {
+      if (!listening) return;
+      if (popoverRef.current?.contains(e.target as Node)) return;
       onClose();
     };
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
 
-    document.addEventListener('mousedown', handleMouseDown);
-    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('keydown', onKeyDown);
     return () => {
       cancelAnimationFrame(frame);
-      document.removeEventListener('mousedown', handleMouseDown);
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', onMouseDown);
+      document.removeEventListener('keydown', onKeyDown);
     };
   }, [onClose]);
 
   return createPortal(
     <div
-      ref={popoverCallbackRef}
-      className={`${styles.popover} ${wide ? styles.popoverWide : ''} ${pos ? styles.popoverVisible : ''}`}
-      style={pos ? { top: pos.top, left: pos.left } : undefined}
+      ref={popoverRef}
+      className={`${styles.popover} ${wide ? styles.popoverWide : ''} ${ready ? styles.popoverVisible : ''}`}
     >
       {children}
     </div>,
@@ -374,7 +383,7 @@ export const Toolbar = memo(function Toolbar() {
   const [mobilePage, setMobilePage] = useState(0);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [showMobileShare, setShowMobileShare] = useState(false);
-  const touchStartRef = useRef<number>(0);
+  const mobileScrollRef = useRef<HTMLDivElement>(null);
 
   const handleTabClick = useCallback((tab: ToolbarTab, el: HTMLButtonElement) => {
     setActiveTab((prev) => {
@@ -392,18 +401,11 @@ export const Toolbar = memo(function Toolbar() {
     setAnchorEl(null);
   }, []);
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    touchStartRef.current = e.touches[0].clientX;
-  }, []);
-
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    const delta = e.changedTouches[0].clientX - touchStartRef.current;
-    if (Math.abs(delta) > 50) {
-      setMobilePage((prev) => {
-        if (delta < 0) return Math.min(prev + 1, MOBILE_PAGES.length - 1);
-        return Math.max(prev - 1, 0);
-      });
-    }
+  const handleMobileScroll = useCallback(() => {
+    const el = mobileScrollRef.current;
+    if (!el) return;
+    const page = Math.round(el.scrollLeft / el.offsetWidth);
+    setMobilePage(page);
   }, []);
 
   const renderItem = (item: { id: ToolbarTab; label: string; icon: React.ReactNode }) => (
@@ -436,19 +438,21 @@ export const Toolbar = memo(function Toolbar() {
         </div>
       </div>
 
-      {/* Mobile: swipeable pill + dots below centered + share to right */}
+      {/* Mobile: scrollable pill + share aligned to the right */}
       <div className={styles.mobileBar}>
         <div className={styles.mobileColumn}>
-          <div
-            className={styles.mobilePill}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-          >
-            {MOBILE_PAGES[mobilePage].map((tabId) => {
-              const item = MENU_ITEMS.find((i) => i.id === tabId);
-              if (!item) return null;
-              return renderItem(item);
-            })}
+          <div className={styles.mobilePill} ref={mobileScrollRef} onScroll={handleMobileScroll}>
+            <div className={styles.mobileTrack}>
+              {MOBILE_PAGES.map((page, pageIdx) => (
+                <div key={pageIdx} className={styles.mobilePage}>
+                  {page.map((tabId) => {
+                    const item = MENU_ITEMS.find((i) => i.id === tabId);
+                    if (!item) return null;
+                    return renderItem(item);
+                  })}
+                </div>
+              ))}
+            </div>
           </div>
           <div className={styles.dots}>
             {MOBILE_PAGES.map((_, i) => (
@@ -456,7 +460,10 @@ export const Toolbar = memo(function Toolbar() {
                 key={i}
                 type="button"
                 className={`${styles.dot} ${i === mobilePage ? styles.dotActive : ''}`}
-                onClick={() => setMobilePage(i)}
+                onClick={() => {
+                  setMobilePage(i);
+                  mobileScrollRef.current?.scrollTo({ left: i * mobileScrollRef.current.offsetWidth, behavior: 'smooth' });
+                }}
                 aria-label={`Page ${i + 1}`}
               />
             ))}
