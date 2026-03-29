@@ -119,7 +119,9 @@ function ToolbarPopover({
       className={`${styles.popover} ${wide ? styles.popoverWide : ''}`}
       style={{ bottom, left, top: 'auto' }}
     >
-      {children}
+      <div className={styles.popoverInner}>
+        {children}
+      </div>
     </div>,
     document.body
   );
@@ -467,20 +469,24 @@ export const Toolbar = memo(function Toolbar() {
         </button>
       </div>
 
-      {/* Popovers */}
-      {activeTab && anchorEl && (
-        <ToolbarPopover
-          anchorEl={anchorEl}
-          onClose={handleClose}
-          wide={activeTab === 'window' || activeTab === 'theme' || activeTab === 'background'}
-        >
-          {activeTab === 'preset' && <PresetPopoverContent />}
-          {activeTab === 'theme' && <ThemePopoverContent />}
-          {activeTab === 'background' && <BackgroundPopoverContent />}
-          {activeTab === 'window' && <WindowPopoverContent />}
-          {activeTab === 'padding' && <PaddingPopoverContent />}
-          {activeTab === 'export' && <ExportPopoverContent />}
-        </ToolbarPopover>
+      {/* Popovers — each tab gets its own popover so content stays mounted */}
+      {activeTab === 'preset' && anchorEl && (
+        <ToolbarPopover anchorEl={anchorEl} onClose={handleClose}><PresetPopoverContent /></ToolbarPopover>
+      )}
+      {activeTab === 'theme' && anchorEl && (
+        <ToolbarPopover anchorEl={anchorEl} onClose={handleClose} wide><ThemePopoverContent /></ToolbarPopover>
+      )}
+      {activeTab === 'background' && anchorEl && (
+        <ToolbarPopover anchorEl={anchorEl} onClose={handleClose} wide><BackgroundPopoverContent /></ToolbarPopover>
+      )}
+      {activeTab === 'window' && anchorEl && (
+        <ToolbarPopover anchorEl={anchorEl} onClose={handleClose} wide><WindowPopoverContent /></ToolbarPopover>
+      )}
+      {activeTab === 'padding' && anchorEl && (
+        <ToolbarPopover anchorEl={anchorEl} onClose={handleClose}><PaddingPopoverContent /></ToolbarPopover>
+      )}
+      {activeTab === 'export' && anchorEl && (
+        <ToolbarPopover anchorEl={anchorEl} onClose={handleClose}><ExportPopoverContent /></ToolbarPopover>
       )}
 
       {/* Share modal */}
