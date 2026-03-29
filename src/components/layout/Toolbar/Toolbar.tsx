@@ -73,35 +73,20 @@ function ToolbarPopover({
   children,
 }: ToolbarPopoverProps) {
   const popoverRef = useRef<HTMLDivElement>(null);
-  const [ready, setReady] = useState(false);
 
-  // Position after mount: render offscreen first, measure, then move into place
-  useEffect(() => {
-    const node = popoverRef.current;
-    if (!node || !anchorEl) return;
+  // Position using bottom (distance from viewport bottom) so we don't need
+  // to measure popover height. The popover sits above the anchor.
+  const anchorRect = anchorEl.getBoundingClientRect();
+  const gap = 12;
+  const pad = 16;
+  const popoverWidth = wide ? 360 : 320;
 
-    // Double rAF to ensure browser has laid out the content
-    const f1 = requestAnimationFrame(() => {
-      const f2 = requestAnimationFrame(() => {
-        const anchorRect = anchorEl.getBoundingClientRect();
-        const popoverRect = node.getBoundingClientRect();
-        const gap = 12;
-        const pad = 16;
+  // bottom = distance from viewport bottom to anchor top + gap
+  const bottom = window.innerHeight - anchorRect.top + gap;
 
-        let left = anchorRect.left + anchorRect.width / 2 - popoverRect.width / 2;
-        let top = anchorRect.top - popoverRect.height - gap;
-
-        left = Math.max(pad, Math.min(left, window.innerWidth - pad - popoverRect.width));
-        top = Math.max(pad, top);
-
-        node.style.top = `${top}px`;
-        node.style.left = `${left}px`;
-        setReady(true);
-      });
-      return () => cancelAnimationFrame(f2);
-    });
-    return () => cancelAnimationFrame(f1);
-  }, [anchorEl]);
+  // center horizontally on anchor, clamped to viewport
+  let left = anchorRect.left + anchorRect.width / 2 - popoverWidth / 2;
+  left = Math.max(pad, Math.min(left, window.innerWidth - pad - popoverWidth));
 
   // Click outside to close (deferred by one frame to skip opening click)
   useEffect(() => {
@@ -129,7 +114,8 @@ function ToolbarPopover({
   return createPortal(
     <div
       ref={popoverRef}
-      className={`${styles.popover} ${wide ? styles.popoverWide : ''} ${ready ? styles.popoverVisible : ''}`}
+      className={`${styles.popover} ${wide ? styles.popoverWide : ''}`}
+      style={{ bottom, left }}
     >
       {children}
     </div>,
