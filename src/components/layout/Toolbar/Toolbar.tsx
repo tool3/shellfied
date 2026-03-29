@@ -85,31 +85,45 @@ function ToolbarPopover({
     let left = anchorRect.left + anchorRect.width / 2 - popoverRect.width / 2;
     let top = anchorRect.top - popoverRect.height - gap;
 
-    // Clamp horizontally
     left = Math.max(pad, Math.min(left, window.innerWidth - pad - popoverRect.width));
-    // Clamp vertically
     top = Math.max(pad, top);
 
     setPos({ top, left });
   }, [anchorEl]);
 
+  // Close on click-outside: listen on mousedown (not click) with a frame
+  // delay so the opening click doesn't immediately close the popover
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    let active = false;
+    const frame = requestAnimationFrame(() => { active = true; });
+
+    const handleMouseDown = (e: MouseEvent) => {
+      if (!active) return;
+      const popover = document.querySelector(`.${styles.popoverVisible}`);
+      if (popover && popover.contains(e.target as Node)) return;
+      onClose();
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+
+    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, [onClose]);
 
   return createPortal(
-    <>
-      <div className={styles.popoverOverlay} onClick={onClose} />
-      <div
-        ref={popoverCallbackRef}
-        className={`${styles.popover} ${wide ? styles.popoverWide : ''} ${pos ? styles.popoverVisible : ''}`}
-        style={pos ? { top: pos.top, left: pos.left } : undefined}
-      >
-        {children}
-      </div>
-    </>,
+    <div
+      ref={popoverCallbackRef}
+      className={`${styles.popover} ${wide ? styles.popoverWide : ''} ${pos ? styles.popoverVisible : ''}`}
+      style={pos ? { top: pos.top, left: pos.left } : undefined}
+    >
+      {children}
+    </div>,
     document.body
   );
 }
