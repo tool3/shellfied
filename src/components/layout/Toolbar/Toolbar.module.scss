@@ -242,8 +242,6 @@
 // ============================================================
 .popover {
   position: fixed;
-  top: -9999px;
-  left: -9999px;
   @include glass-panel;
   border-radius: 16px;
   max-height: 70vh;
@@ -252,11 +250,6 @@
   width: 320px;
   z-index: 200;
   @include custom-scrollbar;
-  opacity: 0;
-}
-
-.popoverVisible {
-  opacity: 1;
   animation: popoverIn 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
