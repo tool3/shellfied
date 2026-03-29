@@ -4,7 +4,7 @@ import { useEffect, useSyncExternalStore, useState } from 'react';
 import { useTheme } from '@/hooks/useTheme';
 import { useIsViewMode, useStore } from '@/store';
 import { rehydrateCompressedContent, getShortId, resolveShortId } from '@/utils/urlParams';
-import { Header, Toolbar, ShareFab } from '@/components/layout';
+import { Header, Toolbar } from '@/components/layout';
 import { Editor, Preview, ViewMode } from '@/components/features';
 import styles from './page.module.scss';
 
@@ -110,7 +110,6 @@ export function HomeClient() {
         </div>
       </main>
       <Toolbar />
-      <ShareFab />
     </div>
   );
 }
