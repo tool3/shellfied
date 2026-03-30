@@ -138,7 +138,7 @@ const ThemePopoverContent = memo(function ThemePopoverContent() {
 });
 
 const BackgroundPopoverContent = memo(function BackgroundPopoverContent() {
-  return <BackgroundSection />;
+  return <BackgroundSection bare />;
 });
 
 const WindowPopoverContent = memo(function WindowPopoverContent() {

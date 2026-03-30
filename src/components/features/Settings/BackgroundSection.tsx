@@ -36,7 +36,7 @@ function isReversedDirection(direction: GradientDirection): boolean {
   return reversedDirections.includes(direction);
 }
 
-export const BackgroundSection = memo(function BackgroundSection() {
+export const BackgroundSection = memo(function BackgroundSection({ bare = false }: { bare?: boolean }) {
   const background = useStore((s) => s.background);
   const setBackground = useStore((s) => s.setBackground);
 
@@ -248,6 +248,10 @@ export const BackgroundSection = memo(function BackgroundSection() {
     </>
   );
 
+  if (bare) {
+    return <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>{controls}</div>;
+  }
+
   return (
     <section className={styles.section}>
       <div className={styles.sectionHeader}>
@@ -262,63 +266,3 @@ export const BackgroundSection = memo(function BackgroundSection() {
   );
 });
 
-/** Background controls without the section wrapper — for use in toolbar popovers */
-export const BackgroundControls = memo(function BackgroundControls() {
-  const background = useStore((s) => s.background);
-  const setBackground = useStore((s) => s.setBackground);
-
-  return (
-    <div>
-      <Select
-        label="Type"
-        options={[
-          { value: 'none', label: 'None' },
-          { value: 'solid', label: 'Solid Color' },
-          { value: 'gradient', label: 'Gradient' },
-          { value: 'image', label: 'Image' },
-        ]}
-        value={background.type}
-        onChange={(v) => setBackground({ type: v as BackgroundType })}
-        fullWidth
-      />
-      {background.type === 'solid' && (
-        <ColorPicker
-          label="Color"
-          value={background.color}
-          onChange={(color) => setBackground({ color })}
-          placeholder="#6366f1"
-          fullWidth
-        />
-      )}
-      {background.type !== 'none' && (
-        <>
-          <Select
-            label="Animation"
-            options={[
-              { value: 'none', label: 'None' },
-              { value: 'particles', label: 'Particles' },
-              { value: 'border-pulse', label: 'Pulsing Border' },
-              { value: 'waves', label: 'Waves' },
-              { value: 'border-gradient', label: 'Border Gradient' },
-              { value: 'border-shimmer', label: 'Border Shimmer' },
-              { value: 'aurora', label: 'Aurora' },
-              { value: 'grid', label: 'Drifting Grid' },
-            ]}
-            value={background.animation || 'none'}
-            onChange={(v) => setBackground({ animation: v === 'none' ? null : v as BackgroundAnimation })}
-            fullWidth
-          />
-          <Slider
-            label="Padding"
-            value={background.padding}
-            onChange={(padding) => setBackground({ padding })}
-            min={BACKGROUND_PADDING_MIN}
-            max={BACKGROUND_PADDING_MAX}
-            step={4}
-            formatValue={(v) => `${v}px`}
-          />
-        </>
-      )}
-    </div>
-  );
-});
