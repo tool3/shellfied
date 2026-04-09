@@ -105,6 +105,7 @@ export const DEFAULT_SETTINGS: ShellfieSettings = {
   header: DEFAULT_HEADER,
   footer: DEFAULT_FOOTER,
   background: DEFAULT_BACKGROUND,
+  lineNumbers: false,
 };
 
 export const DEFAULT_CONTENT = SAMPLE_CODES.default;

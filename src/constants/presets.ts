@@ -7,6 +7,9 @@ export interface PresetConfig {
   // Preview appearance
   previewBg: string; // CSS value for the preset card (can be gradient)
   previewFg: string;
+  // If set, passes this preset name to shellfie which handles
+  // theme, template, overlays, background natively
+  shellfiePreset?: string;
   // Settings to apply
   settings: {
     template: TemplateType;
@@ -35,6 +38,7 @@ const FONT_DEFAULT = "'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monosp
 const vercel: PresetConfig = {
   id: 'preset-vercel',
   name: 'Vercel',
+  shellfiePreset: 'vercel',
   category: 'partner',
   previewBg: '#000000',
   previewFg: '#ededed',
@@ -58,6 +62,7 @@ const vercel: PresetConfig = {
 const supabase: PresetConfig = {
   id: 'preset-supabase',
   name: 'Supabase',
+  shellfiePreset: 'supabase',
   category: 'partner',
   previewBg: '#121212',
   previewFg: '#3ecf8e',
@@ -79,6 +84,7 @@ const supabase: PresetConfig = {
 const tailwind: PresetConfig = {
   id: 'preset-tailwind',
   name: 'Tailwind',
+  shellfiePreset: 'tailwind',
   category: 'partner',
   previewBg: '#0f172a',
   previewFg: '#38bdf8',
@@ -102,6 +108,7 @@ const tailwind: PresetConfig = {
 const openai: PresetConfig = {
   id: 'preset-openai',
   name: 'OpenAI',
+  shellfiePreset: 'openai',
   category: 'partner',
   previewBg: 'linear-gradient(135deg, #121a29, #1a2940)',
   previewFg: '#00a67d',
@@ -125,6 +132,7 @@ const openai: PresetConfig = {
 const clerk: PresetConfig = {
   id: 'preset-clerk',
   name: 'Clerk',
+  shellfiePreset: 'clerk',
   category: 'partner',
   previewBg: '#222222',
   previewFg: '#bab1ff',
@@ -148,6 +156,7 @@ const clerk: PresetConfig = {
 const prisma: PresetConfig = {
   id: 'preset-prisma',
   name: 'Prisma',
+  shellfiePreset: 'prisma',
   category: 'partner',
   previewBg: 'linear-gradient(135deg, #0c1d26, #0a0c17)',
   previewFg: '#71e8df',
@@ -173,6 +182,7 @@ const prisma: PresetConfig = {
 const mintlify: PresetConfig = {
   id: 'preset-mintlify',
   name: 'Mintlify',
+  shellfiePreset: 'mintlify',
   category: 'partner',
   previewBg: '#121212',
   previewFg: '#55d799',
@@ -196,6 +206,7 @@ const mintlify: PresetConfig = {
 const elevenLabs: PresetConfig = {
   id: 'preset-elevenlabs',
   name: 'ElevenLabs',
+  shellfiePreset: 'elevenlabs',
   category: 'partner',
   previewBg: '#111111',
   previewFg: '#8f8fff',
@@ -219,6 +230,7 @@ const elevenLabs: PresetConfig = {
 const resend: PresetConfig = {
   id: 'preset-resend',
   name: 'Resend',
+  shellfiePreset: 'resend',
   category: 'partner',
   previewBg: 'linear-gradient(135deg, #B1B1B1, #181818)',
   previewFg: '#e0e0e0',
@@ -244,6 +256,7 @@ const resend: PresetConfig = {
 const triggerDev: PresetConfig = {
   id: 'preset-triggerdev',
   name: 'Trigger.dev',
+  shellfiePreset: 'triggerdev',
   category: 'partner',
   previewBg: '#121317',
   previewFg: '#9684ff',
@@ -267,6 +280,7 @@ const triggerDev: PresetConfig = {
 const nuxt: PresetConfig = {
   id: 'preset-nuxt',
   name: 'Nuxt',
+  shellfiePreset: 'nuxt',
   category: 'partner',
   previewBg: '#0b0c11',
   previewFg: '#00dc82',
@@ -290,6 +304,7 @@ const nuxt: PresetConfig = {
 const browserbase: PresetConfig = {
   id: 'preset-browserbase',
   name: 'Browserbase',
+  shellfiePreset: 'browserbase',
   category: 'partner',
   previewBg: 'linear-gradient(180deg, #FF4500, #000000)',
   previewFg: '#ffffff',
@@ -313,6 +328,7 @@ const browserbase: PresetConfig = {
 const cloudflare: PresetConfig = {
   id: 'preset-cloudflare',
   name: 'Cloudflare',
+  shellfiePreset: 'cloudflare',
   category: 'partner',
   previewBg: '#0c0c0c',
   previewFg: '#ff7f4d',
@@ -336,6 +352,7 @@ const cloudflare: PresetConfig = {
 const gemini: PresetConfig = {
   id: 'preset-gemini',
   name: 'Gemini',
+  shellfiePreset: 'gemini',
   category: 'partner',
   previewBg: '#0e1016',
   previewFg: '#98c379',
@@ -382,6 +399,7 @@ const stripe: PresetConfig = {
 const firecrawl: PresetConfig = {
   id: 'preset-firecrawl',
   name: 'Firecrawl',
+  shellfiePreset: 'firecrawl',
   category: 'partner',
   previewBg: '#000000',
   previewFg: '#f97316',

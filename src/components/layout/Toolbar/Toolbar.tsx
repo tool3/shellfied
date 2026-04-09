@@ -95,7 +95,7 @@ function ToolbarPopover({
     let listening = false;
     const frame = requestAnimationFrame(() => { listening = true; });
 
-    const onMouseDown = (e: MouseEvent) => {
+    const onMouseDown = (e: MouseEvent) => {  
       if (!listening) return;
       if (popoverRef.current?.contains(e.target as Node)) return;
       onClose();
@@ -156,6 +156,8 @@ const WindowPopoverContent = memo(function WindowPopoverContent() {
   const setControlsPosition = useStore((s) => s.setControlsPosition);
   const borderRadius = useStore((s) => s.borderRadius);
   const setBorderRadius = useStore((s) => s.setBorderRadius);
+  const lineNumbers = useStore((s) => s.lineNumbers);
+  const setLineNumbers = useStore((s) => s.setLineNumbers);
   const width = useStore((s) => s.width);
   const setWidth = useStore((s) => s.setWidth);
   const fontFamily = useStore((s) => s.fontFamily);
@@ -190,6 +192,7 @@ const WindowPopoverContent = memo(function WindowPopoverContent() {
               )}
             </>
           )}
+          <Toggle checked={lineNumbers} onChange={setLineNumbers} label="Line numbers" />
           <Slider label="Border Radius" value={borderRadius} onChange={setBorderRadius} min={BORDER_RADIUS_MIN} max={BORDER_RADIUS_MAX} step={1} formatValue={(v) => `${v}px`} />
           <Slider label="Width" value={width ?? 0} onChange={(v) => setWidth(v === 0 ? null : v)} min={0} max={1200} step={10} formatValue={(v) => (v === 0 ? 'Auto' : `${v}px`)} />
         </div>
@@ -255,60 +258,14 @@ const PaddingPopoverContent = memo(function PaddingPopoverContent() {
 
 const ShareModalWrapper = memo(function ShareModalWrapper({ onClose }: { onClose: () => void }) {
   const [shortUrls, setShortUrls] = useState<ShortUrls | null>(null);
-  const store = useStore.getState();
-  const shareUrl = generateShareUrlLZ({
-    content: store.content,
-    language: store.language,
-    template: store.template,
-    terminalTheme: store.terminalTheme,
-    title: store.title,
-    showControls: store.showControls,
-    controlsPosition: store.controlsPosition,
-    borderRadius: store.borderRadius,
-    fontFamily: store.fontFamily,
-    fontSize: store.fontSize,
-    lineHeight: store.lineHeight,
-    padding: store.padding,
-    background: store.background,
-    width: store.width,
-  }, 'view');
-  const compressedData = generateCompressedData({
-    content: store.content,
-    language: store.language,
-    template: store.template,
-    terminalTheme: store.terminalTheme,
-    title: store.title,
-    showControls: store.showControls,
-    controlsPosition: store.controlsPosition,
-    borderRadius: store.borderRadius,
-    fontFamily: store.fontFamily,
-    fontSize: store.fontSize,
-    lineHeight: store.lineHeight,
-    padding: store.padding,
-    background: store.background,
-    width: store.width,
-  });
+  // Pass the full store state so buildCompactState can read activePreset, lineNumbers, etc.
+  const state = useStore.getState();
 
   return (
     <ShareModal
-      viewUrl={shareUrl}
-      editUrl={generateShareUrlLZ({
-        content: store.content,
-        language: store.language,
-        template: store.template,
-        terminalTheme: store.terminalTheme,
-        title: store.title,
-        showControls: store.showControls,
-        controlsPosition: store.controlsPosition,
-        borderRadius: store.borderRadius,
-        fontFamily: store.fontFamily,
-        fontSize: store.fontSize,
-        lineHeight: store.lineHeight,
-        padding: store.padding,
-        background: store.background,
-        width: store.width,
-      }, 'edit')}
-      compressedData={compressedData}
+      viewUrl={generateShareUrlLZ(state, 'view')}
+      editUrl={generateShareUrlLZ(state, 'edit')}
+      compressedData={generateCompressedData(state, 'view')}
       shortUrls={shortUrls}
       onShortUrlsChange={setShortUrls}
       onClose={onClose}

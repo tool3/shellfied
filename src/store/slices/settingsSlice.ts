@@ -31,6 +31,7 @@ export const createSettingsSlice: StateCreator<AppStore, [], [], SettingsState> 
   setShowControls: (showControls) => set({ showControls }),
   setControlsPosition: (controlsPosition) => set({ controlsPosition }),
   setBorderRadius: (borderRadius) => set({ borderRadius }),
+  setLineNumbers: (lineNumbers) => set({ lineNumbers }),
   setWatermark: (watermarkUpdate) => set({ watermark: { ...get().watermark, ...watermarkUpdate } }),
   setWidth: (width) => set({ width }),
   setFontFamily: (fontFamily) => set({ fontFamily }),
@@ -56,15 +57,25 @@ export const createSettingsSlice: StateCreator<AppStore, [], [], SettingsState> 
     const preset = PRESET_MAP[presetId];
     if (!preset) return;
     const { settings } = preset;
+
+    // Partner presets (with shellfiePreset) — shellfie handles background natively.
+    // Set background.type to 'none' so shellfied doesn't render its own on top.
+    // Classic presets use shellfied's background system (gradients, etc.)
+    const background = preset.shellfiePreset
+      ? { ...DEFAULT_SETTINGS.background, type: 'none' as const }
+      : { ...DEFAULT_SETTINGS.background, ...settings.background };
+
     set({
+      ...DEFAULT_SETTINGS,
       activePreset: presetId,
+      customThemes: get().customThemes,
       template: settings.template,
       terminalTheme: settings.terminalTheme,
       showControls: settings.showControls,
       borderRadius: settings.borderRadius,
       fontFamily: settings.fontFamily,
       padding: settings.padding,
-      background: { ...get().background, ...settings.background },
+      background,
     });
   },
   resetSettings: () =>

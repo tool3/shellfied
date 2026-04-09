@@ -194,8 +194,6 @@ import type {
   GradientDirection,
   ImageAspectRatio,
 } from '@/types';
-import { generateAnimationSvg } from '@/lib/backgroundAnimations';
-import { generateOverlaySvg } from '@/lib/backgroundOverlays';
 
 // Re-export custom themes from themes.ts
 const nightOwl = createTheme({
@@ -272,12 +270,14 @@ const materialDark = createTheme({
 
 // Import shellfie themes and add custom ones
 import { themes } from 'shellfie';
+import { presetThemes } from '@/constants/presetThemes';
 
 const allThemes: Record<string, Theme> = {
   ...themes,
   nightOwl,
   cobalt2,
   materialDark,
+  ...presetThemes,
 };
 
 // Get theme by name
@@ -695,6 +695,10 @@ export interface GenerateSvgOptions {
   watermark?: WatermarkConfig;
   /** Pre-fetched font data to embed (from fetchServerFont). Falls back to bundled JetBrains Mono. */
   customFontData?: { data: string; format: 'ttf' } | null;
+  /** Show line numbers */
+  lineNumbers?: boolean;
+  /** shellfie preset name (e.g. 'vercel', 'prisma'). When set, shellfie handles theme/template/overlays/background natively. */
+  shellfiePreset?: string;
 }
 
 /**
@@ -719,42 +723,64 @@ export function generateSvg(options: GenerateSvgOptions): string {
     footer,
     watermark,
     customFontData,
+    lineNumbers,
+    shellfiePreset,
   } = options;
 
   if (!content.trim()) {
     return '';
   }
 
-  // Resolve language
-  const effectiveLanguage = language === 'auto' ? detectLanguage(content) : language;
-
-  // Apply syntax highlighting
-  const highlightedContent = highlightWithAnsi(content, effectiveLanguage);
-
-  // Get theme
-  const theme = getTheme(terminalTheme);
-
   // Use pre-fetched font data if available, otherwise fall back to bundled JetBrains Mono
   const embeddedFont = customFontData ?? getEmbeddedFontData();
 
-  // Generate SVG WITHOUT shellfie's customFont mechanism (which uses invalid format('ttf')
-  // and renames font to 'EmbeddedFont'). Instead, we embed the font ourselves afterwards
-  // with the correct font-family name and format('truetype'), matching the client-side approach.
-  const svg = shellfie(highlightedContent, {
-    template: buildTemplate(template, controlsPosition, borderRadius),
-    theme,
-    title: title || undefined,
-    fontSize,
-    lineHeight,
-    padding,
-    controls: showControls,
-    watermark: buildWatermarkConfig(watermark),
-    width: width || undefined,
-    fontFamily: fontFamily || undefined,
-    embedFont: false,
-    header: buildHeaderOptions(header),
-    footer: buildFooterOptions(footer),
-  });
+  let svg: string;
+
+  if (shellfiePreset) {
+    // Shellfie preset is active — let shellfie handle everything natively
+    // Normalize ANSI escapes (\e, \033, etc.) to real ESC bytes
+    const hasAnsi = containsAnsi(content);
+    const normalizedContent = hasAnsi ? normalizeAnsiEscapes(content) : content;
+    const effectiveLanguage = language === 'auto' ? detectLanguage(content) : language;
+
+    svg = shellfie(normalizedContent, {
+      preset: shellfiePreset,
+      language: hasAnsi ? false : (effectiveLanguage || 'auto'),
+      title: title || undefined,
+      padding,
+      fontSize,
+      lineHeight,
+      lineNumbers,
+      watermark: buildWatermarkConfig(watermark),
+      width: width || undefined,
+      fontFamily: fontFamily || undefined,
+      embedFont: false,
+    });
+  } else {
+    // No preset — manually build everything
+    const effectiveLanguage = language === 'auto' ? detectLanguage(content) : language;
+    const hasAnsi = containsAnsi(content);
+    const normalizedContent = hasAnsi ? normalizeAnsiEscapes(content) : content;
+    const highlightedContent = highlightWithAnsi(normalizedContent, effectiveLanguage);
+    const theme = getTheme(terminalTheme);
+
+    svg = shellfie(highlightedContent, {
+      template: buildTemplate(template, controlsPosition, borderRadius),
+      theme,
+      title: title || undefined,
+      fontSize,
+      lineHeight,
+      lineNumbers,
+      padding,
+      controls: showControls,
+      watermark: buildWatermarkConfig(watermark),
+      width: width || undefined,
+      fontFamily: fontFamily || undefined,
+      embedFont: false,
+      header: buildHeaderOptions(header),
+      footer: buildFooterOptions(footer),
+    });
+  }
 
   // Embed font as @font-face with correct format, matching the font-family name shellfie used
   if (embeddedFont) {
@@ -933,8 +959,6 @@ export function wrapSvgWithBackground(
   );
 
   const backgroundSvg = generateSvgBackground(background, totalWidth, totalHeight);
-  const overlaySvg = generateOverlaySvg(background.overlay, totalWidth, totalHeight, padding, borderRadius);
-  const animationSvg = generateAnimationSvg(background.animation, totalWidth, totalHeight, padding, borderRadius);
   const innerContent = extractSvgContent(svgContent);
 
   // Extract any existing defs (fonts, etc.) from the inner SVG
@@ -944,8 +968,6 @@ export function wrapSvgWithBackground(
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}">
   <defs>${existingDefs}</defs>
   ${backgroundSvg}
-  ${overlaySvg}
-  ${animationSvg}
   <g transform="translate(${offsetX}, ${offsetY})">
     <svg width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}">
       ${innerContent}
@@ -1118,8 +1140,6 @@ export function generateCompareSvg(options: GenerateCompareSvgOptions): string {
 
   // Generate background SVG element
   const backgroundSvg = background ? generateSvgBackground(background, totalWidth, totalHeight) : '';
-  const ovlSvg = background?.overlay ? generateOverlaySvg(background.overlay, totalWidth, totalHeight, background.padding ?? 0) : '';
-  const animSvg = background?.animation ? generateAnimationSvg(background.animation, totalWidth, totalHeight, background.padding ?? 0) : '';
 
   // Create combined SVG - all fonts embedded as base64, no @import needed
   const combinedSvg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}">
@@ -1138,8 +1158,6 @@ export function generateCompareSvg(options: GenerateCompareSvgOptions): string {
 
   <!-- Background -->
   ${backgroundSvg}
-  ${ovlSvg}
-  ${animSvg}
 
   <!-- Before label -->
   <text x="${beforeLabelX}" y="${offsetY + compareLabelConfig.fontSize}" class="label">${escapeXml(beforeLabel)}</text>

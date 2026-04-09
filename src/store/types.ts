@@ -59,6 +59,7 @@ export interface SettingsState {
   header: HeaderConfig;
   footer: FooterConfig;
   background: BackgroundConfig;
+  lineNumbers: boolean;
   customThemes: CustomTheme[];
   exportFormat: ExportFormat;
   exportScale: ExportScale;
@@ -74,6 +75,7 @@ export interface SettingsState {
   setShowControls: (show: boolean) => void;
   setControlsPosition: (position: ControlsPosition) => void;
   setBorderRadius: (radius: number) => void;
+  setLineNumbers: (show: boolean) => void;
   setWatermark: (watermark: Partial<WatermarkConfig>) => void;
   setWidth: (width: number | null) => void;
   setFontFamily: (fontFamily: string) => void;

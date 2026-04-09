@@ -1,6 +1,4 @@
 import type { ExportFormat, BackgroundConfig, CompareExportOptions, ImageAspectRatio } from '@/types';
-import { generateAnimationSvg } from '@/lib/backgroundAnimations';
-import { generateOverlaySvg } from '@/lib/backgroundOverlays';
 
 // Cache for fetched font data - keyed by "fontFamily-weight"
 const fontCache: Map<string, { data: string; family: string; format: string }> = new Map();
@@ -1100,8 +1098,6 @@ export function createCompareSvg(
 
   // Generate background SVG element
   const backgroundSvg = generateSvgBackground(background, totalWidth, totalHeight);
-  const ovlSvg1 = background?.overlay ? generateOverlaySvg(background.overlay, totalWidth, totalHeight, background.padding ?? 0) : '';
-  const animSvg1 = background?.animation ? generateAnimationSvg(background.animation, totalWidth, totalHeight, background.padding ?? 0) : '';
 
   // Get font import URL if using a Google Font
   const fontImportUrl = getFontImportUrl(labelFont);
@@ -1132,8 +1128,6 @@ export function createCompareSvg(
 
   <!-- Background -->
   ${backgroundSvg}
-  ${ovlSvg1}
-  ${animSvg1}
 
   <!-- Before label -->
   <text x="${beforeLabelX}" y="${offsetY + parseInt(fontSize)}" class="label">${escapeXml(beforeLabel)}</text>
@@ -1218,8 +1212,6 @@ export async function createCompareSvgWithEmbeddedFonts(
 
   // Generate background SVG element
   const backgroundSvg = generateSvgBackground(background, totalWidth, totalHeight);
-  const ovlSvg1 = background?.overlay ? generateOverlaySvg(background.overlay, totalWidth, totalHeight, background.padding ?? 0) : '';
-  const animSvg1 = background?.animation ? generateAnimationSvg(background.animation, totalWidth, totalHeight, background.padding ?? 0) : '';
 
   // Fetch and embed the user's selected font for SVG
   let fontFaceStyle = '';
@@ -1259,8 +1251,6 @@ export async function createCompareSvgWithEmbeddedFonts(
 
   <!-- Background -->
   ${backgroundSvg}
-  ${ovlSvg1}
-  ${animSvg1}
 
   <!-- Before label -->
   <text x="${beforeLabelX}" y="${offsetY + parseInt(fontSize)}" class="label">${escapeXml(beforeLabel)}</text>
@@ -1573,8 +1563,6 @@ export async function downloadCompareSvg(
 
   // Generate background SVG element
   const backgroundSvg = generateSvgBackground(background, totalWidth, totalHeight);
-  const ovlSvg1 = background?.overlay ? generateOverlaySvg(background.overlay, totalWidth, totalHeight, background.padding ?? 0) : '';
-  const animSvg1 = background?.animation ? generateAnimationSvg(background.animation, totalWidth, totalHeight, background.padding ?? 0) : '';
 
   // Fetch and embed the user's selected font for SVG
   let fontFaceStyle = '';
@@ -1614,8 +1602,6 @@ export async function downloadCompareSvg(
 
   <!-- Background -->
   ${backgroundSvg}
-  ${ovlSvg1}
-  ${animSvg1}
 
   <!-- Before label -->
   <text x="${beforeLabelX}" y="${offsetY + parseInt(fontSize)}" class="label">${escapeXml(beforeLabel)}</text>
@@ -1771,8 +1757,6 @@ export function wrapSvgWithBackground(
   );
 
   const backgroundSvg = generateSvgBackground(background, totalWidth, totalHeight);
-  const ovlSvg = generateOverlaySvg(background.overlay, totalWidth, totalHeight, padding);
-  const animSvg = generateAnimationSvg(background.animation, totalWidth, totalHeight, padding);
   const innerContent = extractSvgContent(svgContent);
 
   // Extract any existing defs (fonts, etc.) from the inner SVG
@@ -1782,8 +1766,6 @@ export function wrapSvgWithBackground(
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}">
   <defs>${existingDefs}</defs>
   ${backgroundSvg}
-  ${ovlSvg}
-  ${animSvg}
   <g transform="translate(${offsetX}, ${offsetY})">
     <svg width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}">
       ${innerContent}

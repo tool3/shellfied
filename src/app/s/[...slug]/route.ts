@@ -75,6 +75,8 @@ interface CompactState {
   bga?: string; // bgImageAspectRatio
   ban?: string; // bgAnimation
   bov?: string; // bgOverlay
+  sfp?: string; // shellfiePreset
+  ln?: boolean; // lineNumbers
 }
 
 // Parse compressed state into generation options
@@ -144,6 +146,8 @@ function parseCompressedState(compact: CompactState) {
       animation: (compact.ban as BackgroundConfig['animation']) || null,
       overlay: (compact.bov as BackgroundConfig['overlay']) || null,
     },
+    shellfiePreset: compact.sfp || undefined,
+    lineNumbers: compact.ln ?? false,
   };
 }
 
@@ -236,14 +240,16 @@ async function generateSvgResponse(id: string): Promise<NextResponse> {
         footer: opts.footer,
         watermark: opts.watermark,
         customFontData,
+        lineNumbers: opts.lineNumbers,
+        shellfiePreset: opts.shellfiePreset,
       }) || '';
 
       if (!svg) {
         return new NextResponse('Failed to generate SVG', { status: 500 });
       }
 
-      // Wrap with background if configured
-      if (opts.background.type !== 'none') {
+      // Wrap with background if configured (skip when shellfie preset handles it)
+      if (opts.background.type !== 'none' && !opts.shellfiePreset) {
         svg = wrapSvgWithBackground(svg, opts.background);
       }
     }

@@ -1,4 +1,5 @@
 import LZString from 'lz-string';
+import { PRESET_MAP } from '@/constants/presets';
 import type {
   TemplateType,
   ControlsPosition,
@@ -399,6 +400,9 @@ export interface UrlState {
     overlay?: BackgroundOverlay | null;
   };
 
+  // Shellfie preset (when active, shellfie handles theme/template/overlays/background natively)
+  shellfiePreset?: string;
+
   // Brand
   brand?: {
     enabled?: boolean;
@@ -668,6 +672,8 @@ interface CompactState {
   rbu?: string; // brandUrl
   rbi?: boolean; // brandShowIcon
   rbiu?: string; // brandIconUrl
+  sfp?: string; // shellfiePreset
+  ln?: boolean; // lineNumbers (e.g. 'vercel', 'prisma')
 }
 
 // Build compact state for LZ compression
@@ -696,6 +702,26 @@ function buildCompactState(state: UrlState, mode: ShareMode, includeContent: boo
   }
   if (state.fontFamily && state.fontFamily !== DEFAULT_SETTINGS.fontFamily) {
     compact.ff = state.fontFamily;
+  }
+
+  // Shellfie preset — resolve from shellfiePreset field or activePreset
+  if (state.shellfiePreset) {
+    compact.sfp = state.shellfiePreset;
+  } else {
+    // The store passes activePreset (e.g. 'preset-vercel'), resolve to shellfie name
+    const activePreset = (state as Record<string, unknown>).activePreset as string | undefined;
+    if (activePreset) {
+      const presetConfig = PRESET_MAP[activePreset];
+      if (presetConfig?.shellfiePreset) {
+        compact.sfp = presetConfig.shellfiePreset;
+      }
+    }
+  }
+
+  // Line numbers — always include when a preset is active so we can override the preset's default
+  const lineNumbers = (state as Record<string, unknown>).lineNumbers;
+  if (lineNumbers !== undefined) {
+    compact.ln = !!lineNumbers;
   }
 
   add('ef', state.exportFormat, DEFAULT_EXPORT_FORMAT);
@@ -856,6 +882,8 @@ function parseCompactState(compact: CompactState): UrlState {
   if (compact.jq !== undefined) state.jpegQuality = compact.jq;
   if (compact.c) state.content = compact.c;
   if (compact.lg) state.language = compact.lg;
+  if (compact.sfp) state.shellfiePreset = compact.sfp;
+  if (compact.ln) (state as Record<string, unknown>).lineNumbers = true;
   if (compact.cm) state.colorMode = compact.cm as ColorMode;
 
   if (compact.cmp) {
