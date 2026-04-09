@@ -5,6 +5,7 @@ import { usePanZoom } from '@/hooks/usePanZoom';
 import { Button } from '@/components/common';
 import { generateAnimationSvgElement } from '@/lib/backgroundAnimations';
 import { generateOverlaySvgElement } from '@/lib/backgroundOverlays';
+import { PRESET_MAP } from '@/constants/presets';
 import type { ImageAspectRatio } from '@/types';
 import styles from './Preview.module.scss';
 
@@ -79,6 +80,7 @@ export const Preview = memo(function Preview() {
   const setPreviewZoom = useStore((s) => s.setPreviewZoom);
   const background = useStore((s) => s.background);
   const borderRadius = useStore((s) => s.borderRadius);
+  const activePreset = useStore((s) => s.activePreset);
   const compareMode = useStore((s) => s.compareMode);
   const compareLabelConfig = useStore((s) => s.compareLabelConfig);
 
@@ -396,16 +398,26 @@ export const Preview = memo(function Preview() {
     }
 
     if (svg) {
+      // When a shellfie preset is active, shellfie handles background/overlays/animations
+      // inside the SVG. Don't double-render them from the app.
+      const presetConfig = activePreset ? PRESET_MAP[activePreset] : null;
+      const hasShellfiePreset = Boolean(presetConfig?.shellfiePreset);
+
       const totalW = svgDimensions.width + background.padding * 2;
       const totalH = svgDimensions.height + background.padding * 2;
-      const overlaySvg = background.overlay && background.type !== 'none'
+
+      const overlaySvg = !hasShellfiePreset && background.overlay && background.type !== 'none'
         ? generateOverlaySvgElement(background.overlay, totalW, totalH, background.padding, borderRadius)
         : '';
-      const animSvg = background.animation && background.type !== 'none'
+      const animSvg = !hasShellfiePreset && background.animation && background.type !== 'none'
         ? generateAnimationSvgElement(background.animation, totalW, totalH, background.padding, borderRadius)
         : '';
+
+      // When shellfie preset is active, don't apply CSS background (shellfie renders it in SVG)
+      const effectiveBgStyle = hasShellfiePreset ? {} : backgroundStyle;
+
       return (
-        <div className={styles.backgroundWrapper} style={backgroundStyle}>
+        <div className={styles.backgroundWrapper} style={effectiveBgStyle}>
           {overlaySvg && <div className={styles.bgAnimation} dangerouslySetInnerHTML={{ __html: overlaySvg }} />}
           {animSvg && <div className={styles.bgAnimation} dangerouslySetInnerHTML={{ __html: animSvg }} />}
           <div ref={svgWrapperRef} className={styles.svgWrapper} dangerouslySetInnerHTML={{ __html: svg }} suppressHydrationWarning />

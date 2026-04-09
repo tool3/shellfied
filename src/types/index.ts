@@ -128,6 +128,7 @@ export interface ShellfieSettings {
   header: HeaderConfig;
   footer: FooterConfig;
   background: BackgroundConfig;
+  lineNumbers: boolean;
 }
 
 export type CompareLabelAlignment = 'left' | 'center' | 'right';

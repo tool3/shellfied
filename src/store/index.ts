@@ -73,6 +73,7 @@ export const useStore = create<AppStore>()(
         showControls: state.showControls,
         controlsPosition: state.controlsPosition,
         borderRadius: state.borderRadius,
+        lineNumbers: state.lineNumbers,
         watermark: state.watermark,
         width: state.width,
         fontFamily: state.fontFamily,

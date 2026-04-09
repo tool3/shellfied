@@ -210,6 +210,8 @@ interface CompactState {
   bga?: string; // bgImageAspectRatio
   ban?: string; // bgAnimation
   bov?: string; // bgOverlay
+  sfp?: string; // shellfiePreset
+  ln?: boolean; // lineNumbers
 }
 
 // Decompress LZ-string data
@@ -364,6 +366,8 @@ function parseCompressedState(compact: CompactState) {
       animation: (compact.ban as BackgroundConfig['animation']) || null,
       overlay: (compact.bov as BackgroundConfig['overlay']) || null,
     },
+    shellfiePreset: compact.sfp || undefined,
+    lineNumbers: compact.ln ?? false,
   };
 }
 
@@ -442,10 +446,13 @@ export async function GET(request: NextRequest) {
             footer: opts.footer,
             watermark: opts.watermark,
             customFontData,
+            lineNumbers: opts.lineNumbers,
+            shellfiePreset: opts.shellfiePreset,
           });
 
-          // Only wrap with background for single mode (compare mode handles it internally)
-          if (svg && opts.background.type !== 'none') {
+          // Only wrap with background for single mode when no shellfie preset
+          // (shellfie presets render their own background+overlays natively)
+          if (svg && opts.background.type !== 'none' && !opts.shellfiePreset) {
             svg = wrapSvgWithBackground(svg, opts.background);
           }
         }
