@@ -201,24 +201,35 @@ export const BackgroundSection = memo(function BackgroundSection({ bare = false 
             </>
           )}
 
+          {/* Animation — always available, independent of background type */}
+          <Select
+            label="Animation"
+            options={[
+              { value: 'none', label: 'None' },
+              { value: 'particles', label: 'Particles' },
+              { value: 'border-pulse', label: 'Pulsing Border' },
+              { value: 'waves', label: 'Waves' },
+              { value: 'border-gradient', label: 'Border Gradient' },
+              { value: 'border-shimmer', label: 'Border Shimmer' },
+              { value: 'aurora', label: 'Aurora' },
+              { value: 'grid', label: 'Drifting Grid' },
+            ]}
+            value={background.animation || 'none'}
+            onChange={(v) => setBackground({ animation: v === 'none' ? null : v as BackgroundAnimation })}
+            fullWidth
+          />
+          {background.animation && (
+            <ColorPicker
+              label="Animation Color"
+              value={background.animationColor || 'rgba(255,255,255,0.15)'}
+              onChange={(animationColor) => setBackground({ animationColor })}
+              placeholder="rgba(255,255,255,0.15)"
+              fullWidth
+            />
+          )}
+
           {background.type !== 'none' && (
             <>
-              <Select
-                label="Animation"
-                options={[
-                  { value: 'none', label: 'None' },
-                  { value: 'particles', label: 'Particles' },
-                  { value: 'border-pulse', label: 'Pulsing Border' },
-                  { value: 'waves', label: 'Waves' },
-                  { value: 'border-gradient', label: 'Border Gradient' },
-                  { value: 'border-shimmer', label: 'Border Shimmer' },
-                  { value: 'aurora', label: 'Aurora' },
-                  { value: 'grid', label: 'Drifting Grid' },
-                ]}
-                value={background.animation || 'none'}
-                onChange={(v) => setBackground({ animation: v === 'none' ? null : v as BackgroundAnimation })}
-                fullWidth
-              />
               <Slider
                 label="Padding"
                 value={background.padding}

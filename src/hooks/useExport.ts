@@ -93,17 +93,14 @@ export function useExport() {
           svg = await embedFontInSvg(svg, fontFamily);
 
           if (exportFormat === 'svg') {
-            // Wrap SVG with background if configured
-            const { wrapSvgWithBackground } = await import('@/services/exportService');
-            const finalSvg = background.type !== 'none' ? wrapSvgWithBackground(svg, background) : svg;
-            downloadSvg(finalSvg, filename);
+            // SVG already has background from shellfie — no wrapping needed
+            downloadSvg(svg, filename);
           } else {
             const quality = exportFormat === 'jpeg' ? jpegQuality : 1.0;
-            console.log('[useExport.download] Calling downloadRaster with background:', background);
+            // SVG already has background from shellfie — don't add another
             await downloadRaster(svg, filename, exportFormat, {
               scale: exportScale,
               quality,
-              background,
             });
           }
         }

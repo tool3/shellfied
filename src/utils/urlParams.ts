@@ -397,6 +397,7 @@ export interface UrlState {
     imageAspectRatio?: ImageAspectRatio;
     padding?: number;
     animation?: BackgroundAnimation | null;
+    animationColor?: string;
     overlay?: BackgroundOverlay | null;
   };
 
@@ -665,6 +666,7 @@ interface CompactState {
   bgp?: number; // bgPadding
   bga?: string; // bgImageAspectRatio
   ban?: string; // bgAnimation
+  bac?: string; // bgAnimationColor
   bov?: string; // bgOverlay
   rbe?: boolean; // brandEnabled
   rbt?: string; // brandText
@@ -804,6 +806,9 @@ function buildCompactState(state: UrlState, mode: ShareMode, includeContent: boo
     add('bga', state.background.imageAspectRatio, DEFAULT_BACKGROUND.imageAspectRatio);
     if (state.background.animation) {
       compact.ban = state.background.animation;
+    }
+    if (state.background.animationColor && state.background.animationColor !== 'rgba(255,255,255,0.15)') {
+      compact.bac = state.background.animationColor;
     }
     if (state.background.overlay) {
       compact.bov = state.background.overlay;
@@ -953,6 +958,7 @@ function parseCompactState(compact: CompactState): UrlState {
     if (compact.bgp !== undefined) state.background.padding = compact.bgp;
     if (compact.bga !== undefined) state.background.imageAspectRatio = compact.bga as ImageAspectRatio;
     if (compact.ban !== undefined) state.background.animation = compact.ban as BackgroundAnimation;
+    if (compact.bac !== undefined) state.background.animationColor = compact.bac;
     if (compact.bov !== undefined) state.background.overlay = compact.bov as BackgroundOverlay;
   }
 

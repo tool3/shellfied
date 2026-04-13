@@ -140,6 +140,10 @@ export const useStore = create<AppStore>()(
         if (background && background.overlay === undefined) {
           background = { ...background, overlay: null };
         }
+        // Ensure animationColor field exists (added in later version)
+        if (background && !background.animationColor) {
+          background = { ...background, animationColor: 'rgba(255,255,255,0.15)' };
+        }
 
         // Base merged state from persistence
         const mergedState = {

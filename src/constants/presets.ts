@@ -51,10 +51,9 @@ const vercel: PresetConfig = {
     padding: [16, 24, 16, 24],
     background: {
       type: 'solid',
-      color: '#191919',
+      color: '#000000',
       image: null,
       padding: 64,
-      overlay: 'vercel-grid',
     },
   },
 };
@@ -75,8 +74,9 @@ const supabase: PresetConfig = {
     padding: [16, 24, 16, 24],
     background: {
       type: 'solid',
-      color: '#121212',
-      padding: 64,
+      color: '#0d0d0d',
+      image: null,
+      padding: 40,
     },
   },
 };
@@ -100,7 +100,6 @@ const tailwind: PresetConfig = {
       color: '#0f172a',
       image: null,
       padding: 64,
-      overlay: 'tailwind-beams',
     },
   },
 };
@@ -120,11 +119,10 @@ const openai: PresetConfig = {
     fontFamily: FONT_DEFAULT,
     padding: [16, 24, 16, 24],
     background: {
-      type: 'gradient',
-      gradientFrom: '#121a29',
-      gradientTo: '#1a2940',
-      gradientDirection: 'to-bottom',
-      padding: 64,
+      type: 'solid',
+      color: '#0d0d0d',
+      image: null,
+      padding: 40,
     },
   },
 };
@@ -145,10 +143,9 @@ const clerk: PresetConfig = {
     padding: [16, 24, 16, 24],
     background: {
       type: 'solid',
-      color: '#222222',
+      color: '#0d0d0d',
       image: null,
-      padding: 64,
-      overlay: 'clerk-halftone',
+      padding: 40,
     },
   },
 };
@@ -168,13 +165,10 @@ const prisma: PresetConfig = {
     fontFamily: FONT_JETBRAINS,
     padding: [16, 24, 16, 24],
     background: {
-      type: 'gradient',
-      gradientFrom: '#0c1d26',
-      gradientTo: '#0a0c17',
-      gradientDirection: 'to-bottom-right',
+      type: 'solid',
+      color: '#0c1d26',
       image: null,
       padding: 64,
-      overlay: 'prisma-glow',
     },
   },
 };
@@ -195,10 +189,9 @@ const mintlify: PresetConfig = {
     padding: [16, 24, 16, 24],
     background: {
       type: 'solid',
-      color: '#070a08',
+      color: '#121212',
       image: null,
       padding: 64,
-      overlay: 'mintlify-lines',
     },
   },
 };
@@ -219,10 +212,9 @@ const elevenLabs: PresetConfig = {
     padding: [16, 24, 16, 24],
     background: {
       type: 'solid',
-      color: '#111111',
+      color: '#0d0d0d',
       image: null,
       padding: 64,
-      overlay: 'elevenlabs-grid',
     },
   },
 };
@@ -242,13 +234,10 @@ const resend: PresetConfig = {
     fontFamily: FONT_DEFAULT,
     padding: [16, 24, 16, 24],
     background: {
-      type: 'gradient',
-      gradientFrom: '#B1B1B1',
-      gradientTo: '#181818',
-      gradientDirection: 'to-bottom',
+      type: 'solid',
+      color: '#0d0d0d',
       image: null,
-      padding: 64,
-      overlay: 'resend-topo',
+      padding: 20,
     },
   },
 };
@@ -272,7 +261,6 @@ const triggerDev: PresetConfig = {
       color: '#121317',
       image: null,
       padding: 64,
-      overlay: 'triggerdev-lines',
     },
   },
 };
@@ -296,7 +284,6 @@ const nuxt: PresetConfig = {
       color: '#0b0c11',
       image: null,
       padding: 64,
-      overlay: 'nuxt-glow',
     },
   },
 };
@@ -317,10 +304,9 @@ const browserbase: PresetConfig = {
     padding: [16, 24, 16, 24],
     background: {
       type: 'solid',
-      color: '#000000',
+      color: '#080808',
       image: null,
       padding: 64,
-      overlay: 'browserbase-lines',
     },
   },
 };
@@ -343,8 +329,7 @@ const cloudflare: PresetConfig = {
       type: 'solid',
       color: '#0c0c0c',
       image: null,
-      padding: 64,
-      overlay: 'cloudflare-grid',
+      padding: 40,
     },
   },
 };
@@ -368,7 +353,6 @@ const gemini: PresetConfig = {
       color: '#0e1016',
       image: null,
       padding: 64,
-      overlay: 'gemini-stars',
     },
   },
 };
@@ -414,7 +398,6 @@ const firecrawl: PresetConfig = {
       type: 'solid',
       color: '#000000',
       image: null,
-      overlay: 'firecrawl-grid',
       padding: 64,
     },
   },
