@@ -11,7 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import LZString from 'lz-string';
 import { resolveShortUrl } from '@/services/shortenerService';
-import { generateSvg, generateCompareSvg as generateCompareSvgFromLib, wrapSvgWithBackground, fetchServerFont } from '@/lib/generateSvg';
+import { generateSvg, generateCompareSvg as generateCompareSvgFromLib, wrapSvgWithBackground, fetchServerFont, buildShellfieBackgroundColor } from '@/lib/generateSvg';
 import { DEFAULT_BACKGROUND, DEFAULT_SETTINGS, DEFAULT_HEADER, DEFAULT_FOOTER, DEFAULT_WATERMARK } from '@/constants/defaults';
 import type { TemplateType, ControlsPosition, PaddingTuple, BackgroundType, BackgroundConfig, GradientDirection, ImageAspectRatio, CompareLabelAlignment } from '@/types';
 
@@ -77,6 +77,7 @@ interface CompactState {
   bov?: string; // bgOverlay
   sfp?: string; // shellfiePreset
   ln?: boolean; // lineNumbers
+  bac?: string; // bgAnimationColor
 }
 
 // Parse compressed state into generation options
@@ -145,6 +146,7 @@ function parseCompressedState(compact: CompactState) {
       image: null,
       animation: (compact.ban as BackgroundConfig['animation']) || null,
       overlay: (compact.bov as BackgroundConfig['overlay']) || null,
+      animationColor: compact.bac || 'rgba(255,255,255,0.15)',
     },
     shellfiePreset: compact.sfp || undefined,
     lineNumbers: compact.ln ?? false,
@@ -242,16 +244,17 @@ async function generateSvgResponse(id: string): Promise<NextResponse> {
         customFontData,
         lineNumbers: opts.lineNumbers,
         shellfiePreset: opts.shellfiePreset,
+        animation: opts.background.animation || undefined,
+        animationColor: opts.background.animationColor || undefined,
+        backgroundColorOverride: buildShellfieBackgroundColor(opts.background),
+        backgroundPaddingOverride: opts.background.padding,
       }) || '';
 
       if (!svg) {
         return new NextResponse('Failed to generate SVG', { status: 500 });
       }
 
-      // Wrap with background if configured (skip when shellfie preset handles it)
-      if (opts.background.type !== 'none' && !opts.shellfiePreset) {
-        svg = wrapSvgWithBackground(svg, opts.background);
-      }
+      // Background is already rendered by shellfie — no wrapping needed
     }
 
     // Return SVG with appropriate headers

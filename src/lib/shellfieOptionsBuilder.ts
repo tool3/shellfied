@@ -23,6 +23,10 @@ import {
 } from '@/lib/svgHelpers';
 import { highlightWithAnsi, normalizeAnsiEscapes, containsAnsi } from '@/utils/syntaxHighlight';
 import { detectLanguage } from '@/constants/languages';
+import { DEFAULT_SETTINGS } from '@/constants/defaults';
+
+const DEFAULT_FONT_SIZE = DEFAULT_SETTINGS.fontSize;
+const DEFAULT_LINE_HEIGHT = DEFAULT_SETTINGS.lineHeight;
 
 // Languages shellfie's built-in highlighter supports
 const SHELLFIE_LANGUAGES = new Set([
@@ -33,6 +37,32 @@ const SHELLFIE_LANGUAGES = new Set([
 interface BuildResult {
   content: string;
   options: shellfieOptions;
+}
+
+// Map shellfied gradient direction to shellfie gradient syntax
+const GRADIENT_DIR_MAP: Record<string, string> = {
+  'to-right': 'horizontal',
+  'to-left': 'horizontal:reverse',
+  'to-bottom': 'vertical',
+  'to-top': 'vertical:reverse',
+  'to-bottom-right': 'diagonal',
+  'to-top-left': 'diagonal:reverse',
+  'to-bottom-left': 'diagonal',
+  'to-top-right': 'diagonal:reverse',
+};
+
+function buildShellfieBackground(bg: AppStore['background']): { color: string; padding: number } | undefined {
+  if (bg.type === 'none') return undefined;
+
+  let color: string;
+  if (bg.type === 'gradient') {
+    const dir = GRADIENT_DIR_MAP[bg.gradientDirection] || 'diagonal';
+    color = `gradient(${bg.gradientFrom}, ${bg.gradientTo}:${dir})`;
+  } else {
+    color = bg.color;
+  }
+
+  return { color, padding: bg.padding };
 }
 
 export function buildShellfieArgs(state: AppStore, contentOverride?: string): BuildResult {
@@ -61,31 +91,48 @@ export function buildShellfieArgs(state: AppStore, contentOverride?: string): Bu
         ? state.language
         : 'auto');
 
-    // If user changed the terminal theme from the preset's default, pass it as override
+    // Only pass theme when user explicitly changed it from the preset default.
+    // Otherwise let shellfie use its native preset theme.
     const presetDefaultTheme = presetConfig?.settings?.terminalTheme;
     const userChangedTheme = presetDefaultTheme && state.terminalTheme !== presetDefaultTheme;
     const themeOverride = userChangedTheme ? getTheme(state.terminalTheme, state.customThemes) : undefined;
 
-    return {
-      content: normalizedContent,
-      options: {
-        preset: shellfiePreset,
-        language: shellfieLanguage,
-        // Theme override — only when user explicitly changed it from preset default
-        theme: themeOverride,
-        // User overrides that should always apply on top of preset
-        title: state.title || undefined,
-        padding: state.padding,
-        fontSize: state.fontSize,
-        lineHeight: state.lineHeight,
-        lineNumbers: state.lineNumbers,
-        watermark: buildWatermarkConfig(state.watermark),
-        width: state.width || undefined,
-        fontFamily: state.fontFamily || undefined,
-        embedFont: true,
-        animation: state.background.animation || undefined,
-      },
+    // If user changed the background color OR padding from the preset's default, pass as override
+    const presetBg = presetConfig?.settings?.background;
+    const userChangedBgColor = presetBg?.color && state.background.color !== presetBg.color;
+    const userChangedBgPadding = presetBg?.padding !== undefined && state.background.padding !== presetBg.padding;
+    const backgroundOverride = (userChangedBgColor || userChangedBgPadding)
+      ? buildShellfieBackground(state.background)
+      : undefined;
+
+    // Pass overrides only when user changed from the preset's defaults.
+    // Otherwise let shellfie use its native preset values.
+    const presetSettings = presetConfig?.settings;
+    const userChangedPadding = presetSettings && JSON.stringify(state.padding) !== JSON.stringify(presetSettings.padding);
+    const userChangedFontSize = presetSettings && state.fontSize !== DEFAULT_FONT_SIZE;
+    const userChangedLineHeight = presetSettings && state.lineHeight !== DEFAULT_LINE_HEIGHT;
+    const userChangedFontFamily = presetSettings && state.fontFamily !== presetSettings.fontFamily;
+
+    const opts: shellfieOptions = {
+      preset: shellfiePreset,
+      language: shellfieLanguage,
+      embedFont: true,
+      theme: themeOverride,
+      background: backgroundOverride,
+      lineNumbers: state.lineNumbers,
+      animation: state.background.animation || undefined,
+      animationColor: state.background.animationColor || undefined,
+      title: state.title || undefined,
+      watermark: buildWatermarkConfig(state.watermark),
+      width: state.width || undefined,
+      // Only pass layout overrides when user changed from preset defaults
+      ...(userChangedPadding ? { padding: state.padding } : {}),
+      ...(userChangedFontSize ? { fontSize: state.fontSize } : {}),
+      ...(userChangedLineHeight ? { lineHeight: state.lineHeight } : {}),
+      ...(userChangedFontFamily ? { fontFamily: state.fontFamily } : {}),
     };
+
+    return { content: normalizedContent, options: opts };
   }
 
   // No preset — manually build everything
@@ -102,7 +149,7 @@ export function buildShellfieArgs(state: AppStore, contentOverride?: string): Bu
       title: state.title || undefined,
       fontSize: state.fontSize,
       lineHeight: state.lineHeight,
-      lineNumbers: state.lineNumbers || undefined,
+      lineNumbers: state.lineNumbers,
       padding: state.padding,
       controls: state.showControls,
       watermark: buildWatermarkConfig(state.watermark),
@@ -112,6 +159,9 @@ export function buildShellfieArgs(state: AppStore, contentOverride?: string): Bu
       header: buildHeaderOptions(state.header),
       footer: buildFooterOptions(state.footer),
       animation: state.background.animation || undefined,
+      animationColor: state.background.animationColor || undefined,
+      // Pass background to shellfie so it's part of the SVG output
+      background: buildShellfieBackground(state.background),
     },
   };
 }

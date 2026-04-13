@@ -48,6 +48,7 @@ export interface BackgroundConfig {
   imageAspectRatio: ImageAspectRatio;
   padding: number;
   animation: BackgroundAnimation | null;
+  animationColor: string;
   overlay: BackgroundOverlay | null;
 }
 

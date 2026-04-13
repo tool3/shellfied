@@ -58,12 +58,10 @@ export const createSettingsSlice: StateCreator<AppStore, [], [], SettingsState> 
     if (!preset) return;
     const { settings } = preset;
 
-    // Partner presets (with shellfiePreset) — shellfie handles background natively.
-    // Set background.type to 'none' so shellfied doesn't render its own on top.
-    // Classic presets use shellfied's background system (gradients, etc.)
-    const background = preset.shellfiePreset
-      ? { ...DEFAULT_SETTINGS.background, type: 'none' as const }
-      : { ...DEFAULT_SETTINGS.background, ...settings.background };
+    // All presets get their background settings applied.
+    // Partner presets store the preset's native background color so the user
+    // can see and change it. shellfie renders the actual background in the SVG.
+    const background = { ...DEFAULT_SETTINGS.background, ...settings.background };
 
     set({
       ...DEFAULT_SETTINGS,

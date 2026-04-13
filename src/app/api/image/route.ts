@@ -27,7 +27,7 @@ import sharp from 'sharp';
 import { initWasm, Resvg } from '@resvg/resvg-wasm';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
-import { generateSvg, generateCompareSvg, wrapSvgWithBackground, fetchServerFont } from '@/lib/generateSvg';
+import { generateSvg, generateCompareSvg, wrapSvgWithBackground, fetchServerFont, buildShellfieBackgroundColor } from '@/lib/generateSvg';
 import { DEFAULT_BACKGROUND, DEFAULT_SETTINGS, DEFAULT_HEADER, DEFAULT_FOOTER, DEFAULT_WATERMARK, DEFAULT_COMPARE_LABEL_CONFIG } from '@/constants/defaults';
 import type { TemplateType, ControlsPosition, PaddingTuple, BackgroundType, BackgroundConfig, GradientDirection, ImageAspectRatio, CompareLabelAlignment } from '@/types';
 
@@ -212,6 +212,7 @@ interface CompactState {
   bov?: string; // bgOverlay
   sfp?: string; // shellfiePreset
   ln?: boolean; // lineNumbers
+  bac?: string; // bgAnimationColor
 }
 
 // Decompress LZ-string data
@@ -365,6 +366,7 @@ function parseCompressedState(compact: CompactState) {
       image: null,
       animation: (compact.ban as BackgroundConfig['animation']) || null,
       overlay: (compact.bov as BackgroundConfig['overlay']) || null,
+      animationColor: compact.bac || 'rgba(255,255,255,0.15)',
     },
     shellfiePreset: compact.sfp || undefined,
     lineNumbers: compact.ln ?? false,
@@ -448,13 +450,13 @@ export async function GET(request: NextRequest) {
             customFontData,
             lineNumbers: opts.lineNumbers,
             shellfiePreset: opts.shellfiePreset,
+            animation: opts.background.animation || undefined,
+            animationColor: opts.background.animationColor || undefined,
+            backgroundColorOverride: buildShellfieBackgroundColor(opts.background),
+            backgroundPaddingOverride: opts.background.padding,
           });
 
-          // Only wrap with background for single mode when no shellfie preset
-          // (shellfie presets render their own background+overlays natively)
-          if (svg && opts.background.type !== 'none' && !opts.shellfiePreset) {
-            svg = wrapSvgWithBackground(svg, opts.background);
-          }
+          // Background is already rendered by shellfie — no wrapping needed
         }
 
         if (!svg) {
@@ -600,6 +602,7 @@ export async function GET(request: NextRequest) {
     image: null, // Images are not supported in URL sharing (too large)
     animation: (getParam(searchParams, 'bgAnimation') as BackgroundConfig['animation']) || null,
     overlay: (getParam(searchParams, 'bgOverlay') as BackgroundConfig['overlay']) || null,
+    animationColor: 'rgba(255,255,255,0.15)',
   };
 
   try {
@@ -607,7 +610,7 @@ export async function GET(request: NextRequest) {
     const customFontData = await fetchServerFont(fontFamily);
 
     // Generate SVG
-    let svg = generateSvg({
+    const svg = generateSvg({
       content,
       language,
       template,
@@ -625,15 +628,12 @@ export async function GET(request: NextRequest) {
       footer,
       watermark,
       customFontData,
+      backgroundColorOverride: buildShellfieBackgroundColor(background),
+      backgroundPaddingOverride: background.padding,
     });
 
     if (!svg) {
       return new NextResponse('Failed to generate SVG', { status: 500 });
-    }
-
-    // Wrap with background if configured
-    if (background.type !== 'none') {
-      svg = wrapSvgWithBackground(svg, background);
     }
 
     // Check for output format param (legacy URLs)

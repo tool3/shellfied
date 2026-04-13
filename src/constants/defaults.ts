@@ -29,6 +29,7 @@ export const DEFAULT_BACKGROUND: BackgroundConfig = {
   imageAspectRatio: 'auto',
   padding: 32,
   animation: null,
+  animationColor: 'rgba(255,255,255,0.15)',
   overlay: null,
 };
 

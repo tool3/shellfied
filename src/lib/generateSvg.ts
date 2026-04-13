@@ -271,6 +271,28 @@ const materialDark = createTheme({
 // Import shellfie themes and add custom ones
 import { themes } from 'shellfie';
 import { presetThemes } from '@/constants/presetThemes';
+import type { BackgroundConfig as AppBackgroundConfig } from '@/types';
+
+const GRADIENT_DIR_MAP: Record<string, string> = {
+  'to-right': 'horizontal',
+  'to-left': 'horizontal:reverse',
+  'to-bottom': 'vertical',
+  'to-top': 'vertical:reverse',
+  'to-bottom-right': 'diagonal',
+  'to-top-left': 'diagonal:reverse',
+  'to-bottom-left': 'diagonal',
+  'to-top-right': 'diagonal:reverse',
+};
+
+/** Convert shellfied BackgroundConfig to a shellfie-compatible color string */
+export function buildShellfieBackgroundColor(bg: AppBackgroundConfig): string | undefined {
+  if (bg.type === 'none') return undefined;
+  if (bg.type === 'gradient') {
+    const dir = GRADIENT_DIR_MAP[bg.gradientDirection] || 'diagonal';
+    return `gradient(${bg.gradientFrom}, ${bg.gradientTo}:${dir})`;
+  }
+  return bg.color;
+}
 
 const allThemes: Record<string, Theme> = {
   ...themes,
@@ -699,6 +721,14 @@ export interface GenerateSvgOptions {
   lineNumbers?: boolean;
   /** shellfie preset name (e.g. 'vercel', 'prisma'). When set, shellfie handles theme/template/overlays/background natively. */
   shellfiePreset?: string;
+  /** Animation type to embed in the SVG */
+  animation?: string;
+  /** Background color override (solid hex or shellfie gradient string) */
+  backgroundColorOverride?: string;
+  /** Background padding override */
+  backgroundPaddingOverride?: number;
+  /** Animation color */
+  animationColor?: string;
 }
 
 /**
@@ -725,6 +755,10 @@ export function generateSvg(options: GenerateSvgOptions): string {
     customFontData,
     lineNumbers,
     shellfiePreset,
+    animation,
+    backgroundColorOverride,
+    backgroundPaddingOverride,
+    animationColor,
   } = options;
 
   if (!content.trim()) {
@@ -743,18 +777,21 @@ export function generateSvg(options: GenerateSvgOptions): string {
     const normalizedContent = hasAnsi ? normalizeAnsiEscapes(content) : content;
     const effectiveLanguage = language === 'auto' ? detectLanguage(content) : language;
 
+    // Don't pass padding/fontSize/lineHeight/fontFamily — let the preset define them.
+    // Only pass user-controllable overrides.
     svg = shellfie(normalizedContent, {
       preset: shellfiePreset,
       language: hasAnsi ? false : (effectiveLanguage || 'auto'),
       title: title || undefined,
-      padding,
-      fontSize,
-      lineHeight,
       lineNumbers,
       watermark: buildWatermarkConfig(watermark),
       width: width || undefined,
-      fontFamily: fontFamily || undefined,
       embedFont: false,
+      animation: (animation as import('shellfie').AnimationType) || undefined,
+      animationColor: animationColor || undefined,
+      background: backgroundColorOverride
+        ? { color: backgroundColorOverride, padding: backgroundPaddingOverride ?? 64 }
+        : undefined,
     });
   } else {
     // No preset — manually build everything
@@ -779,6 +816,11 @@ export function generateSvg(options: GenerateSvgOptions): string {
       embedFont: false,
       header: buildHeaderOptions(header),
       footer: buildFooterOptions(footer),
+      animation: (animation as import('shellfie').AnimationType) || undefined,
+      animationColor: animationColor || undefined,
+      background: backgroundColorOverride
+        ? { color: backgroundColorOverride, padding: backgroundPaddingOverride ?? 32 }
+        : undefined,
     });
   }
 

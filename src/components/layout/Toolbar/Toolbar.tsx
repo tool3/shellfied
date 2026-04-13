@@ -256,18 +256,63 @@ const PaddingPopoverContent = memo(function PaddingPopoverContent() {
   );
 });
 
-const ShareModalWrapper = memo(function ShareModalWrapper({ onClose }: { onClose: () => void }) {
-  const [shortUrls, setShortUrls] = useState<ShortUrls | null>(null);
-  // Pass the full store state so buildCompactState can read activePreset, lineNumbers, etc.
+// Module-level cache for share URLs — persists across modal opens.
+// Only regenerated when SVG-affecting state changes.
+let _shareCacheHash = '';
+let _shareCacheUrls: { viewUrl: string; editUrl: string; compressedData: string } | null = null;
+
+function getShareUrls() {
   const state = useStore.getState();
+  const hash = JSON.stringify({
+    c: state.content, l: state.language, tp: state.template,
+    th: state.terminalTheme, fs: state.fontSize, lh: state.lineHeight,
+    pd: state.padding, ti: state.title, sc: state.showControls,
+    cp: state.controlsPosition, br: state.borderRadius,
+    w: state.width, ff: state.fontFamily, bg: state.background,
+    hd: state.header, ft: state.footer, wm: state.watermark,
+    ap: state.activePreset, ln: state.lineNumbers,
+  });
+
+  if (_shareCacheHash === hash && _shareCacheUrls) {
+    return _shareCacheUrls;
+  }
+
+  _shareCacheHash = hash;
+  _shareCacheUrls = {
+    viewUrl: generateShareUrlLZ(state, 'view'),
+    editUrl: generateShareUrlLZ(state, 'edit'),
+    compressedData: generateCompressedData(state, 'view'),
+  };
+  return _shareCacheUrls;
+}
+
+// Short URLs persist in module scope so reopening modal doesn't re-create
+let _shortUrlsCache: ShortUrls | null = null;
+let _shortUrlsHash = '';
+
+const ShareModalWrapper = memo(function ShareModalWrapper({ onClose }: { onClose: () => void }) {
+  const urls = getShareUrls();
+  const [shortUrls, setShortUrls] = useState<ShortUrls | null>(() => {
+    // If state hash changed since last short URL creation, clear cached short URLs
+    if (_shortUrlsHash !== _shareCacheHash) {
+      _shortUrlsCache = null;
+    }
+    return _shortUrlsCache;
+  });
+
+  const handleShortUrlsChange = useCallback((newUrls: ShortUrls | null) => {
+    _shortUrlsCache = newUrls;
+    _shortUrlsHash = _shareCacheHash;
+    setShortUrls(newUrls);
+  }, []);
 
   return (
     <ShareModal
-      viewUrl={generateShareUrlLZ(state, 'view')}
-      editUrl={generateShareUrlLZ(state, 'edit')}
-      compressedData={generateCompressedData(state, 'view')}
+      viewUrl={urls.viewUrl}
+      editUrl={urls.editUrl}
+      compressedData={urls.compressedData}
       shortUrls={shortUrls}
-      onShortUrlsChange={setShortUrls}
+      onShortUrlsChange={handleShortUrlsChange}
       onClose={onClose}
     />
   );

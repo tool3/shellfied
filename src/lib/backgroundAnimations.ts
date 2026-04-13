@@ -10,7 +10,8 @@ export function generateAnimationSvg(
   width: number,
   height: number,
   padding = 0,
-  borderRadius = 8
+  borderRadius = 8,
+  _color?: string
 ): string {
   if (!animation) return '';
 
@@ -34,9 +35,10 @@ export function generateAnimationSvgElement(
   width: number,
   height: number,
   padding = 0,
-  borderRadius = 8
+  borderRadius = 8,
+  color?: string
 ): string {
-  const content = generateAnimationSvg(animation, width, height, padding, borderRadius);
+  const content = generateAnimationSvg(animation, width, height, padding, borderRadius, color);
   if (!content) return '';
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="position:absolute;inset:0;pointer-events:none;width:100%;height:100%">${content}</svg>`;
 }
