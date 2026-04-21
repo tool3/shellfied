@@ -8,6 +8,7 @@ import type { AppStore } from '@/store/types';
 import { buildShellfieArgsCompare } from './shellfieOptionsBuilder';
 import { getSvgWidth, getSvgDimensions, extractSvgContent } from './svgHelpers';
 
+
 // Try to import shellfie's animation generator
 let generateAnimation: ((type: string, w: number, h: number, padding: number, borderRadius: number, color?: string) => string) | null = null;
 try {
