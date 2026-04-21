@@ -2,8 +2,10 @@ import { useMemo } from 'react';
 import shellfie from 'shellfie';
 import { useStore, useContent, useLanguage } from '@/store';
 import { useDebounce } from './useDebounce';
-import { buildShellfieArgs } from '@/lib/shellfieOptionsBuilder';
+import { buildShellfieArgs, buildShellfieArgsCompare } from '@/lib/shellfieOptionsBuilder';
 import { getSvgWidth } from '@/lib/svgHelpers';
+import { applyAspectRatio } from '@/lib/aspectRatio';
+import { generateCompareSvg } from '@/lib/compareComposer';
 
 /**
  * Main hook: generates a single shellfie SVG from editor content.
@@ -32,6 +34,9 @@ export function useShellfie() {
   const activePreset = useStore((s) => s.activePreset);
   const background = useStore((s) => s.background);
   const lineNumbers = useStore((s) => s.lineNumbers);
+  const controlStyle = useStore((s) => s.controlStyle);
+  const borderColor = useStore((s) => s.borderColor);
+  const borderWidth = useStore((s) => s.borderWidth);
 
   const { svg, error } = useMemo(() => {
     if (!debouncedContent.trim()) {
@@ -47,7 +52,12 @@ export function useShellfie() {
 
       if (!processedContent.trim()) return { svg: '', error: null };
 
-      const result = shellfie(processedContent, options);
+      let result = shellfie(processedContent, options);
+      // Apply aspect ratio if set (expands SVG dimensions to target ratio)
+      const aspectRatio = state.background.imageAspectRatio;
+      if (aspectRatio && aspectRatio !== 'auto' && state.background.type !== 'none') {
+        result = applyAspectRatio(result, aspectRatio);
+      }
       return { svg: result, error: null };
     } catch (err) {
       return { svg: '', error: err instanceof Error ? err.message : 'Failed to generate SVG' };
@@ -56,6 +66,7 @@ export function useShellfie() {
     debouncedContent, language, template, controlsPosition, borderRadius,
     terminalTheme, customThemes, fontSize, lineHeight, padding, title, showControls,
     watermark, width, fontFamily, header, footer, activePreset, background, lineNumbers,
+    controlStyle, borderColor, borderWidth,
   ]);
 
   return { svg, error, hasContent: Boolean(debouncedContent.trim()) };
@@ -82,7 +93,8 @@ export function useShellfieSync() {
 }
 
 /**
- * Compare mode: generates two SVGs with matched widths.
+ * Compare mode: generates a single composed SVG with both terminals
+ * inside one unified background (no duplicate backgrounds).
  */
 export function useShellfieCompare() {
   const beforeContent = useStore((s) => s.beforeContent);
@@ -114,76 +126,52 @@ export function useShellfieCompare() {
   const activePreset = useStore((s) => s.activePreset);
   const background = useStore((s) => s.background);
   const lineNumbers = useStore((s) => s.lineNumbers);
+  const controlStyle = useStore((s) => s.controlStyle);
+  const borderColor = useStore((s) => s.borderColor);
+  const borderWidth = useStore((s) => s.borderWidth);
+  const compareLabelConfig = useStore((s) => s.compareLabelConfig);
 
-  const generateOne = useMemo(() => {
-    return (content: string, lang: string, title: string, overrideWidth?: number) => {
-      if (!content.trim()) return '';
+  const { svg, error } = useMemo(() => {
+    if (!debouncedBeforeContent.trim() && !debouncedAfterContent.trim()) {
+      return { svg: '', error: null };
+    }
 
-      try {
-        const state = useStore.getState();
-        const { content: processedContent, options } = buildShellfieArgs(
-          { ...state, content, language: lang, title }
-        );
-
-        if (!processedContent.trim()) return '';
-
-        return shellfie(processedContent, {
-          ...options,
-          width: overrideWidth || options.width,
-        });
-      } catch {
-        return '';
-      }
-    };
+    try {
+      const state = useStore.getState();
+      const result = generateCompareSvg(
+        state,
+        debouncedBeforeContent,
+        debouncedAfterContent,
+        beforeLanguage,
+        afterLanguage,
+        beforeTitle,
+        afterTitle,
+      );
+      return { svg: result.svg, error: null };
+    } catch (err) {
+      return { svg: '', error: err instanceof Error ? err.message : 'Failed to generate SVG' };
+    }
   }, [
+    debouncedBeforeContent, debouncedAfterContent, beforeLanguage, afterLanguage,
+    beforeTitle, afterTitle, beforeLabel, afterLabel, compareLabelConfig,
     template, controlsPosition, borderRadius, terminalTheme, customThemes,
     fontSize, lineHeight, padding, showControls, fontFamily, watermark,
     header, footer, activePreset, background, lineNumbers,
+    controlStyle, borderColor, borderWidth,
   ]);
 
-  const { beforeSvg, afterSvg, error } = useMemo(() => {
-    try {
-      const beforeInitial = generateOne(debouncedBeforeContent, beforeLanguage, beforeTitle);
-      const afterInitial = generateOne(debouncedAfterContent, afterLanguage, afterTitle);
-
-      const beforeWidth = getSvgWidth(beforeInitial);
-      const afterWidth = getSvgWidth(afterInitial);
-      const maxWidth = Math.max(beforeWidth, afterWidth);
-
-      if (beforeWidth === afterWidth || maxWidth === 0) {
-        return { beforeSvg: beforeInitial, afterSvg: afterInitial, error: null };
-      }
-
-      const before = beforeWidth < maxWidth && debouncedBeforeContent.trim()
-        ? generateOne(debouncedBeforeContent, beforeLanguage, beforeTitle, maxWidth)
-        : beforeInitial;
-      const after = afterWidth < maxWidth && debouncedAfterContent.trim()
-        ? generateOne(debouncedAfterContent, afterLanguage, afterTitle, maxWidth)
-        : afterInitial;
-
-      return { beforeSvg: before, afterSvg: after, error: null };
-    } catch (err) {
-      return { beforeSvg: '', afterSvg: '', error: err instanceof Error ? err.message : 'Failed to generate SVG' };
-    }
-  }, [generateOne, debouncedBeforeContent, debouncedAfterContent, beforeLanguage, afterLanguage, beforeTitle, afterTitle]);
-
-  const sharedWidth = useMemo(() => {
-    return Math.max(getSvgWidth(beforeSvg), getSvgWidth(afterSvg));
-  }, [beforeSvg, afterSvg]);
-
   return {
-    beforeSvg,
-    afterSvg,
+    svg,
     beforeLabel,
     afterLabel,
     error,
     hasContent: Boolean(debouncedBeforeContent.trim() || debouncedAfterContent.trim()),
-    sharedWidth,
   };
 }
 
 /**
- * Compare mode sync: generates on demand for exports.
+ * Compare mode sync: generates bare terminals (no background) on demand for exports.
+ * Export functions handle their own background composition.
  */
 export function useShellfieCompareSync() {
   const generate = () => {
@@ -196,7 +184,7 @@ export function useShellfieCompareSync() {
     const generateOne = (content: string, lang: string, title: string, overrideWidth?: number) => {
       if (!content.trim()) return '';
       try {
-        const { content: processed, options } = buildShellfieArgs(
+        const { content: processed, options } = buildShellfieArgsCompare(
           { ...state, content, language: lang, title }
         );
         if (!processed.trim()) return '';

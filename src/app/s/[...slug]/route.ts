@@ -11,7 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import LZString from 'lz-string';
 import { resolveShortUrl } from '@/services/shortenerService';
-import { generateSvg, generateCompareSvg as generateCompareSvgFromLib, wrapSvgWithBackground, fetchServerFont, buildShellfieBackgroundColor } from '@/lib/generateSvg';
+import { generateSvg, generateCompareSvg as generateCompareSvgFromLib, wrapSvgWithBackground, fetchServerFont, buildShellfieBackgroundColor, buildRadialOverlay } from '@/lib/generateSvg';
 import { DEFAULT_BACKGROUND, DEFAULT_SETTINGS, DEFAULT_HEADER, DEFAULT_FOOTER, DEFAULT_WATERMARK } from '@/constants/defaults';
 import type { TemplateType, ControlsPosition, PaddingTuple, BackgroundType, BackgroundConfig, GradientDirection, ImageAspectRatio, CompareLabelAlignment } from '@/types';
 
@@ -28,6 +28,8 @@ interface CompactState {
   sc?: boolean; // showControls
   cp?: string; // controlsPosition
   br?: number; // borderRadius
+  tbc?: string; // borderColor
+  tbw?: number; // borderWidth
   wd?: number | null; // width
   ff?: string; // fontFamily
   lg?: string; // language
@@ -94,6 +96,8 @@ function parseCompressedState(compact: CompactState) {
     showControls: compact.sc ?? DEFAULT_SETTINGS.showControls,
     controlsPosition: (compact.cp || DEFAULT_SETTINGS.controlsPosition) as ControlsPosition,
     borderRadius: compact.br ?? DEFAULT_SETTINGS.borderRadius,
+    borderColor: compact.tbc || '',
+    borderWidth: compact.tbw ?? 1,
     width: compact.wd ?? DEFAULT_SETTINGS.width,
     fontFamily: compact.ff || DEFAULT_SETTINGS.fontFamily,
     // Compare mode
@@ -236,6 +240,8 @@ async function generateSvgResponse(id: string): Promise<NextResponse> {
         showControls: opts.showControls,
         controlsPosition: opts.controlsPosition,
         borderRadius: opts.borderRadius,
+        borderColor: opts.borderColor || undefined,
+        borderWidth: opts.borderWidth,
         width: opts.width,
         fontFamily: opts.fontFamily,
         header: opts.header,
@@ -248,6 +254,8 @@ async function generateSvgResponse(id: string): Promise<NextResponse> {
         animationColor: opts.background.animationColor || undefined,
         backgroundColorOverride: buildShellfieBackgroundColor(opts.background),
         backgroundPaddingOverride: opts.background.padding,
+        aspectRatio: opts.background.imageAspectRatio,
+        radialOverlay: buildRadialOverlay(opts.background),
       }) || '';
 
       if (!svg) {

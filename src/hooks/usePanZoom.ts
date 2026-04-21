@@ -17,7 +17,7 @@ interface UsePanZoomOptions {
 export function usePanZoom(options: UsePanZoomOptions = {}) {
   const {
     minScale = 0.25,
-    maxScale = 2,
+    maxScale = 5,
     scaleStep = 0.1,
     initialScale = 1,
     onScaleChange,

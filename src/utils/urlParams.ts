@@ -328,6 +328,8 @@ export interface UrlState {
   showControls?: boolean;
   controlsPosition?: ControlsPosition;
   borderRadius?: number;
+  borderColor?: string;
+  borderWidth?: number;
   width?: number | null;
   fontFamily?: string;
 
@@ -675,7 +677,9 @@ interface CompactState {
   rbi?: boolean; // brandShowIcon
   rbiu?: string; // brandIconUrl
   sfp?: string; // shellfiePreset
-  ln?: boolean; // lineNumbers (e.g. 'vercel', 'prisma')
+  ln?: boolean; // lineNumbers
+  tbc?: string; // borderColor (terminal border)
+  tbw?: number; // borderWidth (terminal border)
 }
 
 // Build compact state for LZ compression
@@ -726,6 +730,16 @@ function buildCompactState(state: UrlState, mode: ShareMode, includeContent: boo
     compact.ln = !!lineNumbers;
   }
 
+  // Terminal border
+  const borderColor = (state as Record<string, unknown>).borderColor as string | undefined;
+  if (borderColor) {
+    compact.tbc = borderColor;
+    const borderWidth = (state as Record<string, unknown>).borderWidth as number | undefined;
+    if (borderWidth && borderWidth !== 1) {
+      compact.tbw = borderWidth;
+    }
+  }
+
   add('ef', state.exportFormat, DEFAULT_EXPORT_FORMAT);
   add('es', state.exportScale, DEFAULT_EXPORT_SCALE);
   add('jq', state.jpegQuality, DEFAULT_JPEG_QUALITY);
@@ -765,7 +779,11 @@ function buildCompactState(state: UrlState, mode: ShareMode, includeContent: boo
     if (state.watermark.style && state.watermark.style !== DEFAULT_WATERMARK.style) {
       compact.wst = state.watermark.style;
     }
-    if (state.watermark.markup && state.watermark.markup !== DEFAULT_WATERMARK.markup) {
+    // Always include markup when type is 'markup' — even for defaults.
+    // The server needs the actual markup content to render it.
+    if (state.watermark.type === 'markup' && state.watermark.markup) {
+      compact.wmk = state.watermark.markup;
+    } else if (state.watermark.markup && state.watermark.markup !== DEFAULT_WATERMARK.markup) {
       compact.wmk = state.watermark.markup;
     }
   }
@@ -889,6 +907,8 @@ function parseCompactState(compact: CompactState): UrlState {
   if (compact.lg) state.language = compact.lg;
   if (compact.sfp) state.shellfiePreset = compact.sfp;
   if (compact.ln) (state as Record<string, unknown>).lineNumbers = true;
+  if (compact.tbc) (state as Record<string, unknown>).borderColor = compact.tbc;
+  if (compact.tbw !== undefined) (state as Record<string, unknown>).borderWidth = compact.tbw;
   if (compact.cm) state.colorMode = compact.cm as ColorMode;
 
   if (compact.cmp) {

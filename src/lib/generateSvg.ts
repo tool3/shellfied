@@ -271,6 +271,7 @@ const materialDark = createTheme({
 // Import shellfie themes and add custom ones
 import { themes } from 'shellfie';
 import { presetThemes } from '@/constants/presetThemes';
+import { applyAspectRatio } from '@/lib/aspectRatio';
 import type { BackgroundConfig as AppBackgroundConfig } from '@/types';
 
 const GRADIENT_DIR_MAP: Record<string, string> = {
@@ -280,18 +281,47 @@ const GRADIENT_DIR_MAP: Record<string, string> = {
   'to-top': 'vertical:reverse',
   'to-bottom-right': 'diagonal',
   'to-top-left': 'diagonal:reverse',
-  'to-bottom-left': 'diagonal',
-  'to-top-right': 'diagonal:reverse',
+  'to-bottom-left': 'diagonal:swap',
+  'to-top-right': 'diagonal:reverse:swap',
 };
 
-/** Convert shellfied BackgroundConfig to a shellfie-compatible color string */
+/** Convert shellfied BackgroundConfig to a shellfie-compatible color string.
+ *  For radial gradients, returns the outer color (solid) since shellfie doesn't support radial natively.
+ */
 export function buildShellfieBackgroundColor(bg: AppBackgroundConfig): string | undefined {
   if (bg.type === 'none') return undefined;
   if (bg.type === 'gradient') {
-    const dir = GRADIENT_DIR_MAP[bg.gradientDirection] || 'diagonal';
-    return `gradient(${bg.gradientFrom}, ${bg.gradientTo}:${dir})`;
+    const isRadial = bg.gradientDirection === 'radial' || bg.gradientDirection === 'radial-reverse';
+    if (isRadial) {
+      // Return outer color as solid; radial overlay handled separately
+      return bg.gradientDirection === 'radial-reverse' ? bg.gradientFrom : bg.gradientTo;
+    }
+    const mapping = GRADIENT_DIR_MAP[bg.gradientDirection] || 'diagonal';
+    const needsSwap = mapping.includes(':swap');
+    const dir = mapping.replace(':swap', '');
+    const from = needsSwap ? bg.gradientTo : bg.gradientFrom;
+    const to = needsSwap ? bg.gradientFrom : bg.gradientTo;
+    return `gradient(${from}, ${to}:${dir})`;
   }
   return bg.color;
+}
+
+/** Build a radial gradient overlay function for shellfie, or undefined if not radial */
+export function buildRadialOverlay(bg: AppBackgroundConfig): ((w: number, h: number) => string) | undefined {
+  if (bg.type !== 'gradient') return undefined;
+  const isRadial = bg.gradientDirection === 'radial' || bg.gradientDirection === 'radial-reverse';
+  if (!isRadial) return undefined;
+
+  const isReverse = bg.gradientDirection === 'radial-reverse';
+  const innerColor = isReverse ? bg.gradientTo : bg.gradientFrom;
+  const outerColor = isReverse ? bg.gradientFrom : bg.gradientTo;
+
+  return (w: number, h: number) => {
+    const r = Math.max(w, h);
+    const cx = w / 2;
+    const cy = h / 2;
+    return `<defs><radialGradient id="shellfied-radial" gradientUnits="userSpaceOnUse" cx="${cx}" cy="${cy}" r="${r / 2}" fx="${cx}" fy="${cy}"><stop offset="0%" stop-color="${innerColor}"/><stop offset="100%" stop-color="${outerColor}"/></radialGradient></defs><rect width="${w}" height="${h}" fill="url(#shellfied-radial)"/>`;
+  };
 }
 
 const allThemes: Record<string, Theme> = {
@@ -430,15 +460,18 @@ function buildWatermarkConfig(watermark?: WatermarkConfig): ShellfieWatermarkCon
 function buildTemplate(
   templateType: TemplateType,
   controlsPosition: ControlsPosition,
-  borderRadius: number
+  borderRadius: number,
+  borderColor?: string,
+  borderWidth?: number,
 ) {
   const baseTemplate = templates[templateType];
   if (!baseTemplate) return templateType;
 
   const defaultPosition = templateType === 'windows' ? 'right' : 'left';
   const defaultRadius = baseTemplate.shell.borderRadius;
+  const hasBorder = !!borderColor;
 
-  if (controlsPosition === defaultPosition && borderRadius === defaultRadius) {
+  if (controlsPosition === defaultPosition && borderRadius === defaultRadius && !hasBorder) {
     return templateType;
   }
 
@@ -448,6 +481,7 @@ function buildTemplate(
       ...baseTemplate.shell,
       controlsPosition,
       borderRadius,
+      ...(hasBorder ? { border: true, borderColor, borderWidth: borderWidth || 1 } : {}),
     },
   };
 }
@@ -710,6 +744,8 @@ export interface GenerateSvgOptions {
   showControls?: boolean;
   controlsPosition?: ControlsPosition;
   borderRadius?: number;
+  borderColor?: string;
+  borderWidth?: number;
   width?: number | null;
   fontFamily?: string;
   header?: HeaderConfig;
@@ -729,6 +765,10 @@ export interface GenerateSvgOptions {
   backgroundPaddingOverride?: number;
   /** Animation color */
   animationColor?: string;
+  /** Aspect ratio (e.g. '16:9', '1:1') */
+  aspectRatio?: string;
+  /** Radial gradient overlay function (for radial gradients shellfie can't render natively) */
+  radialOverlay?: (w: number, h: number) => string;
 }
 
 /**
@@ -747,6 +787,8 @@ export function generateSvg(options: GenerateSvgOptions): string {
     showControls = true,
     controlsPosition = 'left',
     borderRadius = 8,
+    borderColor,
+    borderWidth,
     width,
     fontFamily,
     header,
@@ -759,14 +801,21 @@ export function generateSvg(options: GenerateSvgOptions): string {
     backgroundColorOverride,
     backgroundPaddingOverride,
     animationColor,
+    aspectRatio,
+    radialOverlay,
   } = options;
 
   if (!content.trim()) {
     return '';
   }
 
-  // Use pre-fetched font data if available, otherwise fall back to bundled JetBrains Mono
-  const embeddedFont = customFontData ?? getEmbeddedFontData();
+  // Use pre-fetched font data if available.
+  // Only fall back to bundled JetBrains Mono when the user's font IS JetBrains Mono
+  // (or the default stack which starts with JetBrains Mono).
+  // Otherwise we'd embed JetBrains Mono data labeled as the wrong font name.
+  const primaryFont = fontFamily ? extractPrimaryFontFamily(fontFamily) : 'JetBrains Mono';
+  const isJetBrainsMono = primaryFont === 'JetBrains Mono';
+  const embeddedFont = customFontData ?? (isJetBrainsMono ? getEmbeddedFontData() : null);
 
   let svg: string;
 
@@ -792,6 +841,8 @@ export function generateSvg(options: GenerateSvgOptions): string {
       background: backgroundColorOverride
         ? { color: backgroundColorOverride, padding: backgroundPaddingOverride ?? 64 }
         : undefined,
+      ...(borderColor ? { borderColor } : {}),
+      ...(radialOverlay ? { overlays: radialOverlay } : {}),
     });
   } else {
     // No preset — manually build everything
@@ -802,9 +853,10 @@ export function generateSvg(options: GenerateSvgOptions): string {
     const theme = getTheme(terminalTheme);
 
     svg = shellfie(highlightedContent, {
-      template: buildTemplate(template, controlsPosition, borderRadius),
+      template: buildTemplate(template, controlsPosition, borderRadius, borderColor, borderWidth),
       theme,
       title: title || undefined,
+      ...(borderColor ? { borderColor } : {}),
       fontSize,
       lineHeight,
       lineNumbers,
@@ -821,12 +873,17 @@ export function generateSvg(options: GenerateSvgOptions): string {
       background: backgroundColorOverride
         ? { color: backgroundColorOverride, padding: backgroundPaddingOverride ?? 32 }
         : undefined,
+      ...(radialOverlay ? { overlays: radialOverlay } : {}),
     });
+  }
+
+  // Apply aspect ratio if set
+  if (aspectRatio && aspectRatio !== 'auto') {
+    svg = applyAspectRatio(svg, aspectRatio);
   }
 
   // Embed font as @font-face with correct format, matching the font-family name shellfie used
   if (embeddedFont) {
-    const primaryFont = fontFamily ? extractPrimaryFontFamily(fontFamily) : 'JetBrains Mono';
     return embedFontInSvgServer(svg, primaryFont, embeddedFont.data);
   }
 
@@ -1135,34 +1192,16 @@ export function generateCompareSvg(options: GenerateCompareSvgOptions): string {
     basePadding
   );
 
-  // Determine label font: use pre-fetched labelFontData, or fall back to JetBrains Mono (bundled)
-  const isSystemFont = compareLabelConfig.fontFamily.includes('system-ui') ||
-    compareLabelConfig.fontFamily.includes('-apple-system') ||
-    compareLabelConfig.fontFamily.includes('sans-serif') ||
-    compareLabelConfig.fontFamily.includes('serif');
-
-  let effectiveLabelFontFamily: string;
+  // Mirror downloadCompareSvg: embed labelFontData when present (Google Font),
+  // otherwise leave the user's font-family stack untouched so the browser resolves it.
+  let effectiveLabelFontFamily = compareLabelConfig.fontFamily;
   let fontFaceStyle = '';
   const fontWeight = compareLabelConfig.fontWeight;
 
   if (options.labelFontData) {
-    // Use pre-fetched label font (from Google Fonts)
     const primaryLabelFont = extractPrimaryFontFamily(compareLabelConfig.fontFamily);
     effectiveLabelFontFamily = `'${primaryLabelFont}', ${compareLabelConfig.fontFamily}`;
     fontFaceStyle = `@font-face { font-family: '${primaryLabelFont}'; src: url('data:font/ttf;base64,${options.labelFontData.data}') format('truetype'); font-weight: ${fontWeight}; }`;
-  } else if (isSystemFont) {
-    // Fall back to bundled JetBrains Mono for system fonts in serverless
-    effectiveLabelFontFamily = "'JetBrains Mono', monospace";
-    const fonts = loadEmbeddedFonts();
-    const fontData = fontWeight <= 400 ? fonts.regular
-      : fontWeight <= 500 ? (fonts.medium || fonts.regular)
-      : fontWeight <= 600 ? (fonts.semibold || fonts.regular)
-      : (fonts.bold || fonts.regular);
-    if (fontData) {
-      fontFaceStyle = `@font-face { font-family: 'JetBrains Mono'; src: url('data:font/ttf;base64,${fontData}') format('truetype'); font-weight: ${fontWeight}; }`;
-    }
-  } else {
-    effectiveLabelFontFamily = compareLabelConfig.fontFamily;
   }
 
   // Calculate label positions based on alignment (using offset for centering)

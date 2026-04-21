@@ -113,16 +113,26 @@ export interface CustomTheme {
   brightWhite: string;
 }
 
+export interface ControlStyleConfig {
+  close: string;
+  minimize: string;
+  maximize: string;
+  size: number;
+}
+
 export interface ShellfieSettings {
   template: TemplateType;
-  terminalTheme: TerminalThemeName | string; // string for custom theme IDs
+  terminalTheme: TerminalThemeName | string;
   fontSize: number;
   lineHeight: number;
   padding: PaddingTuple;
   title: string;
   showControls: boolean;
   controlsPosition: ControlsPosition;
+  controlStyle: ControlStyleConfig;
   borderRadius: number;
+  borderColor: string;
+  borderWidth: number;
   watermark: WatermarkConfig;
   width: number | null;
   fontFamily: string;

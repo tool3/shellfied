@@ -47,22 +47,66 @@ const GRADIENT_DIR_MAP: Record<string, string> = {
   'to-top': 'vertical:reverse',
   'to-bottom-right': 'diagonal',
   'to-top-left': 'diagonal:reverse',
-  'to-bottom-left': 'diagonal',
-  'to-top-right': 'diagonal:reverse',
+  // Anti-diagonal: swap colors and use diagonal (shellfie only supports one diagonal axis)
+  'to-bottom-left': 'diagonal:swap',
+  'to-top-right': 'diagonal:reverse:swap',
 };
 
-function buildShellfieBackground(bg: AppStore['background']): { color: string; padding: number } | undefined {
+interface ShellfieBackgroundResult {
+  color: string;
+  padding: number;
+  radialOverlay?: (w: number, h: number) => string;
+}
+
+function buildShellfieBackground(bg: AppStore['background']): ShellfieBackgroundResult | undefined {
   if (bg.type === 'none') return undefined;
 
-  let color: string;
   if (bg.type === 'gradient') {
-    const dir = GRADIENT_DIR_MAP[bg.gradientDirection] || 'diagonal';
-    color = `gradient(${bg.gradientFrom}, ${bg.gradientTo}:${dir})`;
-  } else {
-    color = bg.color;
+    const isRadial = bg.gradientDirection === 'radial' || bg.gradientDirection === 'radial-reverse';
+
+    if (isRadial) {
+      // Shellfie doesn't support radial gradients natively.
+      // Pass the outer color as solid background and inject radial via overlay.
+      const isReverse = bg.gradientDirection === 'radial-reverse';
+      const innerColor = isReverse ? bg.gradientTo : bg.gradientFrom;
+      const outerColor = isReverse ? bg.gradientFrom : bg.gradientTo;
+
+      return {
+        color: outerColor,
+        padding: bg.padding,
+        radialOverlay: (w: number, h: number) => {
+          const r = Math.max(w, h);
+          const cx = w / 2;
+          const cy = h / 2;
+          return `<defs><radialGradient id="shellfied-radial" gradientUnits="userSpaceOnUse" cx="${cx}" cy="${cy}" r="${r / 2}" fx="${cx}" fy="${cy}"><stop offset="0%" stop-color="${innerColor}"/><stop offset="100%" stop-color="${outerColor}"/></radialGradient></defs><rect width="${w}" height="${h}" fill="url(#shellfied-radial)"/>`;
+        },
+      };
+    }
+
+    const mapping = GRADIENT_DIR_MAP[bg.gradientDirection] || 'diagonal';
+    const needsSwap = mapping.includes(':swap');
+    const dir = mapping.replace(':swap', '');
+    const from = needsSwap ? bg.gradientTo : bg.gradientFrom;
+    const to = needsSwap ? bg.gradientFrom : bg.gradientTo;
+    return { color: `gradient(${from}, ${to}:${dir})`, padding: bg.padding };
   }
 
-  return { color, padding: bg.padding };
+  return { color: bg.color, padding: bg.padding };
+}
+
+/**
+ * Builds shellfie args for compare mode — terminals only, no background/animation.
+ * The caller composes both terminals into a single background.
+ */
+export function buildShellfieArgsCompare(state: AppStore, contentOverride?: string): BuildResult {
+  const result = buildShellfieArgs(state, contentOverride);
+  // Strip background, animation, and overlays — compare mode renders these at the wrapper level
+  const opts = { ...result.options };
+  delete opts.background;
+  delete opts.animation;
+  delete opts.animationColor;
+  delete opts.overlays;
+  return { content: result.content, options: opts };
 }
 
 export function buildShellfieArgs(state: AppStore, contentOverride?: string): BuildResult {
@@ -97,13 +141,16 @@ export function buildShellfieArgs(state: AppStore, contentOverride?: string): Bu
     const userChangedTheme = presetDefaultTheme && state.terminalTheme !== presetDefaultTheme;
     const themeOverride = userChangedTheme ? getTheme(state.terminalTheme, state.customThemes) : undefined;
 
-    // If user changed the background color OR padding from the preset's default, pass as override
+    // If user changed ANY background setting from the preset's default, pass as override
     const presetBg = presetConfig?.settings?.background;
+    const presetBgType = presetBg?.type || 'solid';
+    const userChangedBgType = state.background.type !== presetBgType;
     const userChangedBgColor = presetBg?.color && state.background.color !== presetBg.color;
     const userChangedBgPadding = presetBg?.padding !== undefined && state.background.padding !== presetBg.padding;
-    const backgroundOverride = (userChangedBgColor || userChangedBgPadding)
+    const bgResult = (userChangedBgType || userChangedBgColor || userChangedBgPadding)
       ? buildShellfieBackground(state.background)
       : undefined;
+    const backgroundOverride = bgResult ? { color: bgResult.color, padding: bgResult.padding } : undefined;
 
     // Pass overrides only when user changed from the preset's defaults.
     // Otherwise let shellfie use its native preset values.
@@ -130,6 +177,10 @@ export function buildShellfieArgs(state: AppStore, contentOverride?: string): Bu
       ...(userChangedFontSize ? { fontSize: state.fontSize } : {}),
       ...(userChangedLineHeight ? { lineHeight: state.lineHeight } : {}),
       ...(userChangedFontFamily ? { fontFamily: state.fontFamily } : {}),
+      // Pass border color if user has set one
+      ...(state.borderColor ? { borderColor: state.borderColor } : {}),
+      // Radial gradient overlay (shellfie doesn't support radial natively)
+      ...(bgResult?.radialOverlay ? { overlays: bgResult.radialOverlay } : {}),
     };
 
     return { content: normalizedContent, options: opts };
@@ -140,11 +191,14 @@ export function buildShellfieArgs(state: AppStore, contentOverride?: string): Bu
   const normalizedContent = containsAnsi(content) ? normalizeAnsiEscapes(content) : content;
   const processedContent = highlightWithAnsi(normalizedContent, effectiveLanguage);
 
+  const bgResult = buildShellfieBackground(state.background);
+  const background = bgResult ? { color: bgResult.color, padding: bgResult.padding } : undefined;
+
   return {
     content: processedContent,
     options: {
       language: false, // already highlighted above
-      template: buildTemplate(state.template, state.controlsPosition, state.borderRadius),
+      template: buildTemplate(state.template, state.controlsPosition, state.borderRadius, state.borderColor || undefined, state.borderWidth),
       theme: getTheme(state.terminalTheme, state.customThemes),
       title: state.title || undefined,
       fontSize: state.fontSize,
@@ -152,6 +206,7 @@ export function buildShellfieArgs(state: AppStore, contentOverride?: string): Bu
       lineNumbers: state.lineNumbers,
       padding: state.padding,
       controls: state.showControls,
+      controlStyle: state.controlStyle,
       watermark: buildWatermarkConfig(state.watermark),
       width: state.width || undefined,
       fontFamily: state.fontFamily || undefined,
@@ -160,8 +215,9 @@ export function buildShellfieArgs(state: AppStore, contentOverride?: string): Bu
       footer: buildFooterOptions(state.footer),
       animation: state.background.animation || undefined,
       animationColor: state.background.animationColor || undefined,
-      // Pass background to shellfie so it's part of the SVG output
-      background: buildShellfieBackground(state.background),
+      background,
+      // Radial gradient overlay (shellfie doesn't support radial natively)
+      ...(bgResult?.radialOverlay ? { overlays: bgResult.radialOverlay } : {}),
     },
   };
 }

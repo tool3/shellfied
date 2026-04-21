@@ -33,7 +33,7 @@
 }
 
 @mixin glass-panel {
-  background: rgba(28, 28, 28, 0.7);
+  // background: rgba(28, 28, 28, 0.7);
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
@@ -81,7 +81,7 @@
     right: 16px;
     z-index: 50;
     display: flex;
-    align-items: flex-start; // share aligns with top of pill
+    align-items: center;
     gap: 8px;
   }
 }
@@ -96,18 +96,24 @@
   min-width: 0;
 }
 
-// Horizontal scroll container with snap
+// Glass shell — no overflow clipping so the border pseudo-element stays visible
 .mobilePill {
   @include glass-panel;
   border-radius: 9999px;
   padding: 4px;
+  width: 100%;
+  overflow: visible;
+}
+
+// Inner scroll container with snap
+.mobilePillScroll {
   display: flex;
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  width: 100%;
+  border-radius: 9999px;
 
   &::-webkit-scrollbar {
     display: none;
@@ -245,19 +251,20 @@
   position: fixed;
   border-radius: 16px;
   max-height: 70vh;
-  overflow: hidden; // outer container clips to border-radius
-  padding: 0; // no padding on outer — inner scrolls
+  overflow: visible; // don't clip the glass border pseudo-element
+  padding: 0;
   width: 320px;
   z-index: 200;
   animation: popoverIn 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-// Inner scroll wrapper — keeps the glass border visible
+// Inner scroll wrapper — clips content to border-radius while keeping glass border visible
 .popoverInner {
   padding: 16px;
   max-height: 70vh;
   overflow-x: hidden;
   overflow-y: auto;
+  border-radius: inherit;
   scrollbar-width: none;
 
   &::-webkit-scrollbar {

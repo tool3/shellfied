@@ -1,4 +1,4 @@
-import { memo, useMemo, useRef } from 'react';
+import { memo, useRef } from 'react';
 import { useStore } from '@/store';
 import { useShellfie, useShellfieCompare } from '@/hooks/useShellfie';
 import { usePanZoom } from '@/hooks/usePanZoom';
@@ -8,19 +8,13 @@ import styles from './Preview.module.scss';
 export const Preview = memo(function Preview() {
   const previewZoom = useStore((s) => s.previewZoom);
   const setPreviewZoom = useStore((s) => s.setPreviewZoom);
-  const background = useStore((s) => s.background);
   const compareMode = useStore((s) => s.compareMode);
-  const compareLabelConfig = useStore((s) => s.compareLabelConfig);
 
   const { svg, error, hasContent } = useShellfie();
   const {
-    beforeSvg,
-    afterSvg,
-    beforeLabel,
-    afterLabel,
+    svg: compareSvg,
     error: compareError,
     hasContent: hasCompareContent,
-    sharedWidth,
   } = useShellfieCompare();
 
   const svgWrapperRef = useRef<HTMLDivElement>(null);
@@ -28,7 +22,7 @@ export const Preview = memo(function Preview() {
 
   const { containerRef, state, isPanning, handlers, reset } = usePanZoom({
     minScale: 0.25,
-    maxScale: 2,
+    maxScale: 5,
     scaleStep: 0.25,
     initialScale: previewZoom / 100,
     onScaleChange: setPreviewZoom,
@@ -41,7 +35,7 @@ export const Preview = memo(function Preview() {
   // compareBackgroundStyle removed — shellfie renders backgrounds natively
 
   const handleZoomIn = () => {
-    setPreviewZoom(Math.min(previewZoom + 25, 200));
+    setPreviewZoom(Math.min(previewZoom + 25, 500));
   };
 
   const handleZoomOut = () => {
@@ -56,7 +50,7 @@ export const Preview = memo(function Preview() {
     transform: `translate(${state.x}px, ${state.y}px) scale(${state.scale})`,
   };
 
-  // Render compare mode preview
+  // Render compare mode preview — single composed SVG with unified background
   const renderComparePreview = () => {
     if (compareError) {
       return (
@@ -67,42 +61,10 @@ export const Preview = memo(function Preview() {
       );
     }
 
-    if (beforeSvg || afterSvg) {
-      const labelStyle: React.CSSProperties = {
-        fontSize: compareLabelConfig.fontSize,
-        fontFamily: compareLabelConfig.fontFamily,
-        fontWeight: compareLabelConfig.fontWeight,
-        color: compareLabelConfig.color,
-        textAlign: compareLabelConfig.alignment,
-      };
-
-      // Calculate empty pane style to match the other terminal's width
-      const emptyPaneStyle: React.CSSProperties = sharedWidth > 0 ? { width: sharedWidth, minWidth: sharedWidth } : {};
-
+    if (compareSvg) {
       return (
-        <div className={styles.comparePreview}>
-          <div ref={compareWrapperRef} className={styles.comparePanes}>
-            <div className={styles.comparePane}>
-              <span className={styles.compareLabel} style={labelStyle}>{beforeLabel}</span>
-              {beforeSvg ? (
-                <div className={styles.svgWrapper} dangerouslySetInnerHTML={{ __html: beforeSvg }} suppressHydrationWarning />
-              ) : (
-                <div className={styles.emptyPane} style={emptyPaneStyle}>
-                  <p>No content</p>
-                </div>
-              )}
-            </div>
-            <div className={styles.comparePane}>
-              <span className={styles.compareLabel} style={labelStyle}>{afterLabel}</span>
-              {afterSvg ? (
-                <div className={styles.svgWrapper} dangerouslySetInnerHTML={{ __html: afterSvg }} suppressHydrationWarning />
-              ) : (
-                <div className={styles.emptyPane} style={emptyPaneStyle}>
-                  <p>No content</p>
-                </div>
-              )}
-            </div>
-          </div>
+        <div className={styles.backgroundWrapper}>
+          <div ref={compareWrapperRef} className={styles.svgWrapper} dangerouslySetInnerHTML={{ __html: compareSvg }} suppressHydrationWarning />
         </div>
       );
     }

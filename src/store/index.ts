@@ -73,6 +73,9 @@ export const useStore = create<AppStore>()(
         showControls: state.showControls,
         controlsPosition: state.controlsPosition,
         borderRadius: state.borderRadius,
+        borderColor: state.borderColor,
+        borderWidth: state.borderWidth,
+        controlStyle: state.controlStyle,
         lineNumbers: state.lineNumbers,
         watermark: state.watermark,
         width: state.width,
@@ -195,6 +198,8 @@ function applyUrlState(
   if (urlState.showControls !== undefined) result.showControls = urlState.showControls;
   if (urlState.controlsPosition !== undefined) result.controlsPosition = urlState.controlsPosition;
   if (urlState.borderRadius !== undefined) result.borderRadius = urlState.borderRadius;
+  if (urlState.borderColor !== undefined) result.borderColor = urlState.borderColor;
+  if (urlState.borderWidth !== undefined) result.borderWidth = urlState.borderWidth;
   if (urlState.width !== undefined) result.width = urlState.width;
   if (urlState.fontFamily !== undefined) result.fontFamily = urlState.fontFamily;
 
