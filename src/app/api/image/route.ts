@@ -27,7 +27,7 @@ import sharp from 'sharp';
 import { initWasm, Resvg } from '@resvg/resvg-wasm';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
-import { generateSvg, generateCompareSvg, wrapSvgWithBackground, fetchServerFont, buildShellfieBackgroundColor } from '@/lib/generateSvg';
+import { generateSvg, generateCompareSvg, wrapSvgWithBackground, fetchServerFont, buildShellfieBackgroundColor, buildRadialOverlay } from '@/lib/generateSvg';
 import { DEFAULT_BACKGROUND, DEFAULT_SETTINGS, DEFAULT_HEADER, DEFAULT_FOOTER, DEFAULT_WATERMARK, DEFAULT_COMPARE_LABEL_CONFIG } from '@/constants/defaults';
 import type { TemplateType, ControlsPosition, PaddingTuple, BackgroundType, BackgroundConfig, GradientDirection, ImageAspectRatio, CompareLabelAlignment } from '@/types';
 
@@ -163,6 +163,8 @@ interface CompactState {
   sc?: boolean; // showControls
   cp?: string; // controlsPosition
   br?: number; // borderRadius
+  tbc?: string; // borderColor
+  tbw?: number; // borderWidth
   wd?: number | null; // width
   ff?: string; // fontFamily
   lg?: string; // language
@@ -314,6 +316,8 @@ function parseCompressedState(compact: CompactState) {
     showControls: compact.sc ?? DEFAULT_SETTINGS.showControls,
     controlsPosition: (compact.cp || DEFAULT_SETTINGS.controlsPosition) as ControlsPosition,
     borderRadius: compact.br ?? DEFAULT_SETTINGS.borderRadius,
+    borderColor: compact.tbc || '',
+    borderWidth: compact.tbw ?? 1,
     width: compact.wd ?? DEFAULT_SETTINGS.width,
     fontFamily: compact.ff || DEFAULT_SETTINGS.fontFamily,
     // Compare mode
@@ -442,6 +446,8 @@ export async function GET(request: NextRequest) {
             showControls: opts.showControls,
             controlsPosition: opts.controlsPosition,
             borderRadius: opts.borderRadius,
+            borderColor: opts.borderColor || undefined,
+            borderWidth: opts.borderWidth,
             width: opts.width,
             fontFamily: opts.fontFamily,
             header: opts.header,
@@ -454,6 +460,8 @@ export async function GET(request: NextRequest) {
             animationColor: opts.background.animationColor || undefined,
             backgroundColorOverride: buildShellfieBackgroundColor(opts.background),
             backgroundPaddingOverride: opts.background.padding,
+            aspectRatio: opts.background.imageAspectRatio,
+            radialOverlay: buildRadialOverlay(opts.background),
           });
 
           // Background is already rendered by shellfie — no wrapping needed

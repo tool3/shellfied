@@ -31,7 +31,10 @@ export const createSettingsSlice: StateCreator<AppStore, [], [], SettingsState> 
   setShowControls: (showControls) => set({ showControls }),
   setControlsPosition: (controlsPosition) => set({ controlsPosition }),
   setBorderRadius: (borderRadius) => set({ borderRadius }),
+  setBorderColor: (borderColor) => set({ borderColor }),
+  setBorderWidth: (borderWidth) => set({ borderWidth }),
   setLineNumbers: (lineNumbers) => set({ lineNumbers }),
+  setControlStyle: (styleUpdate) => set({ controlStyle: { ...get().controlStyle, ...styleUpdate } }),
   setWatermark: (watermarkUpdate) => set({ watermark: { ...get().watermark, ...watermarkUpdate } }),
   setWidth: (width) => set({ width }),
   setFontFamily: (fontFamily) => set({ fontFamily }),
@@ -54,6 +57,19 @@ export const createSettingsSlice: StateCreator<AppStore, [], [], SettingsState> 
   setJpegQuality: (jpegQuality) => set({ jpegQuality }),
   setBrand: (brandUpdate) => set({ brand: { ...get().brand, ...brandUpdate } }),
   applyPreset: (presetId) => {
+    // Toggle: clicking the active preset deselects it and resets to defaults
+    if (get().activePreset === presetId) {
+      set({
+        ...DEFAULT_SETTINGS,
+        activePreset: null,
+        customThemes: get().customThemes,
+        exportFormat: get().exportFormat,
+        exportScale: get().exportScale,
+        jpegQuality: get().jpegQuality,
+      });
+      return;
+    }
+
     const preset = PRESET_MAP[presetId];
     if (!preset) return;
     const { settings } = preset;

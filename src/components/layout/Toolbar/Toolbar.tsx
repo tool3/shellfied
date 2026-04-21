@@ -4,7 +4,7 @@ import { memo, useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore, useExportSettings, useExportActions, useCompareState } from '@/store';
 import { useExport } from '@/hooks/useExport';
-import { Button, Icon, Input, Toggle, Slider, Select, NumberSlider } from '@/components/common';
+import { Button, Icon, Input, Toggle, Slider, Select, NumberSlider, ColorPicker } from '@/components/common';
 import { PresetSelector } from '@/components/features/Settings/PresetSelector';
 import { ThemeSelector } from '@/components/features/Settings/ThemeSelector';
 import { BackgroundSection } from '@/components/features/Settings/BackgroundSection';
@@ -158,6 +158,8 @@ const WindowPopoverContent = memo(function WindowPopoverContent() {
   const setBorderRadius = useStore((s) => s.setBorderRadius);
   const lineNumbers = useStore((s) => s.lineNumbers);
   const setLineNumbers = useStore((s) => s.setLineNumbers);
+  const controlStyle = useStore((s) => s.controlStyle);
+  const setControlStyle = useStore((s) => s.setControlStyle);
   const width = useStore((s) => s.width);
   const setWidth = useStore((s) => s.setWidth);
   const fontFamily = useStore((s) => s.fontFamily);
@@ -166,6 +168,10 @@ const WindowPopoverContent = memo(function WindowPopoverContent() {
   const setFontSize = useStore((s) => s.setFontSize);
   const lineHeight = useStore((s) => s.lineHeight);
   const setLineHeight = useStore((s) => s.setLineHeight);
+  const borderColor = useStore((s) => s.borderColor);
+  const setBorderColor = useStore((s) => s.setBorderColor);
+  const borderWidth = useStore((s) => s.borderWidth);
+  const setBorderWidth = useStore((s) => s.setBorderWidth);
 
   return (
     <>
@@ -188,12 +194,22 @@ const WindowPopoverContent = memo(function WindowPopoverContent() {
             <>
               <Toggle checked={showControls} onChange={setShowControls} label="Show window controls" />
               {showControls && (
-                <Select label="Controls Position" options={[{ value: 'left', label: 'Left' }, { value: 'right', label: 'Right' }]} value={controlsPosition} onChange={(v) => setControlsPosition(v as 'left' | 'right')} fullWidth />
+                <>
+                  <Select label="Controls Position" options={[{ value: 'left', label: 'Left' }, { value: 'right', label: 'Right' }]} value={controlsPosition} onChange={(v) => setControlsPosition(v as 'left' | 'right')} fullWidth />
+                  <ColorPicker label="Close" value={controlStyle.close} onChange={(v) => setControlStyle({ close: v })} fullWidth />
+                  <ColorPicker label="Minimize" value={controlStyle.minimize} onChange={(v) => setControlStyle({ minimize: v })} fullWidth />
+                  <ColorPicker label="Maximize" value={controlStyle.maximize} onChange={(v) => setControlStyle({ maximize: v })} fullWidth />
+                  <Slider label="Control Size" value={controlStyle.size} onChange={(v) => setControlStyle({ size: v })} min={6} max={20} step={1} formatValue={(v) => `${v}px`} />
+                </>
               )}
             </>
           )}
           <Toggle checked={lineNumbers} onChange={setLineNumbers} label="Line numbers" />
           <Slider label="Border Radius" value={borderRadius} onChange={setBorderRadius} min={BORDER_RADIUS_MIN} max={BORDER_RADIUS_MAX} step={1} formatValue={(v) => `${v}px`} />
+          <ColorPicker label="Border Color" value={borderColor || 'transparent'} onChange={(v) => setBorderColor(v === 'transparent' ? '' : v)} fullWidth />
+          {borderColor && (
+            <Slider label="Border Width" value={borderWidth} onChange={setBorderWidth} min={1} max={10} step={1} formatValue={(v) => `${v}px`} />
+          )}
           <Slider label="Width" value={width ?? 0} onChange={(v) => setWidth(v === 0 ? null : v)} min={0} max={1200} step={10} formatValue={(v) => (v === 0 ? 'Auto' : `${v}px`)} />
         </div>
       </div>
@@ -433,17 +449,19 @@ export const Toolbar = memo(function Toolbar() {
       {/* Mobile: scrollable pill + share aligned to the right */}
       <div className={styles.mobileBar}>
         <div className={styles.mobileColumn}>
-          <div className={styles.mobilePill} ref={mobileScrollRef} onScroll={handleMobileScroll}>
-            <div className={styles.mobileTrack}>
-              {MOBILE_PAGES.map((page, pageIdx) => (
-                <div key={pageIdx} className={styles.mobilePage}>
-                  {page.map((tabId) => {
-                    const item = MENU_ITEMS.find((i) => i.id === tabId);
-                    if (!item) return null;
-                    return renderItem(item);
-                  })}
-                </div>
-              ))}
+          <div className={styles.mobilePill}>
+            <div className={styles.mobilePillScroll} ref={mobileScrollRef} onScroll={handleMobileScroll}>
+              <div className={styles.mobileTrack}>
+                {MOBILE_PAGES.map((page, pageIdx) => (
+                  <div key={pageIdx} className={styles.mobilePage}>
+                    {page.map((tabId) => {
+                      const item = MENU_ITEMS.find((i) => i.id === tabId);
+                      if (!item) return null;
+                      return renderItem(item);
+                    })}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
           <div className={styles.dots}>

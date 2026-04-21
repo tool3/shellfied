@@ -90,6 +90,13 @@ export const DEFAULT_COMPARE_LABEL_CONFIG = {
   alignment: 'left' as const,
 };
 
+export const DEFAULT_CONTROL_STYLE = {
+  close: '#ff5f57',
+  minimize: '#febc2e',
+  maximize: '#28c840',
+  size: 12,
+};
+
 export const DEFAULT_SETTINGS: ShellfieSettings = {
   template: 'macos',
   terminalTheme: 'dracula',
@@ -99,7 +106,10 @@ export const DEFAULT_SETTINGS: ShellfieSettings = {
   title: 'Terminal',
   showControls: true,
   controlsPosition: 'left',
+  controlStyle: DEFAULT_CONTROL_STYLE,
   borderRadius: 8,
+  borderColor: '',
+  borderWidth: 1,
   watermark: DEFAULT_WATERMARK,
   width: null,
   fontFamily: DEFAULT_FONT_STACK,

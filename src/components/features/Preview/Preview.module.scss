@@ -83,10 +83,6 @@
 .svgContainer {
   transform-origin: center center;
   pointer-events: none;
-  // GPU acceleration for smooth panning/zooming on mobile
-  will-change: transform;
-  // Force GPU layer to avoid repaint during transforms
-  backface-visibility: hidden;
 }
 
 .backgroundWrapper {

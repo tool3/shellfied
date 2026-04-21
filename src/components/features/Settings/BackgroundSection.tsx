@@ -236,7 +236,7 @@ export const BackgroundSection = memo(function BackgroundSection({ bare = false 
                 onChange={(padding) => setBackground({ padding })}
                 min={BACKGROUND_PADDING_MIN}
                 max={BACKGROUND_PADDING_MAX}
-                step={4}
+                step={1}
                 formatValue={(v) => `${v}px`}
               />
               <Select

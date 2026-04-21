@@ -52,7 +52,10 @@ export interface SettingsState {
   title: string;
   showControls: boolean;
   controlsPosition: ControlsPosition;
+  controlStyle: import('@/types').ControlStyleConfig;
   borderRadius: number;
+  borderColor: string;
+  borderWidth: number;
   watermark: WatermarkConfig;
   width: number | null;
   fontFamily: string;
@@ -75,6 +78,8 @@ export interface SettingsState {
   setShowControls: (show: boolean) => void;
   setControlsPosition: (position: ControlsPosition) => void;
   setBorderRadius: (radius: number) => void;
+  setBorderColor: (color: string) => void;
+  setBorderWidth: (width: number) => void;
   setLineNumbers: (show: boolean) => void;
   setWatermark: (watermark: Partial<WatermarkConfig>) => void;
   setWidth: (width: number | null) => void;
@@ -89,6 +94,7 @@ export interface SettingsState {
   setExportScale: (scale: ExportScale) => void;
   setJpegQuality: (quality: number) => void;
   activePreset: string | null;
+  setControlStyle: (style: Partial<import('@/types').ControlStyleConfig>) => void;
   setBrand: (brand: Partial<BrandConfig>) => void;
   applyPreset: (presetId: string) => void;
   resetSettings: () => void;

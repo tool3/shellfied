@@ -218,21 +218,29 @@ export function buildWatermarkConfig(watermark: WatermarkConfig): ShellfieWaterm
 export function buildTemplate(
   templateType: TemplateType,
   controlsPosition: ControlsPosition,
-  borderRadius: number
+  borderRadius: number,
+  borderColor?: string,
+  borderWidth?: number,
 ) {
   const baseTemplate = templates[templateType];
   if (!baseTemplate) return templateType;
 
   const defaultPosition = templateType === 'windows' ? 'right' : 'left';
   const defaultRadius = baseTemplate.shell.borderRadius;
+  const hasBorder = !!borderColor;
 
-  if (controlsPosition === defaultPosition && borderRadius === defaultRadius) {
+  if (controlsPosition === defaultPosition && borderRadius === defaultRadius && !hasBorder) {
     return templateType;
   }
 
   return {
     ...baseTemplate,
-    shell: { ...baseTemplate.shell, controlsPosition, borderRadius },
+    shell: {
+      ...baseTemplate.shell,
+      controlsPosition,
+      borderRadius,
+      ...(hasBorder ? { border: true, borderColor, borderWidth: borderWidth || 1 } : {}),
+    },
   };
 }
 

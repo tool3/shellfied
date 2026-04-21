@@ -142,9 +142,7 @@ const FORMAT_OPTIONS: { value: ExportFormat; label: string }[] = [
 
 export const ViewMode = memo(function ViewMode() {
   const background = useStore((s) => s.background);
-  const borderRadius = useStore((s) => s.borderRadius);
   const compareMode = useStore((s) => s.compareMode);
-  const compareLabelConfig = useStore((s) => s.compareLabelConfig);
   const exitViewMode = useStore((s) => s.exitViewMode);
   const colorMode = useStore((s) => s.colorMode);
   const brand = useStore((s) => s.brand);
@@ -154,18 +152,10 @@ export const ViewMode = memo(function ViewMode() {
 
   const { svg, error, hasContent } = useShellfie();
   const {
-    beforeSvg,
-    afterSvg,
-    beforeLabel,
-    afterLabel,
+    svg: compareSvg,
     error: compareError,
     hasContent: hasCompareContent,
-    sharedWidth,
   } = useShellfieCompare();
-
-  // Sync generators for static image generation (used when background has an image)
-  const { generate } = useShellfieSync();
-  const { generate: generateCompare } = useShellfieCompareSync();
 
   const { download, copyToClipboard, isExporting, isCopySuccess, isDownloadSuccess, error: exportError } = useExport();
 
@@ -212,7 +202,7 @@ export const ViewMode = memo(function ViewMode() {
     );
   }
 
-  const isLoading = (hasContent && !svg) || (hasCompareContent && !beforeSvg && !afterSvg);
+  const isLoading = (hasContent && !svg) || (hasCompareContent && !compareSvg);
 
   if (isLoading) {
     return (
@@ -228,7 +218,7 @@ export const ViewMode = memo(function ViewMode() {
   }
 
   const renderComparePreview = () => {
-    if (!beforeSvg && !afterSvg) {
+    if (!compareSvg) {
       return (
         <div className={styles.empty}>
           <p>No content to display</p>
@@ -236,45 +226,9 @@ export const ViewMode = memo(function ViewMode() {
       );
     }
 
-    const labelStyle: React.CSSProperties = {
-      fontSize: compareLabelConfig.fontSize,
-      fontFamily: compareLabelConfig.fontFamily,
-      fontWeight: compareLabelConfig.fontWeight,
-      color: compareLabelConfig.color,
-      textAlign: compareLabelConfig.alignment,
-    };
-
-    const emptyPaneStyle: React.CSSProperties =
-      sharedWidth > 0 ? { width: sharedWidth, minWidth: sharedWidth } : {};
-
     return (
       <div className={styles.backgroundWrapper}>
-        <div ref={compareWrapperRef} className={styles.comparePanes}>
-          <div className={styles.comparePane}>
-            <span className={styles.compareLabel} style={labelStyle}>
-              {beforeLabel}
-            </span>
-            {beforeSvg ? (
-              <div className={styles.svgWrapper} dangerouslySetInnerHTML={{ __html: beforeSvg }} />
-            ) : (
-              <div className={styles.emptyPane} style={emptyPaneStyle}>
-                <p>No content</p>
-              </div>
-            )}
-          </div>
-          <div className={styles.comparePane}>
-            <span className={styles.compareLabel} style={labelStyle}>
-              {afterLabel}
-            </span>
-            {afterSvg ? (
-              <div className={styles.svgWrapper} dangerouslySetInnerHTML={{ __html: afterSvg }} />
-            ) : (
-              <div className={styles.emptyPane} style={emptyPaneStyle}>
-                <p>No content</p>
-              </div>
-            )}
-          </div>
-        </div>
+        <div ref={compareWrapperRef} className={styles.svgWrapper} dangerouslySetInnerHTML={{ __html: compareSvg }} />
       </div>
     );
   };
