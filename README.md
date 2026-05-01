@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://shellfie.vercel.app/s/9jCDF9m.svg" alt="Shellfied Logo">
+  <img src="https://shellfie.vercel.app/s/6THJgiN.svg" alt="Shellfied Logo">
 </p>
 
 <h1 align="center">Shellfied</h1>
