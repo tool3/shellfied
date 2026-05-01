@@ -199,7 +199,11 @@
     color: var(--color-text-tertiary);
   }
 
+  // Keep the textarea's text invisible during selection — the global
+  // `::selection { color: ... }` rule would otherwise reveal the textarea's
+  // plain text on top of the highlighted pre, producing a duplicated overlay.
   &::selection {
     background-color: var(--color-accent-subtle);
+    color: transparent;
   }
 }

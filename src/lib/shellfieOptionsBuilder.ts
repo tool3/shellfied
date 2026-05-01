@@ -123,17 +123,15 @@ export function buildShellfieArgs(state: AppStore, contentOverride?: string): Bu
     // Shellfie preset is active — let shellfie handle everything natively.
     // Normalize literal escape notations (\e[, \033, etc.) to real ESC bytes
     // so shellfie's ANSI parser can process them.
-    const hasAnsi = containsAnsi(content);
-    const normalizedContent = hasAnsi ? normalizeAnsiEscapes(content) : content;
+    const normalizedContent = containsAnsi(content) ? normalizeAnsiEscapes(content) : content;
 
-    // If content has ANSI codes, disable syntax highlighting (language: false)
-    // so shellfie doesn't try to re-highlight already-colored terminal output.
-    // Otherwise let shellfie auto-detect and highlight.
-    const shellfieLanguage = hasAnsi
-      ? false as const
-      : (state.language !== 'auto' && SHELLFIE_LANGUAGES.has(state.language)
-        ? state.language
-        : 'auto');
+    // shellfie's highlight() does hybrid highlighting — it tokenizes plain
+    // segments while passing ANSI sequences through verbatim — so we let it
+    // handle ANSI-containing source as well. Only fall back to disabling the
+    // highlighter when the user explicitly picked a language we don't support.
+    const shellfieLanguage = state.language !== 'auto' && SHELLFIE_LANGUAGES.has(state.language)
+      ? state.language
+      : 'auto';
 
     // Only pass theme when user explicitly changed it from the preset default.
     // Otherwise let shellfie use its native preset theme.

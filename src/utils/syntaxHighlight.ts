@@ -123,6 +123,9 @@ function processToken(token: PrismToken): string {
 
 const ANSI_REGEX = /\x1b(?:\[[0-9;:]*[A-Za-z]|\][^\x07]*\x07|\(B|=|>|c)/;
 const LITERAL_ESCAPE_REGEX = /\\u001[bB]|\\x1[bB]|\\033|\\e/g;
+// Matches CSI (e.g. \x1b[31m) and OSC (e.g. \x1b]…\x07) sequences so we can
+// passthrough pre-styled regions during highlighting instead of tokenizing them.
+const ANSI_PASSTHROUGH_REGEX = /\x1b\[[0-9;:]*[A-Za-z]|\x1b\].*?(?:\x07|\x1b\\)/g;
 
 export function normalizeAnsiEscapes(text: string): string {
   return text.replace(LITERAL_ESCAPE_REGEX, '\x1b');
@@ -134,10 +137,6 @@ export function containsAnsi(text: string): boolean {
 }
 
 export function highlightWithAnsi(code: string, language: string): string {
-  if (containsAnsi(code)) {
-    return normalizeAnsiEscapes(code);
-  }
-
   if (language === 'plain' || !code) {
     return code;
   }
@@ -149,10 +148,35 @@ export function highlightWithAnsi(code: string, language: string): string {
     return code;
   }
 
-  try {
-    const tokens = Prism.tokenize(code, grammar);
-    return tokens.map(processToken).join('');
-  } catch {
-    return code;
+  const tokenizeSegment = (segment: string): string => {
+    if (!segment) return '';
+    try {
+      return Prism.tokenize(segment, grammar).map(processToken).join('');
+    } catch {
+      return segment;
+    }
+  };
+
+  // Fast path: no embedded ANSI — tokenize the whole input.
+  if (!code.includes('\x1b')) {
+    return tokenizeSegment(code);
   }
+
+  // Hybrid path: tokenize plain segments, passthrough ANSI sequences verbatim
+  // so users can mix syntax-highlighted code with inline ANSI styling.
+  let result = '';
+  let lastIndex = 0;
+  ANSI_PASSTHROUGH_REGEX.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = ANSI_PASSTHROUGH_REGEX.exec(code)) !== null) {
+    if (match.index > lastIndex) {
+      result += tokenizeSegment(code.slice(lastIndex, match.index));
+    }
+    result += match[0];
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < code.length) {
+    result += tokenizeSegment(code.slice(lastIndex));
+  }
+  return result;
 }
