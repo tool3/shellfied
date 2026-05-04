@@ -5,8 +5,12 @@ import {
   BACKGROUND_PADDING_MIN,
   BACKGROUND_PADDING_MAX,
   GRADIENT_PRESETS,
+  PATTERN_SIZE_MIN,
+  PATTERN_SIZE_MAX,
+  PATTERN_THICKNESS_MIN,
+  PATTERN_THICKNESS_MAX,
 } from '@/constants/defaults';
-import type { BackgroundType, BackgroundAnimation, GradientDirection, ImageAspectRatio } from '@/types';
+import type { BackgroundType, BackgroundAnimation, GradientDirection, ImageAspectRatio, PatternType, PatternBaseType } from '@/types';
 import styles from './SettingsPanel.module.scss';
 
 // Direction mapping: base direction -> reversed direction
@@ -90,6 +94,7 @@ export const BackgroundSection = memo(function BackgroundSection({ bare = false 
               { value: 'none', label: 'None' },
               { value: 'solid', label: 'Solid Color' },
               { value: 'gradient', label: 'Gradient' },
+              { value: 'pattern', label: 'Pattern' },
               { value: 'image', label: 'Image' },
             ]}
             value={background.type}
@@ -97,9 +102,10 @@ export const BackgroundSection = memo(function BackgroundSection({ bare = false 
             fullWidth
           />
 
-          {background.type === 'solid' && (
+          {(background.type === 'solid' ||
+            (background.type === 'pattern' && background.patternBaseType === 'solid')) && (
             <ColorPicker
-              label="Color"
+              label={background.type === 'pattern' ? 'Base Color' : 'Color'}
               value={background.color}
               onChange={(color) => setBackground({ color })}
               placeholder="#6366f1"
@@ -107,7 +113,8 @@ export const BackgroundSection = memo(function BackgroundSection({ bare = false 
             />
           )}
 
-          {background.type === 'gradient' && (
+          {(background.type === 'gradient' ||
+            (background.type === 'pattern' && background.patternBaseType === 'gradient')) && (
             <>
               <div className={styles.gradientPresets}>
                 {GRADIENT_PRESETS.map((preset) => (
@@ -129,14 +136,14 @@ export const BackgroundSection = memo(function BackgroundSection({ bare = false 
                 ))}
               </div>
               <ColorPicker
-                label="From"
+                label={background.type === 'pattern' ? 'Base From' : 'From'}
                 value={background.gradientFrom}
                 onChange={(gradientFrom) => setBackground({ gradientFrom })}
                 placeholder="#6366f1"
                 fullWidth
               />
               <ColorPicker
-                label="To"
+                label={background.type === 'pattern' ? 'Base To' : 'To'}
                 value={background.gradientTo}
                 onChange={(gradientTo) => setBackground({ gradientTo })}
                 placeholder="#ec4899"
@@ -169,6 +176,77 @@ export const BackgroundSection = memo(function BackgroundSection({ bare = false 
                   })}
                 </div>
               </div>
+            </>
+          )}
+
+          {background.type === 'pattern' && (
+            <>
+              <Select
+                label="Pattern"
+                options={[
+                  { value: 'dotted', label: 'Dotted' },
+                  { value: 'grid', label: 'Grid' },
+                  { value: 'noise', label: 'Noise' },
+                  { value: 'topographic', label: 'Topographic' },
+                ]}
+                value={background.patternType}
+                onChange={(v) => setBackground({ patternType: v as PatternType })}
+                fullWidth
+              />
+              <Select
+                label="Base"
+                options={[
+                  { value: 'solid', label: 'Solid Color' },
+                  { value: 'gradient', label: 'Gradient' },
+                ]}
+                value={background.patternBaseType}
+                onChange={(v) => setBackground({ patternBaseType: v as PatternBaseType })}
+                fullWidth
+              />
+              <ColorPicker
+                label="Pattern Color"
+                value={background.patternColor}
+                onChange={(patternColor) => setBackground({ patternColor })}
+                placeholder="rgba(255,255,255,0.35)"
+                fullWidth
+              />
+              <Slider
+                label={
+                  background.patternType === 'grid'
+                    ? 'Cell Size'
+                    : background.patternType === 'topographic'
+                      ? 'Spacing'
+                      : background.patternType === 'noise'
+                        ? 'Grain'
+                        : 'Spacing'
+                }
+                value={background.patternSize}
+                onChange={(patternSize) => setBackground({ patternSize })}
+                min={PATTERN_SIZE_MIN}
+                max={PATTERN_SIZE_MAX}
+                step={1}
+                formatValue={(v) => `${v}px`}
+              />
+              {background.patternType !== 'noise' && (
+                <Slider
+                  label={background.patternType === 'dotted' ? 'Dot Size' : 'Thickness'}
+                  value={background.patternThickness}
+                  onChange={(patternThickness) => setBackground({ patternThickness })}
+                  min={PATTERN_THICKNESS_MIN}
+                  max={PATTERN_THICKNESS_MAX}
+                  step={0.5}
+                  formatValue={(v) => `${v}px`}
+                />
+              )}
+              <Slider
+                label="Opacity"
+                value={background.patternOpacity}
+                onChange={(patternOpacity) => setBackground({ patternOpacity })}
+                min={0}
+                max={1}
+                step={0.05}
+                formatValue={(v) => `${Math.round(v * 100)}%`}
+              />
             </>
           )}
 

@@ -14,6 +14,8 @@ import type {
   BackgroundAnimation,
   BackgroundOverlay,
   CompareLabelAlignment,
+  PatternType,
+  PatternBaseType,
 } from '@/types';
 import {
   DEFAULT_SETTINGS,
@@ -105,6 +107,13 @@ export const URL_PARAM_MAP = {
   bgGradientDirection: 'bgd',
   bgImageAspectRatio: 'bga',
   bgPadding: 'bgp',
+  // Pattern background
+  patternType: 'pty',
+  patternBaseType: 'pbt',
+  patternColor: 'pc',
+  patternSize: 'psz',
+  patternThickness: 'pth',
+  patternOpacity: 'pop',
 } as const;
 
 // Reverse mapping for decoding
@@ -401,6 +410,12 @@ export interface UrlState {
     animation?: BackgroundAnimation | null;
     animationColor?: string;
     overlay?: BackgroundOverlay | null;
+    patternType?: PatternType;
+    patternBaseType?: PatternBaseType;
+    patternColor?: string;
+    patternSize?: number;
+    patternThickness?: number;
+    patternOpacity?: number;
   };
 
   // Shellfie preset (when active, shellfie handles theme/template/overlays/background natively)
@@ -557,6 +572,19 @@ function buildShareUrlParams(
       addIfChanged('bgGradientTo', state.background.gradientTo, DEFAULT_BACKGROUND.gradientTo);
       addIfChanged('bgGradientDirection', state.background.gradientDirection, DEFAULT_BACKGROUND.gradientDirection);
     }
+    if (state.background.type === 'pattern') {
+      // Always include the base color/gradient since the pattern layers over it.
+      addIfChanged('bgColor', state.background.color, DEFAULT_BACKGROUND.color);
+      addIfChanged('bgGradientFrom', state.background.gradientFrom, DEFAULT_BACKGROUND.gradientFrom);
+      addIfChanged('bgGradientTo', state.background.gradientTo, DEFAULT_BACKGROUND.gradientTo);
+      addIfChanged('bgGradientDirection', state.background.gradientDirection, DEFAULT_BACKGROUND.gradientDirection);
+      addIfChanged('patternType', state.background.patternType, DEFAULT_BACKGROUND.patternType);
+      addIfChanged('patternBaseType', state.background.patternBaseType, DEFAULT_BACKGROUND.patternBaseType);
+      addIfChanged('patternColor', state.background.patternColor, DEFAULT_BACKGROUND.patternColor);
+      addIfChanged('patternSize', state.background.patternSize, DEFAULT_BACKGROUND.patternSize);
+      addIfChanged('patternThickness', state.background.patternThickness, DEFAULT_BACKGROUND.patternThickness);
+      addIfChanged('patternOpacity', state.background.patternOpacity, DEFAULT_BACKGROUND.patternOpacity);
+    }
     addIfChanged('bgImageAspectRatio', state.background.imageAspectRatio, DEFAULT_BACKGROUND.imageAspectRatio);
     addIfChanged('bgPadding', state.background.padding, DEFAULT_BACKGROUND.padding);
   }
@@ -670,6 +698,12 @@ interface CompactState {
   ban?: string; // bgAnimation
   bac?: string; // bgAnimationColor
   bov?: string; // bgOverlay
+  pty?: string; // patternType
+  pbt?: string; // patternBaseType
+  pc?: string;  // patternColor
+  psz?: number; // patternSize
+  pth?: number; // patternThickness
+  pop?: number; // patternOpacity
   rbe?: boolean; // brandEnabled
   rbt?: string; // brandText
   rbn?: string; // brandName
@@ -820,6 +854,18 @@ function buildCompactState(state: UrlState, mode: ShareMode, includeContent: boo
       add('bgt', state.background.gradientTo, DEFAULT_BACKGROUND.gradientTo);
       add('bgd', state.background.gradientDirection, DEFAULT_BACKGROUND.gradientDirection);
     }
+    if (state.background.type === 'pattern') {
+      add('bgc', state.background.color, DEFAULT_BACKGROUND.color);
+      add('bgf', state.background.gradientFrom, DEFAULT_BACKGROUND.gradientFrom);
+      add('bgt', state.background.gradientTo, DEFAULT_BACKGROUND.gradientTo);
+      add('bgd', state.background.gradientDirection, DEFAULT_BACKGROUND.gradientDirection);
+      add('pty', state.background.patternType, DEFAULT_BACKGROUND.patternType);
+      add('pbt', state.background.patternBaseType, DEFAULT_BACKGROUND.patternBaseType);
+      add('pc', state.background.patternColor, DEFAULT_BACKGROUND.patternColor);
+      add('psz', state.background.patternSize, DEFAULT_BACKGROUND.patternSize);
+      add('pth', state.background.patternThickness, DEFAULT_BACKGROUND.patternThickness);
+      add('pop', state.background.patternOpacity, DEFAULT_BACKGROUND.patternOpacity);
+    }
     add('bgp', state.background.padding, DEFAULT_BACKGROUND.padding);
     add('bga', state.background.imageAspectRatio, DEFAULT_BACKGROUND.imageAspectRatio);
     if (state.background.animation) {
@@ -969,11 +1015,19 @@ function parseCompactState(compact: CompactState): UrlState {
     };
     // Only include properties that are defined to avoid overwriting with undefined
     if (compact.bgc !== undefined) state.background.color = compact.bgc;
-    if (compact.bt === 'gradient') {
-      // For gradients, always include colors (use defaults if not specified)
+    if (compact.bt === 'gradient' || compact.bt === 'pattern') {
+      // Always include base gradient fields so the base layer round-trips.
       state.background.gradientFrom = compact.bgf ?? DEFAULT_BACKGROUND.gradientFrom;
       state.background.gradientTo = compact.bgt ?? DEFAULT_BACKGROUND.gradientTo;
       state.background.gradientDirection = (compact.bgd ?? DEFAULT_BACKGROUND.gradientDirection) as GradientDirection;
+    }
+    if (compact.bt === 'pattern') {
+      state.background.patternType = (compact.pty ?? DEFAULT_BACKGROUND.patternType) as PatternType;
+      state.background.patternBaseType = (compact.pbt ?? DEFAULT_BACKGROUND.patternBaseType) as PatternBaseType;
+      state.background.patternColor = compact.pc ?? DEFAULT_BACKGROUND.patternColor;
+      state.background.patternSize = compact.psz ?? DEFAULT_BACKGROUND.patternSize;
+      state.background.patternThickness = compact.pth ?? DEFAULT_BACKGROUND.patternThickness;
+      state.background.patternOpacity = compact.pop ?? DEFAULT_BACKGROUND.patternOpacity;
     }
     if (compact.bgp !== undefined) state.background.padding = compact.bgp;
     if (compact.bga !== undefined) state.background.imageAspectRatio = compact.bga as ImageAspectRatio;
@@ -1329,7 +1383,7 @@ export function parseUrlParams(): UrlState | null {
 
   // Background
   const bgType = getParam('bgType');
-  if (bgType && ['none', 'solid', 'gradient', 'image'].includes(bgType)) {
+  if (bgType && ['none', 'solid', 'gradient', 'image', 'pattern'].includes(bgType)) {
     state.background = {
       type: bgType as BackgroundType,
     };
@@ -1365,6 +1419,35 @@ export function parseUrlParams(): UrlState | null {
       if (!isNaN(num)) {
         state.background.padding = num;
       }
+    }
+
+    // Pattern fields
+    const patternType = getParam('patternType');
+    if (patternType && ['dotted', 'grid', 'noise', 'topographic'].includes(patternType)) {
+      state.background.patternType = patternType as PatternType;
+    }
+    const patternBaseType = getParam('patternBaseType');
+    if (patternBaseType && ['solid', 'gradient'].includes(patternBaseType)) {
+      state.background.patternBaseType = patternBaseType as PatternBaseType;
+    }
+    const patternColor = getParam('patternColor');
+    if (patternColor) {
+      state.background.patternColor = patternColor;
+    }
+    const patternSize = getParam('patternSize');
+    if (patternSize) {
+      const num = Number(patternSize);
+      if (!isNaN(num)) state.background.patternSize = num;
+    }
+    const patternThickness = getParam('patternThickness');
+    if (patternThickness) {
+      const num = Number(patternThickness);
+      if (!isNaN(num)) state.background.patternThickness = num;
+    }
+    const patternOpacity = getParam('patternOpacity');
+    if (patternOpacity) {
+      const num = Number(patternOpacity);
+      if (!isNaN(num)) state.background.patternOpacity = num;
     }
   }
 

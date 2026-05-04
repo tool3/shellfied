@@ -13,7 +13,7 @@ import LZString from 'lz-string';
 import { resolveShortUrl } from '@/services/shortenerService';
 import { generateSvg, generateCompareSvg as generateCompareSvgFromLib, wrapSvgWithBackground, fetchServerFont, buildShellfieBackgroundColor, buildRadialOverlay } from '@/lib/generateSvg';
 import { DEFAULT_BACKGROUND, DEFAULT_SETTINGS, DEFAULT_HEADER, DEFAULT_FOOTER, DEFAULT_WATERMARK } from '@/constants/defaults';
-import type { TemplateType, ControlsPosition, PaddingTuple, BackgroundType, BackgroundConfig, GradientDirection, ImageAspectRatio, CompareLabelAlignment } from '@/types';
+import type { TemplateType, ControlsPosition, PaddingTuple, BackgroundType, BackgroundConfig, GradientDirection, ImageAspectRatio, CompareLabelAlignment, PatternType, PatternBaseType } from '@/types';
 
 // Compact state interface (matching urlParams.ts and /api/image)
 interface CompactState {
@@ -77,6 +77,12 @@ interface CompactState {
   bga?: string; // bgImageAspectRatio
   ban?: string; // bgAnimation
   bov?: string; // bgOverlay
+  pty?: string; // patternType
+  pbt?: string; // patternBaseType
+  pc?: string;  // patternColor
+  psz?: number; // patternSize
+  pth?: number; // patternThickness
+  pop?: number; // patternOpacity
   sfp?: string; // shellfiePreset
   ln?: boolean; // lineNumbers
   bac?: string; // bgAnimationColor
@@ -151,6 +157,12 @@ function parseCompressedState(compact: CompactState) {
       animation: (compact.ban as BackgroundConfig['animation']) || null,
       overlay: (compact.bov as BackgroundConfig['overlay']) || null,
       animationColor: compact.bac || 'rgba(255,255,255,0.15)',
+      patternType: (compact.pty || DEFAULT_BACKGROUND.patternType) as PatternType,
+      patternBaseType: (compact.pbt || DEFAULT_BACKGROUND.patternBaseType) as PatternBaseType,
+      patternColor: compact.pc || DEFAULT_BACKGROUND.patternColor,
+      patternSize: compact.psz ?? DEFAULT_BACKGROUND.patternSize,
+      patternThickness: compact.pth ?? DEFAULT_BACKGROUND.patternThickness,
+      patternOpacity: compact.pop ?? DEFAULT_BACKGROUND.patternOpacity,
     },
     shellfiePreset: compact.sfp || undefined,
     lineNumbers: compact.ln ?? false,

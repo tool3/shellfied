@@ -31,7 +31,18 @@ export const DEFAULT_BACKGROUND: BackgroundConfig = {
   animation: null,
   animationColor: 'rgba(255,255,255,0.15)',
   overlay: null,
+  patternType: 'dotted',
+  patternBaseType: 'solid',
+  patternColor: 'rgba(255,255,255,0.35)',
+  patternSize: 24,
+  patternThickness: 2,
+  patternOpacity: 1,
 };
+
+export const PATTERN_SIZE_MIN = 4;
+export const PATTERN_SIZE_MAX = 96;
+export const PATTERN_THICKNESS_MIN = 0.5;
+export const PATTERN_THICKNESS_MAX = 8;
 
 // Default monospace font stack for code rendering in SVG
 const DEFAULT_FONT_STACK = "'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace";

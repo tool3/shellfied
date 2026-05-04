@@ -24,6 +24,7 @@ import {
 import { highlightWithAnsi, normalizeAnsiEscapes, containsAnsi } from '@/utils/syntaxHighlight';
 import { detectLanguage } from '@/constants/languages';
 import { DEFAULT_SETTINGS } from '@/constants/defaults';
+import { buildPatternOverlay } from '@/lib/backgroundPatterns';
 
 const DEFAULT_FONT_SIZE = DEFAULT_SETTINGS.fontSize;
 const DEFAULT_LINE_HEIGHT = DEFAULT_SETTINGS.lineHeight;
@@ -58,37 +59,65 @@ interface ShellfieBackgroundResult {
   radialOverlay?: (w: number, h: number) => string;
 }
 
+function buildLinearGradientColor(bg: AppStore['background']): string {
+  const mapping = GRADIENT_DIR_MAP[bg.gradientDirection] || 'diagonal';
+  const needsSwap = mapping.includes(':swap');
+  const dir = mapping.replace(':swap', '');
+  const from = needsSwap ? bg.gradientTo : bg.gradientFrom;
+  const to = needsSwap ? bg.gradientFrom : bg.gradientTo;
+  return `gradient(${from}, ${to}:${dir})`;
+}
+
+function buildRadialOverlayFn(bg: AppStore['background']): (w: number, h: number) => string {
+  const isReverse = bg.gradientDirection === 'radial-reverse';
+  const innerColor = isReverse ? bg.gradientTo : bg.gradientFrom;
+  const outerColor = isReverse ? bg.gradientFrom : bg.gradientTo;
+  return (w, h) => {
+    const r = Math.max(w, h);
+    const cx = w / 2;
+    const cy = h / 2;
+    return `<defs><radialGradient id="shellfied-radial" gradientUnits="userSpaceOnUse" cx="${cx}" cy="${cy}" r="${r / 2}" fx="${cx}" fy="${cy}"><stop offset="0%" stop-color="${innerColor}"/><stop offset="100%" stop-color="${outerColor}"/></radialGradient></defs><rect width="${w}" height="${h}" fill="url(#shellfied-radial)"/>`;
+  };
+}
+
 function buildShellfieBackground(bg: AppStore['background']): ShellfieBackgroundResult | undefined {
   if (bg.type === 'none') return undefined;
 
   if (bg.type === 'gradient') {
     const isRadial = bg.gradientDirection === 'radial' || bg.gradientDirection === 'radial-reverse';
-
     if (isRadial) {
-      // Shellfie doesn't support radial gradients natively.
-      // Pass the outer color as solid background and inject radial via overlay.
       const isReverse = bg.gradientDirection === 'radial-reverse';
-      const innerColor = isReverse ? bg.gradientTo : bg.gradientFrom;
       const outerColor = isReverse ? bg.gradientFrom : bg.gradientTo;
+      return { color: outerColor, padding: bg.padding, radialOverlay: buildRadialOverlayFn(bg) };
+    }
+    return { color: buildLinearGradientColor(bg), padding: bg.padding };
+  }
 
-      return {
-        color: outerColor,
-        padding: bg.padding,
-        radialOverlay: (w: number, h: number) => {
-          const r = Math.max(w, h);
-          const cx = w / 2;
-          const cy = h / 2;
-          return `<defs><radialGradient id="shellfied-radial" gradientUnits="userSpaceOnUse" cx="${cx}" cy="${cy}" r="${r / 2}" fx="${cx}" fy="${cy}"><stop offset="0%" stop-color="${innerColor}"/><stop offset="100%" stop-color="${outerColor}"/></radialGradient></defs><rect width="${w}" height="${h}" fill="url(#shellfied-radial)"/>`;
-        },
-      };
+  if (bg.type === 'pattern') {
+    // Render the user's chosen base (solid or gradient) underneath, then
+    // composite the pattern as an overlay rect on top.
+    let color: string;
+    let radialFn: ((w: number, h: number) => string) | undefined;
+    if (bg.patternBaseType === 'gradient') {
+      const isRadial = bg.gradientDirection === 'radial' || bg.gradientDirection === 'radial-reverse';
+      if (isRadial) {
+        const isReverse = bg.gradientDirection === 'radial-reverse';
+        color = isReverse ? bg.gradientFrom : bg.gradientTo;
+        radialFn = buildRadialOverlayFn(bg);
+      } else {
+        color = buildLinearGradientColor(bg);
+      }
+    } else {
+      color = bg.color;
     }
 
-    const mapping = GRADIENT_DIR_MAP[bg.gradientDirection] || 'diagonal';
-    const needsSwap = mapping.includes(':swap');
-    const dir = mapping.replace(':swap', '');
-    const from = needsSwap ? bg.gradientTo : bg.gradientFrom;
-    const to = needsSwap ? bg.gradientFrom : bg.gradientTo;
-    return { color: `gradient(${from}, ${to}:${dir})`, padding: bg.padding };
+    const overlay = (w: number, h: number) => {
+      const radial = radialFn ? radialFn(w, h) : '';
+      const pattern = buildPatternOverlay(bg, w, h, 'sfp-preview');
+      return radial + pattern;
+    };
+
+    return { color, padding: bg.padding, radialOverlay: overlay };
   }
 
   return { color: bg.color, padding: bg.padding };

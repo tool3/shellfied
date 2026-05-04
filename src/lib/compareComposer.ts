@@ -7,6 +7,7 @@ import shellfie from 'shellfie';
 import type { AppStore } from '@/store/types';
 import { buildShellfieArgsCompare } from './shellfieOptionsBuilder';
 import { getSvgWidth, getSvgDimensions, extractSvgContent } from './svgHelpers';
+import { buildPatternOverlay } from './backgroundPatterns';
 
 
 // Try to import shellfie's animation generator
@@ -181,9 +182,16 @@ function buildBackgroundSvg(
   let background = '';
   let defs = '';
 
-  if (bg.type === 'solid') {
+  // For 'pattern', render the user's selected base (solid/gradient) and then
+  // overlay the pattern markup. Treat the base as if the type were that base.
+  const baseType: 'solid' | 'gradient' | 'image' | 'none' =
+    bg.type === 'pattern'
+      ? bg.patternBaseType
+      : (bg.type as 'solid' | 'gradient' | 'image' | 'none');
+
+  if (baseType === 'solid') {
     background = `<rect width="${totalWidth}" height="${totalHeight}" fill="${bg.color}" rx="12"/>`;
-  } else if (bg.type === 'gradient') {
+  } else if (baseType === 'gradient') {
     const isRadial = bg.gradientDirection === 'radial' || bg.gradientDirection === 'radial-reverse';
     if (isRadial) {
       const isReverse = bg.gradientDirection === 'radial-reverse';
@@ -195,7 +203,6 @@ function buildBackgroundSvg(
       defs = `<radialGradient id="cmp-bg-grad" gradientUnits="userSpaceOnUse" cx="${cx}" cy="${cy}" r="${r / 2}" fx="${cx}" fy="${cy}"><stop offset="0%" stop-color="${innerColor}"/><stop offset="100%" stop-color="${outerColor}"/></radialGradient>`;
       background = `<rect width="${totalWidth}" height="${totalHeight}" fill="url(#cmp-bg-grad)" rx="12"/>`;
     } else {
-      // Linear gradient
       const GRADIENT_DIR_MAP: Record<string, { x1: string; y1: string; x2: string; y2: string }> = {
         'to-right': { x1: '0%', y1: '0%', x2: '100%', y2: '0%' },
         'to-left': { x1: '100%', y1: '0%', x2: '0%', y2: '0%' },
@@ -210,6 +217,10 @@ function buildBackgroundSvg(
       defs = `<linearGradient id="cmp-bg-grad" x1="${dir.x1}" y1="${dir.y1}" x2="${dir.x2}" y2="${dir.y2}"><stop offset="0%" stop-color="${bg.gradientFrom}"/><stop offset="100%" stop-color="${bg.gradientTo}"/></linearGradient>`;
       background = `<rect width="${totalWidth}" height="${totalHeight}" fill="url(#cmp-bg-grad)" rx="12"/>`;
     }
+  }
+
+  if (bg.type === 'pattern') {
+    background += buildPatternOverlay(bg, totalWidth, totalHeight, 'cmp-pat');
   }
 
   // Animation — use shellfie's animation generator if available

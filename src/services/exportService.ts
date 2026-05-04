@@ -1,4 +1,5 @@
 import type { ExportFormat, BackgroundConfig, CompareExportOptions, ImageAspectRatio } from '@/types';
+import { buildPatternOverlay } from '@/lib/backgroundPatterns';
 
 // Cache for fetched font data - keyed by "fontFamily-weight"
 const fontCache: Map<string, { data: string; family: string; format: string }> = new Map();
@@ -1442,42 +1443,50 @@ function generateSvgBackground(
     'to-top-right': { x1: '0%', y1: '100%', x2: '100%', y2: '0%' },
   };
 
-  switch (background.type) {
-    case 'solid':
+  const renderBase = (baseType: 'solid' | 'gradient'): string => {
+    if (baseType === 'solid') {
       return `<rect width="${totalWidth}" height="${totalHeight}" rx="${borderRadius}" fill="${background.color}"/>`;
+    }
+    const isRadialReverse = background.gradientDirection === 'radial-reverse';
+    const isRadial = background.gradientDirection === 'radial' || isRadialReverse;
+    const fromColor = isRadialReverse ? background.gradientTo : background.gradientFrom;
+    const toColor = isRadialReverse ? background.gradientFrom : background.gradientTo;
 
-    case 'gradient': {
-      const isRadialReverse = background.gradientDirection === 'radial-reverse';
-      const isRadial = background.gradientDirection === 'radial' || isRadialReverse;
-      const fromColor = isRadialReverse ? background.gradientTo : background.gradientFrom;
-      const toColor = isRadialReverse ? background.gradientFrom : background.gradientTo;
-
-      if (isRadial) {
-        // Calculate radius to match CSS radial-gradient(circle, ...) behavior
-        // CSS circle gradient extends to the farthest corner, but for simple 50% 50% position
-        // it creates a circle that touches the nearest edge and extends beyond
-        // We use a large enough radius to cover the entire rectangle
-        const radius = Math.max(totalWidth, totalHeight);
-        const cx = totalWidth / 2;
-        const cy = totalHeight / 2;
-        return `
-          <defs>
-            <radialGradient id="bgGradient" gradientUnits="userSpaceOnUse" cx="${cx}" cy="${cy}" r="${radius / 2}" fx="${cx}" fy="${cy}">
-              <stop offset="0%" stop-color="${fromColor}"/>
-              <stop offset="100%" stop-color="${toColor}"/>
-            </radialGradient>
-          </defs>
-          <rect width="${totalWidth}" height="${totalHeight}" rx="${borderRadius}" fill="url(#bgGradient)"/>`;
-      }
-      const dir = GRADIENT_DIRECTIONS[background.gradientDirection] || GRADIENT_DIRECTIONS['to-right'];
+    if (isRadial) {
+      const radius = Math.max(totalWidth, totalHeight);
+      const cx = totalWidth / 2;
+      const cy = totalHeight / 2;
       return `
         <defs>
-          <linearGradient id="bgGradient" x1="${dir.x1}" y1="${dir.y1}" x2="${dir.x2}" y2="${dir.y2}">
-            <stop offset="0%" stop-color="${background.gradientFrom}"/>
-            <stop offset="100%" stop-color="${background.gradientTo}"/>
-          </linearGradient>
+          <radialGradient id="bgGradient" gradientUnits="userSpaceOnUse" cx="${cx}" cy="${cy}" r="${radius / 2}" fx="${cx}" fy="${cy}">
+            <stop offset="0%" stop-color="${fromColor}"/>
+            <stop offset="100%" stop-color="${toColor}"/>
+          </radialGradient>
         </defs>
         <rect width="${totalWidth}" height="${totalHeight}" rx="${borderRadius}" fill="url(#bgGradient)"/>`;
+    }
+    const dir = GRADIENT_DIRECTIONS[background.gradientDirection] || GRADIENT_DIRECTIONS['to-right'];
+    return `
+      <defs>
+        <linearGradient id="bgGradient" x1="${dir.x1}" y1="${dir.y1}" x2="${dir.x2}" y2="${dir.y2}">
+          <stop offset="0%" stop-color="${background.gradientFrom}"/>
+          <stop offset="100%" stop-color="${background.gradientTo}"/>
+        </linearGradient>
+      </defs>
+      <rect width="${totalWidth}" height="${totalHeight}" rx="${borderRadius}" fill="url(#bgGradient)"/>`;
+  };
+
+  switch (background.type) {
+    case 'solid':
+      return renderBase('solid');
+
+    case 'gradient':
+      return renderBase('gradient');
+
+    case 'pattern': {
+      const base = renderBase(background.patternBaseType === 'gradient' ? 'gradient' : 'solid');
+      const pattern = buildPatternOverlay(background, totalWidth, totalHeight, 'exp-pat');
+      return base + pattern;
     }
 
     case 'image':

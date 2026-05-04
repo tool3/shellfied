@@ -29,7 +29,7 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { generateSvg, generateCompareSvg, wrapSvgWithBackground, fetchServerFont, buildShellfieBackgroundColor, buildRadialOverlay } from '@/lib/generateSvg';
 import { DEFAULT_BACKGROUND, DEFAULT_SETTINGS, DEFAULT_HEADER, DEFAULT_FOOTER, DEFAULT_WATERMARK, DEFAULT_COMPARE_LABEL_CONFIG } from '@/constants/defaults';
-import type { TemplateType, ControlsPosition, PaddingTuple, BackgroundType, BackgroundConfig, GradientDirection, ImageAspectRatio, CompareLabelAlignment } from '@/types';
+import type { TemplateType, ControlsPosition, PaddingTuple, BackgroundType, BackgroundConfig, GradientDirection, ImageAspectRatio, CompareLabelAlignment, PatternType, PatternBaseType } from '@/types';
 
 // Track WASM initialization
 let wasmInitialized = false;
@@ -212,6 +212,12 @@ interface CompactState {
   bga?: string; // bgImageAspectRatio
   ban?: string; // bgAnimation
   bov?: string; // bgOverlay
+  pty?: string; // patternType
+  pbt?: string; // patternBaseType
+  pc?: string;  // patternColor
+  psz?: number; // patternSize
+  pth?: number; // patternThickness
+  pop?: number; // patternOpacity
   sfp?: string; // shellfiePreset
   ln?: boolean; // lineNumbers
   bac?: string; // bgAnimationColor
@@ -268,6 +274,12 @@ const URL_PARAM_MAP = {
   bgImageAspectRatio: 'bga',
   bgAnimation: 'ban',
   bgOverlay: 'bov',
+  patternType: 'pty',
+  patternBaseType: 'pbt',
+  patternColor: 'pc',
+  patternSize: 'psz',
+  patternThickness: 'pth',
+  patternOpacity: 'pop',
 } as const;
 
 // URL-safe Base64 decoding
@@ -371,6 +383,12 @@ function parseCompressedState(compact: CompactState) {
       animation: (compact.ban as BackgroundConfig['animation']) || null,
       overlay: (compact.bov as BackgroundConfig['overlay']) || null,
       animationColor: compact.bac || 'rgba(255,255,255,0.15)',
+      patternType: (compact.pty || DEFAULT_BACKGROUND.patternType) as PatternType,
+      patternBaseType: (compact.pbt || DEFAULT_BACKGROUND.patternBaseType) as PatternBaseType,
+      patternColor: compact.pc || DEFAULT_BACKGROUND.patternColor,
+      patternSize: compact.psz ?? DEFAULT_BACKGROUND.patternSize,
+      patternThickness: compact.pth ?? DEFAULT_BACKGROUND.patternThickness,
+      patternOpacity: compact.pop ?? DEFAULT_BACKGROUND.patternOpacity,
     },
     shellfiePreset: compact.sfp || undefined,
     lineNumbers: compact.ln ?? false,
@@ -599,7 +617,14 @@ export async function GET(request: NextRequest) {
   const bgImageAspectRatioParam = getParam(searchParams, 'bgImageAspectRatio');
   const bgImageAspectRatio: ImageAspectRatio = bgImageAspectRatioParam as ImageAspectRatio || DEFAULT_BACKGROUND.imageAspectRatio;
 
-  const background = {
+  const patternTypeParam = getParam(searchParams, 'patternType');
+  const patternBaseTypeParam = getParam(searchParams, 'patternBaseType');
+  const patternColorParam = getParam(searchParams, 'patternColor');
+  const patternSizeParam = getParam(searchParams, 'patternSize');
+  const patternThicknessParam = getParam(searchParams, 'patternThickness');
+  const patternOpacityParam = getParam(searchParams, 'patternOpacity');
+
+  const background: BackgroundConfig = {
     type: bgType,
     color: bgColor,
     gradientFrom: bgGradientFrom,
@@ -611,6 +636,12 @@ export async function GET(request: NextRequest) {
     animation: (getParam(searchParams, 'bgAnimation') as BackgroundConfig['animation']) || null,
     overlay: (getParam(searchParams, 'bgOverlay') as BackgroundConfig['overlay']) || null,
     animationColor: 'rgba(255,255,255,0.15)',
+    patternType: (patternTypeParam || DEFAULT_BACKGROUND.patternType) as PatternType,
+    patternBaseType: (patternBaseTypeParam || DEFAULT_BACKGROUND.patternBaseType) as PatternBaseType,
+    patternColor: patternColorParam || DEFAULT_BACKGROUND.patternColor,
+    patternSize: patternSizeParam ? Number(patternSizeParam) : DEFAULT_BACKGROUND.patternSize,
+    patternThickness: patternThicknessParam ? Number(patternThicknessParam) : DEFAULT_BACKGROUND.patternThickness,
+    patternOpacity: patternOpacityParam ? Number(patternOpacityParam) : DEFAULT_BACKGROUND.patternOpacity,
   };
 
   try {

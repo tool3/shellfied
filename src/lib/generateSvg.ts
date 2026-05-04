@@ -272,6 +272,7 @@ const materialDark = createTheme({
 import { themes } from 'shellfie';
 import { presetThemes } from '@/constants/presetThemes';
 import { applyAspectRatio } from '@/lib/aspectRatio';
+import { buildPatternOverlay } from '@/lib/backgroundPatterns';
 import type { BackgroundConfig as AppBackgroundConfig } from '@/types';
 
 const GRADIENT_DIR_MAP: Record<string, string> = {
@@ -285,43 +286,76 @@ const GRADIENT_DIR_MAP: Record<string, string> = {
   'to-top-right': 'diagonal:reverse:swap',
 };
 
-/** Convert shellfied BackgroundConfig to a shellfie-compatible color string.
- *  For radial gradients, returns the outer color (solid) since shellfie doesn't support radial natively.
- */
-export function buildShellfieBackgroundColor(bg: AppBackgroundConfig): string | undefined {
-  if (bg.type === 'none') return undefined;
-  if (bg.type === 'gradient') {
-    const isRadial = bg.gradientDirection === 'radial' || bg.gradientDirection === 'radial-reverse';
-    if (isRadial) {
-      // Return outer color as solid; radial overlay handled separately
-      return bg.gradientDirection === 'radial-reverse' ? bg.gradientFrom : bg.gradientTo;
-    }
-    const mapping = GRADIENT_DIR_MAP[bg.gradientDirection] || 'diagonal';
-    const needsSwap = mapping.includes(':swap');
-    const dir = mapping.replace(':swap', '');
-    const from = needsSwap ? bg.gradientTo : bg.gradientFrom;
-    const to = needsSwap ? bg.gradientFrom : bg.gradientTo;
-    return `gradient(${from}, ${to}:${dir})`;
-  }
-  return bg.color;
+function _linearGradientColor(bg: AppBackgroundConfig): string {
+  const mapping = GRADIENT_DIR_MAP[bg.gradientDirection] || 'diagonal';
+  const needsSwap = mapping.includes(':swap');
+  const dir = mapping.replace(':swap', '');
+  const from = needsSwap ? bg.gradientTo : bg.gradientFrom;
+  const to = needsSwap ? bg.gradientFrom : bg.gradientTo;
+  return `gradient(${from}, ${to}:${dir})`;
 }
 
-/** Build a radial gradient overlay function for shellfie, or undefined if not radial */
-export function buildRadialOverlay(bg: AppBackgroundConfig): ((w: number, h: number) => string) | undefined {
-  if (bg.type !== 'gradient') return undefined;
-  const isRadial = bg.gradientDirection === 'radial' || bg.gradientDirection === 'radial-reverse';
-  if (!isRadial) return undefined;
-
+function _radialOverlayFn(bg: AppBackgroundConfig): (w: number, h: number) => string {
   const isReverse = bg.gradientDirection === 'radial-reverse';
   const innerColor = isReverse ? bg.gradientTo : bg.gradientFrom;
   const outerColor = isReverse ? bg.gradientFrom : bg.gradientTo;
-
-  return (w: number, h: number) => {
+  return (w, h) => {
     const r = Math.max(w, h);
     const cx = w / 2;
     const cy = h / 2;
     return `<defs><radialGradient id="shellfied-radial" gradientUnits="userSpaceOnUse" cx="${cx}" cy="${cy}" r="${r / 2}" fx="${cx}" fy="${cy}"><stop offset="0%" stop-color="${innerColor}"/><stop offset="100%" stop-color="${outerColor}"/></radialGradient></defs><rect width="${w}" height="${h}" fill="url(#shellfied-radial)"/>`;
   };
+}
+
+/** Convert shellfied BackgroundConfig to a shellfie-compatible color string.
+ *  For radial gradients, returns the outer color (solid) since shellfie doesn't support radial natively.
+ *  For pattern backgrounds, returns the base color/gradient (the pattern itself is rendered via the overlay).
+ */
+export function buildShellfieBackgroundColor(bg: AppBackgroundConfig): string | undefined {
+  if (bg.type === 'none') return undefined;
+
+  if (bg.type === 'pattern') {
+    if (bg.patternBaseType === 'gradient') {
+      const isRadial = bg.gradientDirection === 'radial' || bg.gradientDirection === 'radial-reverse';
+      if (isRadial) {
+        return bg.gradientDirection === 'radial-reverse' ? bg.gradientFrom : bg.gradientTo;
+      }
+      return _linearGradientColor(bg);
+    }
+    return bg.color;
+  }
+
+  if (bg.type === 'gradient') {
+    const isRadial = bg.gradientDirection === 'radial' || bg.gradientDirection === 'radial-reverse';
+    if (isRadial) {
+      return bg.gradientDirection === 'radial-reverse' ? bg.gradientFrom : bg.gradientTo;
+    }
+    return _linearGradientColor(bg);
+  }
+  return bg.color;
+}
+
+/** Build a combined overlay (radial gradient + pattern) for shellfie, or undefined if neither applies. */
+export function buildRadialOverlay(bg: AppBackgroundConfig): ((w: number, h: number) => string) | undefined {
+  // Plain gradient with a radial direction.
+  if (bg.type === 'gradient') {
+    const isRadial = bg.gradientDirection === 'radial' || bg.gradientDirection === 'radial-reverse';
+    return isRadial ? _radialOverlayFn(bg) : undefined;
+  }
+
+  // Pattern type: combine an optional radial base + the pattern markup.
+  if (bg.type === 'pattern') {
+    let radialFn: ((w: number, h: number) => string) | undefined;
+    if (bg.patternBaseType === 'gradient') {
+      const isRadial = bg.gradientDirection === 'radial' || bg.gradientDirection === 'radial-reverse';
+      if (isRadial) {
+        radialFn = _radialOverlayFn(bg);
+      }
+    }
+    return (w, h) => (radialFn ? radialFn(w, h) : '') + buildPatternOverlay(bg, w, h, 'sfp-server');
+  }
+
+  return undefined;
 }
 
 const allThemes: Record<string, Theme> = {
@@ -1018,40 +1052,51 @@ function generateSvgBackground(
     'to-top-right': { x1: '0%', y1: '100%', x2: '100%', y2: '0%' },
   };
 
-  switch (background.type) {
-    case 'solid':
+  const renderBase = (baseType: 'solid' | 'gradient'): string => {
+    if (baseType === 'solid') {
       return `<rect width="${totalWidth}" height="${totalHeight}" rx="${borderRadius}" fill="${background.color}"/>`;
+    }
+    // gradient
+    const isRadialReverse = background.gradientDirection === 'radial-reverse';
+    const isRadial = background.gradientDirection === 'radial' || isRadialReverse;
+    const fromColor = isRadialReverse ? background.gradientTo : background.gradientFrom;
+    const toColor = isRadialReverse ? background.gradientFrom : background.gradientTo;
 
-    case 'gradient': {
-      const isRadialReverse = background.gradientDirection === 'radial-reverse';
-      const isRadial = background.gradientDirection === 'radial' || isRadialReverse;
-      const fromColor = isRadialReverse ? background.gradientTo : background.gradientFrom;
-      const toColor = isRadialReverse ? background.gradientFrom : background.gradientTo;
-
-      if (isRadial) {
-        // Calculate radius to match CSS radial-gradient(circle, ...) behavior
-        // We use userSpaceOnUse to properly scale the gradient for non-square dimensions
-        const radius = Math.max(totalWidth, totalHeight);
-        const cx = totalWidth / 2;
-        const cy = totalHeight / 2;
-        return `
-          <defs>
-            <radialGradient id="bgGradient" gradientUnits="userSpaceOnUse" cx="${cx}" cy="${cy}" r="${radius / 2}" fx="${cx}" fy="${cy}">
-              <stop offset="0%" stop-color="${fromColor}"/>
-              <stop offset="100%" stop-color="${toColor}"/>
-            </radialGradient>
-          </defs>
-          <rect width="${totalWidth}" height="${totalHeight}" rx="${borderRadius}" fill="url(#bgGradient)"/>`;
-      }
-      const dir = GRADIENT_DIRECTIONS[background.gradientDirection] || GRADIENT_DIRECTIONS['to-right'];
+    if (isRadial) {
+      const radius = Math.max(totalWidth, totalHeight);
+      const cx = totalWidth / 2;
+      const cy = totalHeight / 2;
       return `
         <defs>
-          <linearGradient id="bgGradient" x1="${dir.x1}" y1="${dir.y1}" x2="${dir.x2}" y2="${dir.y2}">
-            <stop offset="0%" stop-color="${background.gradientFrom}"/>
-            <stop offset="100%" stop-color="${background.gradientTo}"/>
-          </linearGradient>
+          <radialGradient id="bgGradient" gradientUnits="userSpaceOnUse" cx="${cx}" cy="${cy}" r="${radius / 2}" fx="${cx}" fy="${cy}">
+            <stop offset="0%" stop-color="${fromColor}"/>
+            <stop offset="100%" stop-color="${toColor}"/>
+          </radialGradient>
         </defs>
         <rect width="${totalWidth}" height="${totalHeight}" rx="${borderRadius}" fill="url(#bgGradient)"/>`;
+    }
+    const dir = GRADIENT_DIRECTIONS[background.gradientDirection] || GRADIENT_DIRECTIONS['to-right'];
+    return `
+      <defs>
+        <linearGradient id="bgGradient" x1="${dir.x1}" y1="${dir.y1}" x2="${dir.x2}" y2="${dir.y2}">
+          <stop offset="0%" stop-color="${background.gradientFrom}"/>
+          <stop offset="100%" stop-color="${background.gradientTo}"/>
+        </linearGradient>
+      </defs>
+      <rect width="${totalWidth}" height="${totalHeight}" rx="${borderRadius}" fill="url(#bgGradient)"/>`;
+  };
+
+  switch (background.type) {
+    case 'solid':
+      return renderBase('solid');
+
+    case 'gradient':
+      return renderBase('gradient');
+
+    case 'pattern': {
+      const base = renderBase(background.patternBaseType === 'gradient' ? 'gradient' : 'solid');
+      const pattern = buildPatternOverlay(background, totalWidth, totalHeight, 'wrap-pat');
+      return base + pattern;
     }
 
     default:

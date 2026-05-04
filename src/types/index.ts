@@ -19,7 +19,11 @@ export type JpegQuality = 0.6 | 0.8 | 0.9 | 1.0;
 
 export type PaddingTuple = [number, number, number, number];
 
-export type BackgroundType = 'none' | 'solid' | 'gradient' | 'image';
+export type BackgroundType = 'none' | 'solid' | 'gradient' | 'image' | 'pattern';
+
+export type PatternType = 'dotted' | 'grid' | 'noise' | 'topographic';
+
+export type PatternBaseType = 'solid' | 'gradient';
 
 export type GradientDirection =
   | 'to-right' | 'to-left'
@@ -50,6 +54,20 @@ export interface BackgroundConfig {
   animation: BackgroundAnimation | null;
   animationColor: string;
   overlay: BackgroundOverlay | null;
+
+  // Pattern background — used when type === 'pattern'.
+  // The base layer reuses `color` (when patternBaseType === 'solid') or
+  // gradientFrom/gradientTo/gradientDirection (when 'gradient').
+  patternType: PatternType;
+  patternBaseType: PatternBaseType;
+  patternColor: string;
+  // Primary scale: dot/grid spacing (px), topographic line spacing (px),
+  // or noise frequency divisor (smaller value = larger grain).
+  patternSize: number;
+  // Stroke/dot thickness — applies to dotted/grid/topographic.
+  patternThickness: number;
+  // Overall pattern layer opacity, 0–1.
+  patternOpacity: number;
 }
 
 export interface HeaderConfig {
