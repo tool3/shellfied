@@ -2,7 +2,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 48px;
+  height: 56px;
   padding: 0 var(--space-lg);
   background-color: var(--color-bg-primary);
   flex-shrink: 0;
@@ -16,7 +16,7 @@
 
 .title {
   font-family: var(--font-family-display);
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-2xl);
   font-weight: 700;
   color: var(--color-text-primary);
   letter-spacing: -0.02em;

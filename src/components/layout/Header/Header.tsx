@@ -6,7 +6,7 @@ export const Header = memo(function Header() {
   return (
     <header className={styles.header}>
       <div className={styles.brand}>
-        <Logo size={24} />
+        {/* <Logo size={24} /> */}
         <span className={styles.title}>Shellfied</span>
       </div>
       <nav className={styles.nav}>
