@@ -32,7 +32,7 @@ export const PresetSelector = memo(function PresetSelector() {
   return (
     <div className={styles.presetSelector}>
       <div className={styles.section}>
-        <h4 className={styles.sectionTitle}>Partner</h4>
+        <h4 className={styles.sectionTitle}>Vendor</h4>
         <div className={styles.grid}>
           {PARTNER_PRESETS.map((preset) => (
             <PresetCard
