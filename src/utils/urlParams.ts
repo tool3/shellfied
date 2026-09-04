@@ -1,3 +1,4 @@
+import type { EffectConfig } from '@/lib/effects';
 import LZString from 'lz-string';
 import { PRESET_MAP } from '@/constants/presets';
 import type {
@@ -328,6 +329,7 @@ export function getOutputFormat(): OutputFormat | null {
 // State interface for URL serialization
 export interface UrlState {
   // Core settings
+  effects?: EffectConfig[];
   template?: TemplateType;
   terminalTheme?: string;
   fontSize?: number;
@@ -714,6 +716,7 @@ interface CompactState {
   ln?: boolean; // lineNumbers
   tbc?: string; // borderColor (terminal border)
   tbw?: number; // borderWidth (terminal border)
+  fx?: EffectConfig[]; // effects stack (post-processing)
 }
 
 // Build compact state for LZ compression
@@ -762,6 +765,13 @@ function buildCompactState(state: UrlState, mode: ShareMode, includeContent: boo
   const lineNumbers = (state as Record<string, unknown>).lineNumbers;
   if (lineNumbers !== undefined) {
     compact.ln = !!lineNumbers;
+  }
+
+  // Effects ride along verbatim. The payload is LZ-compressed JSON, so a
+  // nested array costs nothing when absent and compresses well when
+  // present — and without it a shared link silently drops the whole look.
+  if (state.effects && state.effects.length > 0) {
+    compact.fx = state.effects;
   }
 
   // Terminal border
@@ -955,6 +965,7 @@ function parseCompactState(compact: CompactState): UrlState {
   if (compact.ln) (state as Record<string, unknown>).lineNumbers = true;
   if (compact.tbc) (state as Record<string, unknown>).borderColor = compact.tbc;
   if (compact.tbw !== undefined) (state as Record<string, unknown>).borderWidth = compact.tbw;
+  if (compact.fx?.length) (state as Record<string, unknown>).effects = compact.fx;
   if (compact.cm) state.colorMode = compact.cm as ColorMode;
 
   if (compact.cmp) {

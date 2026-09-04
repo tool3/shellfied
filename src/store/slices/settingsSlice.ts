@@ -33,6 +33,7 @@ export const createSettingsSlice: StateCreator<AppStore, [], [], SettingsState> 
   setBorderRadius: (borderRadius) => set({ borderRadius }),
   setBorderColor: (borderColor) => set({ borderColor }),
   setBorderWidth: (borderWidth) => set({ borderWidth }),
+  setEffects: (effects) => set({ effects }),
   setLineNumbers: (lineNumbers) => set({ lineNumbers }),
   setControlStyle: (styleUpdate) => set({ controlStyle: { ...get().controlStyle, ...styleUpdate } }),
   setWatermark: (watermarkUpdate) => set({ watermark: { ...get().watermark, ...watermarkUpdate } }),

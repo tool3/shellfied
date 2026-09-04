@@ -8,6 +8,7 @@ import { Button, Icon, Input, Toggle, Slider, Select, NumberSlider, ColorPicker 
 import { PresetSelector } from '@/components/features/Settings/PresetSelector';
 import { ThemeSelector } from '@/components/features/Settings/ThemeSelector';
 import { BackgroundSection } from '@/components/features/Settings/BackgroundSection';
+import { EffectsSection } from '@/components/features/Settings/EffectsSection';
 import { TemplateSelector } from '@/components/features/Settings/TemplateSelector';
 import { WatermarkEditor } from '@/components/features/Settings/WatermarkEditor';
 import { HeaderSection, FooterSection } from '@/components/features/Settings/HeaderFooterSection';
@@ -27,21 +28,26 @@ import { ShareModal, type ShortUrls } from '@/components/features/Share';
 import { generateShareUrlLZ, generateCompressedData } from '@/utils/urlParams';
 import styles from './Toolbar.module.scss';
 
-type ToolbarTab = 'preset' | 'theme' | 'background' | 'window' | 'padding' | 'export' | null;
+type ToolbarTab = 'preset' | 'theme' | 'background' | 'effects' | 'window' | 'padding' | 'export' | null;
 
 // All menu items (export is part of the menu, not separate)
 const MENU_ITEMS: { id: ToolbarTab; label: string; icon: React.ReactNode }[] = [
   { id: 'preset', label: 'Preset', icon: <PaletteIcon /> },
   { id: 'theme', label: 'Theme', icon: <PaintbrushIcon /> },
   { id: 'background', label: 'BG', icon: <ImageIcon /> },
+  { id: 'effects', label: 'Effects', icon: <SparklesIcon /> },
   { id: 'window', label: 'Window', icon: <MonitorIcon /> },
   { id: 'padding', label: 'Padding', icon: <PaddingIcon /> },
   { id: 'export', label: 'Export', icon: <DownloadIcon /> },
 ];
 
 // Mobile pages: 3 per page
+// Four per page rather than three: it keeps Effects on the first page
+// instead of behind a swipe, and avoids stranding Export alone on a third.
+// Items are `flex: 1`, so four share the pill at ~100px each — ample for
+// an icon plus a short uppercase label.
 const MOBILE_PAGES: ToolbarTab[][] = [
-  ['preset', 'theme', 'background'],
+  ['preset', 'theme', 'background', 'effects'],
   ['window', 'padding', 'export'],
 ];
 
@@ -139,6 +145,10 @@ const ThemePopoverContent = memo(function ThemePopoverContent() {
 
 const BackgroundPopoverContent = memo(function BackgroundPopoverContent() {
   return <BackgroundSection bare />;
+});
+
+const EffectsPopoverContent = memo(function EffectsPopoverContent() {
+  return <EffectsSection bare />;
 });
 
 const WindowPopoverContent = memo(function WindowPopoverContent() {
@@ -375,6 +385,9 @@ function PaintbrushIcon() {
 function ImageIcon() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>;
 }
+function SparklesIcon() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.94 5.94 12 2l2.06 3.94L18 8l-3.94 2.06L12 14l-2.06-3.94L6 8Z" /><path d="M18.5 15.5 19.5 18l2.5 1-2.5 1-1 2.5-1-2.5L15 19l2.5-1Z" /><path d="M5 14l.75 1.75L7.5 16.5l-1.75.75L5 19l-.75-1.75L2.5 16.5l1.75-.75Z" /></svg>;
+}
 function MonitorIcon() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="3" rx="2" /><line x1="8" x2="16" y1="21" y2="21" /><line x1="12" x2="12" y1="17" y2="21" /></svg>;
 }
@@ -498,6 +511,9 @@ export const Toolbar = memo(function Toolbar() {
       )}
       {activeTab === 'background' && anchorEl && (
         <ToolbarPopover anchorEl={anchorEl} onClose={handleClose} wide><BackgroundPopoverContent /></ToolbarPopover>
+      )}
+      {activeTab === 'effects' && anchorEl && (
+        <ToolbarPopover anchorEl={anchorEl} onClose={handleClose} wide><EffectsPopoverContent /></ToolbarPopover>
       )}
       {activeTab === 'window' && anchorEl && (
         <ToolbarPopover anchorEl={anchorEl} onClose={handleClose} wide><WindowPopoverContent /></ToolbarPopover>

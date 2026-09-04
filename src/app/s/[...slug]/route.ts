@@ -8,6 +8,7 @@
  * Supports both single mode and compare mode
  */
 
+import type { EffectConfig } from '@/lib/effects';
 import { NextRequest, NextResponse } from 'next/server';
 import LZString from 'lz-string';
 import { resolveShortUrl } from '@/services/shortenerService';
@@ -86,11 +87,13 @@ interface CompactState {
   sfp?: string; // shellfiePreset
   ln?: boolean; // lineNumbers
   bac?: string; // bgAnimationColor
+  fx?: EffectConfig[]; // effects stack (post-processing)
 }
 
 // Parse compressed state into generation options
 function parseCompressedState(compact: CompactState) {
   return {
+    effects: compact.fx ?? [],
     content: compact.c || '',
     language: compact.lg || 'auto',
     template: (compact.tp || DEFAULT_SETTINGS.template) as TemplateType,
@@ -241,6 +244,7 @@ async function generateSvgResponse(id: string): Promise<NextResponse> {
       }
 
       svg = generateSvg({
+        effects: opts.effects,
         content: opts.content,
         language: opts.language,
         template: opts.template,

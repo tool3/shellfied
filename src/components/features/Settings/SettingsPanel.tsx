@@ -6,6 +6,7 @@ import { TemplateSelector } from './TemplateSelector';
 import { PresetSelector } from './PresetSelector';
 import { WatermarkEditor } from './WatermarkEditor';
 import { BackgroundSection } from './BackgroundSection';
+import { EffectsSection } from './EffectsSection';
 import { HeaderSection, FooterSection } from './HeaderFooterSection';
 import { ExportPanel } from '../Export';
 import {
@@ -290,6 +291,9 @@ export const SettingsPanel = memo(function SettingsPanel() {
 
         {/* Background Section */}
         <BackgroundSection />
+
+        {/* Effects Section — post-processing applied to the finished SVG */}
+        <EffectsSection />
 
         {/* Export Section - Desktop only */}
         <div className={styles.exportSection}>

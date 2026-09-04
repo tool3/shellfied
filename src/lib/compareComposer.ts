@@ -6,6 +6,7 @@
 import shellfie from 'shellfie';
 import type { AppStore } from '@/store/types';
 import { buildShellfieArgsCompare } from './shellfieOptionsBuilder';
+import { applyEffects } from './applyEffects';
 import { getSvgWidth, getSvgDimensions, extractSvgContent } from './svgHelpers';
 import { buildPatternOverlay } from './backgroundPatterns';
 
@@ -49,7 +50,18 @@ export function generateCompareSvg(
       { ...state, content, language: lang, title }
     );
     if (!processed.trim()) return '';
-    return shellfie(processed, { ...options, width: overrideWidth || options.width });
+    // Post-process each terminal rather than the composed picture.
+    //
+    // Compare mode has two composition routes: this one builds a single
+    // SVG for the preview, while raster export composes the pair onto a
+    // canvas, where an SVG post-process is impossible. Effecting each
+    // terminal is the only treatment both routes can apply identically —
+    // and svgfx never changes root dimensions, so the width-matching pass
+    // below still measures what it expects.
+    return applyEffects(
+      shellfie(processed, { ...options, width: overrideWidth || options.width }),
+      state.effects,
+    );
   };
 
   // First pass: generate to get natural widths

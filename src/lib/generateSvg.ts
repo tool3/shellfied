@@ -5,6 +5,8 @@
 
 import shellfie, { templates, type Theme, createTheme } from 'shellfie';
 import type { WatermarkStyle, WatermarkConfig as ShellfieWatermarkConfig } from 'shellfie';
+import { applyEffects } from './applyEffects';
+import type { EffectConfig } from './effects';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
@@ -792,6 +794,8 @@ export function detectLanguage(code: string): string {
 
 export interface GenerateSvgOptions {
   content: string;
+  /** Post-processing stack, applied to the finished SVG. */
+  effects?: EffectConfig[];
   language?: string;
   template?: TemplateType;
   terminalTheme?: string;
@@ -939,6 +943,16 @@ export function generateSvg(options: GenerateSvgOptions): string {
   if (aspectRatio && aspectRatio !== 'auto') {
     svg = applyAspectRatio(svg, aspectRatio);
   }
+
+  // Post-processing, after the aspect-ratio pass so effects see the final
+  // dimensions, and before the font embed so the @font-face lands on the
+  // outermost SVG.
+  //
+  // `generateCompareSvg` renders each terminal through this function, so
+  // compare mode gets effects per terminal — the same treatment the
+  // client applies, and the only one its canvas-composed raster export
+  // can reproduce.
+  svg = applyEffects(svg, options.effects);
 
   // Embed font as @font-face with correct format, matching the font-family name shellfie used
   if (embeddedFont) {

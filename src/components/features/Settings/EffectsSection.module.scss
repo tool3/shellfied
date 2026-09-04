@@ -1,0 +1,276 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ----------------------------- The stack ----------------------------- */
+
+.stackHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.stackTitle {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.clear {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: var(--color-brand-primary);
+  }
+}
+
+.empty {
+  margin: 0;
+  padding: 12px;
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  color: var(--color-text-tertiary);
+  border: 1px dashed var(--color-border-primary);
+  border-radius: var(--radius-md);
+}
+
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row {
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-secondary);
+  overflow: hidden;
+}
+
+.rowHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+}
+
+/* The name doubles as the expand toggle, so it takes all the slack
+   between the enable switch and the row actions. */
+.rowName {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  cursor: pointer;
+  color: var(--color-text-primary);
+  transition: color 0.15s ease;
+
+  &:hover:not(:disabled) {
+    color: var(--color-brand-primary);
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 1px;
+  }
+}
+
+.rowNameOpen {
+  color: var(--color-brand-primary);
+}
+
+.rowLabel {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: inherit;
+  white-space: nowrap;
+  /* Holds its width so the effect's *name* survives; the meta beside it
+     gives way first. "Chrom…" tells you nothing. */
+  flex: 0 0 auto;
+}
+
+.rowMeta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+  /* First to collapse when the row runs out of room. */
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rowActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+
+.params {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  border-top: 1px solid var(--color-border-primary);
+  background: var(--color-bg-tertiary);
+}
+
+.paramsDesc {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  color: var(--color-text-tertiary);
+}
+
+.reset {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+
+  &:hover {
+    color: var(--color-brand-primary);
+  }
+}
+
+/* -------------------------- Look containers -------------------------- */
+
+/* A Look reads as one thing you can open, so it gets a stronger border
+   than a bare effect and an accent rail down the left of its children to
+   show they belong to it. */
+.group {
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-elevated);
+  overflow: hidden;
+}
+
+.groupHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+}
+
+.groupChevron {
+  flex: 0 0 auto;
+  width: 10px;
+  font-size: 9px;
+  line-height: 1;
+  color: var(--color-text-tertiary);
+}
+
+.groupChildren {
+  list-style: none;
+  margin: 0;
+  padding: 8px 8px 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--color-border-primary);
+  background: var(--color-bg-tertiary);
+  box-shadow: inset 2px 0 0 0 var(--color-accent-subtle);
+}
+
+.rowNested {
+  background: transparent;
+}
+
+/* ---------------------------- The library ---------------------------- */
+
+.library {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border-primary);
+}
+
+.libGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.groupName {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+.groupNote {
+  margin-left: 8px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--color-text-tertiary);
+  opacity: 0.75;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  padding: 4px 10px;
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--color-text-primary);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: 999px;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    transform 0.15s ease;
+
+  &:hover {
+    border-color: var(--color-brand-primary);
+    background: var(--color-bg-tertiary);
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 1px;
+  }
+}
+
+/* Must follow .chip — equal specificity, so source order decides. */
+.chipLook {
+  border-color: var(--color-brand-primary);
+  color: var(--color-brand-primary);
+}

@@ -6,6 +6,7 @@ import { buildShellfieArgs, buildShellfieArgsCompare } from '@/lib/shellfieOptio
 import { getSvgWidth } from '@/lib/svgHelpers';
 import { applyAspectRatio } from '@/lib/aspectRatio';
 import { generateCompareSvg } from '@/lib/compareComposer';
+import { applyEffects } from '@/lib/applyEffects';
 
 /**
  * Main hook: generates a single shellfie SVG from editor content.
@@ -37,6 +38,7 @@ export function useShellfie() {
   const controlStyle = useStore((s) => s.controlStyle);
   const borderColor = useStore((s) => s.borderColor);
   const borderWidth = useStore((s) => s.borderWidth);
+  const effects = useStore((s) => s.effects);
 
   const { svg, error } = useMemo(() => {
     if (!debouncedContent.trim()) {
@@ -58,6 +60,9 @@ export function useShellfie() {
       if (aspectRatio && aspectRatio !== 'auto' && state.background.type !== 'none') {
         result = applyAspectRatio(result, aspectRatio);
       }
+      // Post-processing last: it wraps the finished artwork, so it has to
+      // see the final dimensions the aspect-ratio pass may have changed.
+      result = applyEffects(result, state.effects);
       return { svg: result, error: null };
     } catch (err) {
       return { svg: '', error: err instanceof Error ? err.message : 'Failed to generate SVG' };
@@ -66,7 +71,7 @@ export function useShellfie() {
     debouncedContent, language, template, controlsPosition, borderRadius,
     terminalTheme, customThemes, fontSize, lineHeight, padding, title, showControls,
     watermark, width, fontFamily, header, footer, activePreset, background, lineNumbers,
-    controlStyle, borderColor, borderWidth,
+    controlStyle, borderColor, borderWidth, effects,
   ]);
 
   return { svg, error, hasContent: Boolean(debouncedContent.trim()) };
@@ -83,7 +88,7 @@ export function useShellfieSync() {
     try {
       const { content, options } = buildShellfieArgs(state);
       if (!content.trim()) return '';
-      return shellfie(content, options);
+      return applyEffects(shellfie(content, options), state.effects);
     } catch {
       return '';
     }
@@ -129,6 +134,7 @@ export function useShellfieCompare() {
   const controlStyle = useStore((s) => s.controlStyle);
   const borderColor = useStore((s) => s.borderColor);
   const borderWidth = useStore((s) => s.borderWidth);
+  const effects = useStore((s) => s.effects);
   const compareLabelConfig = useStore((s) => s.compareLabelConfig);
 
   const { svg, error } = useMemo(() => {
@@ -147,6 +153,8 @@ export function useShellfieCompare() {
         beforeTitle,
         afterTitle,
       );
+      // Effects are applied per terminal inside generateCompareSvg, not
+      // here — see the note in compareComposer.
       return { svg: result.svg, error: null };
     } catch (err) {
       return { svg: '', error: err instanceof Error ? err.message : 'Failed to generate SVG' };
@@ -157,7 +165,7 @@ export function useShellfieCompare() {
     template, controlsPosition, borderRadius, terminalTheme, customThemes,
     fontSize, lineHeight, padding, showControls, fontFamily, watermark,
     header, footer, activePreset, background, lineNumbers,
-    controlStyle, borderColor, borderWidth,
+    controlStyle, borderColor, borderWidth, effects,
   ]);
 
   return {
@@ -188,7 +196,10 @@ export function useShellfieCompareSync() {
           { ...state, content, language: lang, title }
         );
         if (!processed.trim()) return '';
-        return shellfie(processed, { ...options, width: overrideWidth || options.width });
+        return applyEffects(
+          shellfie(processed, { ...options, width: overrideWidth || options.width }),
+          state.effects,
+        );
       } catch {
         return '';
       }

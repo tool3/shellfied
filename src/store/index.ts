@@ -75,6 +75,7 @@ export const useStore = create<AppStore>()(
         borderRadius: state.borderRadius,
         borderColor: state.borderColor,
         borderWidth: state.borderWidth,
+        effects: state.effects,
         controlStyle: state.controlStyle,
         lineNumbers: state.lineNumbers,
         watermark: state.watermark,
@@ -189,6 +190,7 @@ function applyUrlState(
   }
 
   // Core settings
+  if (urlState.effects !== undefined) result.effects = urlState.effects;
   if (urlState.template !== undefined) result.template = urlState.template;
   if (urlState.terminalTheme !== undefined) result.terminalTheme = urlState.terminalTheme;
   if (urlState.fontSize !== undefined) result.fontSize = urlState.fontSize;

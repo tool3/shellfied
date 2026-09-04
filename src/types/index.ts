@@ -1,3 +1,4 @@
+import type { EffectConfig } from '@/lib/effects';
 export type TemplateType = 'macos' | 'windows' | 'minimal';
 
 export type ControlsPosition = 'left' | 'right';
@@ -158,6 +159,8 @@ export interface ShellfieSettings {
   footer: FooterConfig;
   background: BackgroundConfig;
   lineNumbers: boolean;
+  /** Post-processing stack (see `@/lib/effects`). */
+  effects: EffectConfig[];
 }
 
 export type CompareLabelAlignment = 'left' | 'center' | 'right';

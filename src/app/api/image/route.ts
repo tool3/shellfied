@@ -21,6 +21,7 @@
  *   - JPEG: Raster format, no transparency, smaller file size
  */
 
+import type { EffectConfig } from '@/lib/effects';
 import { NextRequest, NextResponse } from 'next/server';
 import LZString from 'lz-string';
 import sharp from 'sharp';
@@ -221,6 +222,7 @@ interface CompactState {
   sfp?: string; // shellfiePreset
   ln?: boolean; // lineNumbers
   bac?: string; // bgAnimationColor
+  fx?: EffectConfig[]; // effects stack (post-processing)
 }
 
 // Decompress LZ-string data
@@ -317,6 +319,7 @@ function getParam(params: URLSearchParams, key: keyof typeof URL_PARAM_MAP): str
 // Parse compressed state into generation options
 function parseCompressedState(compact: CompactState) {
   return {
+    effects: compact.fx ?? [],
     content: compact.c || '',
     language: compact.lg || 'auto',
     template: (compact.tp || DEFAULT_SETTINGS.template) as TemplateType,
@@ -453,6 +456,7 @@ export async function GET(request: NextRequest) {
           }
 
           svg = generateSvg({
+            effects: opts.effects,
             content: opts.content,
             language: opts.language,
             template: opts.template,

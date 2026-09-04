@@ -1,3 +1,4 @@
+import type { EffectConfig } from '@/lib/effects';
 import type {
   TemplateType,
   TerminalThemeName,
@@ -56,6 +57,12 @@ export interface SettingsState {
   borderRadius: number;
   borderColor: string;
   borderWidth: number;
+  /**
+   * Post-processing stack applied to the finished SVG via
+   * `@svgfx/postprocessing`. Flat and ordered — svgfx composes effects as
+   * a pipeline, so position is meaningful.
+   */
+  effects: EffectConfig[];
   watermark: WatermarkConfig;
   width: number | null;
   fontFamily: string;
@@ -80,6 +87,7 @@ export interface SettingsState {
   setBorderRadius: (radius: number) => void;
   setBorderColor: (color: string) => void;
   setBorderWidth: (width: number) => void;
+  setEffects: (effects: EffectConfig[]) => void;
   setLineNumbers: (show: boolean) => void;
   setWatermark: (watermark: Partial<WatermarkConfig>) => void;
   setWidth: (width: number | null) => void;
