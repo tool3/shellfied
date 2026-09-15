@@ -8,7 +8,7 @@
  * Supports both single mode and compare mode
  */
 
-import type { EffectConfig } from '@/lib/effects';
+import { sanitizeEffectStack, type SerializedEffect } from '@/lib/effects';
 import { NextRequest, NextResponse } from 'next/server';
 import LZString from 'lz-string';
 import { resolveShortUrl } from '@/services/shortenerService';
@@ -87,13 +87,13 @@ interface CompactState {
   sfp?: string; // shellfiePreset
   ln?: boolean; // lineNumbers
   bac?: string; // bgAnimationColor
-  fx?: EffectConfig[]; // effects stack (post-processing)
+  fx?: SerializedEffect[]; // effects stack (post-processing)
 }
 
 // Parse compressed state into generation options
 function parseCompressedState(compact: CompactState) {
   return {
-    effects: compact.fx ?? [],
+    effects: sanitizeEffectStack(compact.fx),
     content: compact.c || '',
     language: compact.lg || 'auto',
     template: (compact.tp || DEFAULT_SETTINGS.template) as TemplateType,
@@ -220,6 +220,7 @@ async function generateSvgResponse(id: string): Promise<NextResponse> {
         beforeLanguage: opts.beforeLanguage,
         afterLanguage: opts.afterLanguage,
         compareLabelConfig: opts.compareLabelConfig,
+        effects: opts.effects,
         template: opts.template,
         terminalTheme: opts.terminalTheme,
         fontSize: opts.fontSize,

@@ -814,3 +814,119 @@ export const reorderInGroup = (
     }),
   );
 };
+
+/* ------------------------------------------------------------------ */
+/*                          Untrusted stacks                          */
+/* ------------------------------------------------------------------ */
+
+const MAX_STACK = 64;
+const MAX_LABEL = 64;
+const HEX_COLOR = /^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+const GROUP_UID = /^[A-Za-z0-9_-]{1,64}$/;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const sanitizeValue = (control: Control, value: unknown): ControlValue | undefined => {
+  switch (control.type) {
+    case 'number':
+      return typeof value === 'number' && Number.isFinite(value)
+        ? Math.min(control.max, Math.max(control.min, value))
+        : undefined;
+    case 'boolean':
+      return typeof value === 'boolean' ? value : undefined;
+    case 'color':
+      return typeof value === 'string' && HEX_COLOR.test(value) ? value : undefined;
+    case 'optionalColor':
+      if (value === null) return null;
+      return typeof value === 'string' && HEX_COLOR.test(value) ? value : undefined;
+    case 'enum':
+      return typeof value === 'string' && control.options.includes(value) ? value : undefined;
+  }
+};
+
+const sanitizeParams = (
+  descriptor: EffectDescriptor,
+  value: unknown,
+): Record<string, ControlValue> =>
+  isRecord(value)
+    ? Object.fromEntries(
+        descriptor.controls.flatMap((control) => {
+          const sanitized = sanitizeValue(control, value[control.key]);
+          return sanitized === undefined ? [] : [[control.key, sanitized] as const];
+        }),
+      )
+    : {};
+
+const sanitizeGroup = (value: unknown): EffectConfig['group'] => {
+  if (!isRecord(value)) return undefined;
+  const { uid, id, label } = value;
+  if (typeof uid !== 'string' || !GROUP_UID.test(uid)) return undefined;
+  if (typeof id !== 'string' || typeof label !== 'string') return undefined;
+  return { uid, id: id.slice(0, MAX_LABEL), label: label.slice(0, MAX_LABEL) };
+};
+
+const sanitizeEntry = (value: unknown): EffectConfig | null => {
+  if (!isRecord(value) || typeof value.id !== 'string') return null;
+  const descriptor = BY_ID.get(value.id);
+  if (!descriptor) return null;
+  const group = sanitizeGroup(value.group);
+  return {
+    uid: newEffectUid(descriptor.id),
+    id: descriptor.id,
+    enabled: value.enabled !== false,
+    params: sanitizeParams(descriptor, value.params),
+    ...(group ? { group } : {}),
+    ...(isRecord(value.baseline)
+      ? { baseline: sanitizeParams(descriptor, value.baseline) }
+      : {}),
+  };
+};
+
+/**
+ * Rebuild a stack from data that came in over a URL.
+ *
+ * Every field is re-derived from the registry rather than trusted: unknown
+ * effects and parameters are dropped, numbers are clamped to their control's
+ * range, and colours must be hex — a shared link is rendered server-side into
+ * SVG, so an unchecked parameter value would be markup injection.
+ *
+ * `uid`s are regenerated because they only identify a row within a session;
+ * taking them from the URL invites duplicate React keys.
+ */
+export const sanitizeEffectStack = (value: unknown): EffectConfig[] =>
+  Array.isArray(value)
+    ? value
+        .slice(0, MAX_STACK)
+        .map(sanitizeEntry)
+        .filter((entry): entry is EffectConfig => entry !== null)
+    : [];
+
+/**
+ * The stack as it travels in a URL.
+ *
+ * `uid` is left out because it only identifies a row inside one session and
+ * `sanitizeEffectStack` mints a fresh one on the way back in; empty `params`
+ * and `baseline` objects go too. Everything dropped here is either rebuilt or
+ * meaningless on arrival, so this is the same stack in fewer characters.
+ */
+export type SerializedEffect = Omit<EffectConfig, 'uid' | 'params' | 'baseline'> & {
+  params?: Record<string, ControlValue>;
+  baseline?: Record<string, ControlValue>;
+};
+
+const withoutEmpty = (
+  params: Record<string, ControlValue> | undefined,
+): Record<string, ControlValue> | undefined =>
+  params && Object.keys(params).length > 0 ? params : undefined;
+
+export const serializeEffectStack = (
+  stack: readonly EffectConfig[],
+): SerializedEffect[] =>
+  stack.map(({ id, enabled, params, group, baseline }) => ({
+    id,
+    enabled,
+    ...(withoutEmpty(params) ? { params } : {}),
+    ...(group ? { group } : {}),
+    ...(withoutEmpty(baseline) ? { baseline } : {}),
+  }));

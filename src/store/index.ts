@@ -191,6 +191,7 @@ function applyUrlState(
 
   // Core settings
   if (urlState.effects !== undefined) result.effects = urlState.effects;
+  if (urlState.lineNumbers !== undefined) result.lineNumbers = urlState.lineNumbers;
   if (urlState.template !== undefined) result.template = urlState.template;
   if (urlState.terminalTheme !== undefined) result.terminalTheme = urlState.terminalTheme;
   if (urlState.fontSize !== undefined) result.fontSize = urlState.fontSize;
@@ -255,6 +256,20 @@ function applyUrlState(
   }
 
   return result;
+}
+
+/**
+ * Apply state resolved after startup (a short link, which only arrives once
+ * `?sid=` has been exchanged for its payload) to the live store.
+ *
+ * It routes through the same `applyUrlState` the initial `?d=` parse uses, so
+ * a field can't be honoured on one path and silently dropped on the other —
+ * which is exactly how short links lost their effect stack.
+ */
+export function applyUrlStateToStore(urlState: UrlState): void {
+  useStore.setState((state) =>
+    applyUrlState(state, urlState, state.shareMode, state.staticOutput)
+  );
 }
 
 // Selectors for optimized re-renders

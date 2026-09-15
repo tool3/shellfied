@@ -21,7 +21,7 @@
  *   - JPEG: Raster format, no transparency, smaller file size
  */
 
-import type { EffectConfig } from '@/lib/effects';
+import { sanitizeEffectStack, type EffectConfig, type SerializedEffect } from '@/lib/effects';
 import { NextRequest, NextResponse } from 'next/server';
 import LZString from 'lz-string';
 import sharp from 'sharp';
@@ -222,7 +222,7 @@ interface CompactState {
   sfp?: string; // shellfiePreset
   ln?: boolean; // lineNumbers
   bac?: string; // bgAnimationColor
-  fx?: EffectConfig[]; // effects stack (post-processing)
+  fx?: SerializedEffect[]; // effects stack (post-processing)
 }
 
 // Decompress LZ-string data
@@ -240,6 +240,7 @@ function decompressLZData(compressed: string): CompactState | null {
 const URL_PARAM_MAP = {
   content: 'c',
   language: 'lg',
+  effects: 'fx',
   template: 'tp',
   terminalTheme: 'th',
   fontSize: 'fs',
@@ -316,10 +317,21 @@ function getParam(params: URLSearchParams, key: keyof typeof URL_PARAM_MAP): str
   return params.get(URL_PARAM_MAP[key]) ?? params.get(key);
 }
 
+// Decode an effect stack (LZ-compressed JSON, see encodeEffects in urlParams)
+function decodeEffects(str: string | null): EffectConfig[] {
+  if (!str) return [];
+  try {
+    const json = LZString.decompressFromEncodedURIComponent(str);
+    return json ? sanitizeEffectStack(JSON.parse(json)) : [];
+  } catch {
+    return [];
+  }
+}
+
 // Parse compressed state into generation options
 function parseCompressedState(compact: CompactState) {
   return {
-    effects: compact.fx ?? [],
+    effects: sanitizeEffectStack(compact.fx),
     content: compact.c || '',
     language: compact.lg || 'auto',
     template: (compact.tp || DEFAULT_SETTINGS.template) as TemplateType,
@@ -433,6 +445,7 @@ export async function GET(request: NextRequest) {
             beforeLanguage: opts.beforeLanguage,
             afterLanguage: opts.afterLanguage,
             compareLabelConfig: opts.compareLabelConfig,
+            effects: opts.effects,
             template: opts.template,
             terminalTheme: opts.terminalTheme,
             fontSize: opts.fontSize,
@@ -536,6 +549,7 @@ export async function GET(request: NextRequest) {
 
   // Parse all parameters
   const language = getParam(searchParams, 'language') || 'auto';
+  const effects = decodeEffects(getParam(searchParams, 'effects'));
 
   const templateParam = getParam(searchParams, 'template');
   const template: TemplateType = templateParam && ['macos', 'windows', 'minimal'].includes(templateParam)
@@ -655,6 +669,7 @@ export async function GET(request: NextRequest) {
     // Generate SVG
     const svg = generateSvg({
       content,
+      effects,
       language,
       template,
       terminalTheme,

@@ -2,7 +2,7 @@
 
 import { useEffect, useSyncExternalStore, useState } from 'react';
 import { useTheme } from '@/hooks/useTheme';
-import { useIsViewMode, useStore } from '@/store';
+import { applyUrlStateToStore, useIsViewMode, useStore } from '@/store';
 import { rehydrateCompressedContent, getShortId, resolveShortId } from '@/utils/urlParams';
 import { Header, Toolbar } from '@/components/layout';
 import { Editor, Preview, ViewMode } from '@/components/features';
@@ -24,38 +24,7 @@ export function HomeClient() {
     if (!sid) return;
 
     resolveShortId(sid).then((urlState) => {
-      if (urlState) {
-        const store = useStore.getState();
-        // Apply all resolved state to the store
-        if (urlState.content !== undefined) store.setContent(urlState.content);
-        if (urlState.language !== undefined) store.setLanguage(urlState.language);
-        if (urlState.template !== undefined) store.setTemplate(urlState.template);
-        if (urlState.terminalTheme !== undefined) store.setTerminalTheme(urlState.terminalTheme);
-        if (urlState.fontSize !== undefined) store.setFontSize(urlState.fontSize);
-        if (urlState.lineHeight !== undefined) store.setLineHeight(urlState.lineHeight);
-        if (urlState.padding !== undefined) store.setPadding(urlState.padding);
-        if (urlState.title !== undefined) store.setTitle(urlState.title);
-        if (urlState.showControls !== undefined) store.setShowControls(urlState.showControls);
-        if (urlState.controlsPosition !== undefined) store.setControlsPosition(urlState.controlsPosition);
-        if (urlState.borderRadius !== undefined) store.setBorderRadius(urlState.borderRadius);
-        if (urlState.width !== undefined) store.setWidth(urlState.width);
-        if (urlState.fontFamily !== undefined) store.setFontFamily(urlState.fontFamily);
-        if (urlState.compareMode !== undefined) store.setCompareMode(urlState.compareMode);
-        if (urlState.beforeContent !== undefined) store.setBeforeContent(urlState.beforeContent);
-        if (urlState.afterContent !== undefined) store.setAfterContent(urlState.afterContent);
-        if (urlState.beforeLabel !== undefined) store.setBeforeLabel(urlState.beforeLabel);
-        if (urlState.afterLabel !== undefined) store.setAfterLabel(urlState.afterLabel);
-        if (urlState.beforeLanguage !== undefined) store.setBeforeLanguage(urlState.beforeLanguage);
-        if (urlState.beforeTitle !== undefined) store.setBeforeTitle(urlState.beforeTitle);
-        if (urlState.afterTitle !== undefined) store.setAfterTitle(urlState.afterTitle);
-        if (urlState.afterLanguage !== undefined) store.setAfterLanguage(urlState.afterLanguage);
-        if (urlState.compareLabelConfig) store.setCompareLabelConfig(urlState.compareLabelConfig as Parameters<typeof store.setCompareLabelConfig>[0]);
-        if (urlState.watermark) store.setWatermark(urlState.watermark);
-        if (urlState.header) store.setHeader(urlState.header);
-        if (urlState.footer) store.setFooter(urlState.footer);
-        if (urlState.background) store.setBackground(urlState.background);
-        if (urlState.brand) store.setBrand(urlState.brand);
-      }
+      if (urlState) applyUrlStateToStore(urlState);
       setShortIdResolved(true);
     });
   }, []);

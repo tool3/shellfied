@@ -1,4 +1,9 @@
-import type { EffectConfig } from '@/lib/effects';
+import {
+  sanitizeEffectStack,
+  serializeEffectStack,
+  type EffectConfig,
+  type SerializedEffect,
+} from '@/lib/effects';
 import LZString from 'lz-string';
 import { PRESET_MAP } from '@/constants/presets';
 import type {
@@ -61,6 +66,9 @@ export const URL_PARAM_MAP = {
   content: 'c',
   language: 'lg',
   colorMode: 'cm',
+
+  // Post-processing stack
+  effects: 'fx',
 
   // Compare mode
   compareMode: 'cmp',
@@ -269,6 +277,24 @@ export function decodeBool(str: string | null, defaultValue: boolean = false): b
   return defaultValue;
 }
 
+// Effect stack encoding for the legacy query-param format. The stack is JSON,
+// which base64 alone bloats past what a query string should carry, so it gets
+// the same LZ treatment as the `d=` payload.
+export function encodeEffects(stack: readonly EffectConfig[]): string {
+  return LZString.compressToEncodedURIComponent(
+    JSON.stringify(serializeEffectStack(stack))
+  );
+}
+
+export function decodeEffects(str: string): EffectConfig[] {
+  try {
+    const json = LZString.decompressFromEncodedURIComponent(str);
+    return json ? sanitizeEffectStack(JSON.parse(json)) : [];
+  } catch {
+    return [];
+  }
+}
+
 // Share mode type
 export type ShareMode = 'view' | 'edit';
 
@@ -330,6 +356,7 @@ export function getOutputFormat(): OutputFormat | null {
 export interface UrlState {
   // Core settings
   effects?: EffectConfig[];
+  lineNumbers?: boolean;
   template?: TemplateType;
   terminalTheme?: string;
   fontSize?: number;
@@ -489,6 +516,11 @@ function buildShareUrlParams(
 
   addIfChanged('language', state.language, DEFAULT_LANGUAGE);
   addIfChanged('colorMode', state.colorMode, DEFAULT_COLOR_MODE);
+
+  // Post-processing stack
+  if (state.effects && state.effects.length > 0) {
+    params.set(URL_PARAM_MAP.effects, encodeEffects(state.effects));
+  }
 
   // Compare mode
   addIfChanged('compareMode', state.compareMode, false, encodeBool);
@@ -716,7 +748,7 @@ interface CompactState {
   ln?: boolean; // lineNumbers
   tbc?: string; // borderColor (terminal border)
   tbw?: number; // borderWidth (terminal border)
-  fx?: EffectConfig[]; // effects stack (post-processing)
+  fx?: SerializedEffect[]; // effects stack (post-processing)
 }
 
 // Build compact state for LZ compression
@@ -767,11 +799,11 @@ function buildCompactState(state: UrlState, mode: ShareMode, includeContent: boo
     compact.ln = !!lineNumbers;
   }
 
-  // Effects ride along verbatim. The payload is LZ-compressed JSON, so a
-  // nested array costs nothing when absent and compresses well when
+  // Effects ride along in their serialized form. The payload is LZ-compressed
+  // JSON, so a nested array costs nothing when absent and compresses well when
   // present — and without it a shared link silently drops the whole look.
   if (state.effects && state.effects.length > 0) {
-    compact.fx = state.effects;
+    compact.fx = serializeEffectStack(state.effects);
   }
 
   // Terminal border
@@ -962,10 +994,12 @@ function parseCompactState(compact: CompactState): UrlState {
   if (compact.c) state.content = compact.c;
   if (compact.lg) state.language = compact.lg;
   if (compact.sfp) state.shellfiePreset = compact.sfp;
-  if (compact.ln) (state as Record<string, unknown>).lineNumbers = true;
-  if (compact.tbc) (state as Record<string, unknown>).borderColor = compact.tbc;
-  if (compact.tbw !== undefined) (state as Record<string, unknown>).borderWidth = compact.tbw;
-  if (compact.fx?.length) (state as Record<string, unknown>).effects = compact.fx;
+  if (compact.ln) state.lineNumbers = true;
+  if (compact.tbc) state.borderColor = compact.tbc;
+  if (compact.tbw !== undefined) state.borderWidth = compact.tbw;
+  // Always set, even when absent: a link carries the whole look, so an
+  // effect-free one has to clear whatever stack the visitor has locally.
+  state.effects = sanitizeEffectStack(compact.fx);
   if (compact.cm) state.colorMode = compact.cm as ColorMode;
 
   if (compact.cmp) {
@@ -1205,6 +1239,9 @@ export function parseUrlParams(): UrlState | null {
   if (colorMode && ['light', 'dark'].includes(colorMode)) {
     state.colorMode = colorMode as ColorMode;
   }
+
+  const effects = getParam('effects');
+  const effectStack = effects ? decodeEffects(effects) : [];
 
   // Compare mode
   const compareMode = getParam('compareMode');
@@ -1462,7 +1499,11 @@ export function parseUrlParams(): UrlState | null {
     }
   }
 
-  return Object.keys(state).length > 0 ? state : null;
+  // Same rule as the compact format: any link at all pins the stack, so a
+  // legacy link (which predates effects) renders without them.
+  return Object.keys(state).length > 0 || effectStack.length > 0
+    ? { ...state, effects: effectStack }
+    : null;
 }
 
 // URL length validation
