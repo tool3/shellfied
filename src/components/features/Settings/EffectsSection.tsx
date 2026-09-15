@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo, useState, type DragEvent, type ReactNode } from 'react';
 import { useStore } from '@/store';
 import { Button, ColorPicker, NumberSlider, Select, Toggle } from '@/components/common';
 import {
@@ -10,6 +10,8 @@ import {
   groupStack,
   isTuned,
   newEffectUid,
+  reorderInGroup,
+  reorderRuns,
   resolveParams,
   type Control,
   type ControlValue,
@@ -19,9 +21,9 @@ import panel from './SettingsPanel.module.scss';
 import styles from './EffectsSection.module.scss';
 
 /**
- * Post-processing stack editor, backed by `@svgfx/postprocessing`.
+ * Post-processing stack editor, backed by `vctrfx`.
  *
- * Order is significant — svgfx composes effects as a pipeline, so
+ * Order is significant — vctrfx composes effects as a pipeline, so
  * blur-then-threshold is a different picture from threshold-then-blur.
  * Hence a reorderable list rather than checkboxes, and hence the same
  * effect may legitimately appear twice.
@@ -96,8 +98,115 @@ const EffectControl = memo(function EffectControl({
   }
 });
 
+interface DragState {
+  list: string;
+  from: number;
+  over: number;
+}
+
+interface DragList {
+  itemProps: (list: string, index: number) => {
+    onDragStart: (e: DragEvent<HTMLElement>) => void;
+    onDragOver: (e: DragEvent<HTMLElement>) => void;
+    onDrop: (e: DragEvent<HTMLElement>) => void;
+    onDragEnd: () => void;
+  };
+  isDragging: (list: string, index: number) => boolean;
+  isOver: (list: string, index: number) => boolean;
+}
+
 /**
- * One effect row: enable, expandable name, reorder, remove, and its
+ * Drag-to-reorder for every list in the editor at once, keyed by `list` —
+ * 'root' for the top level, the Look's uid for its children. One hook
+ * rather than one per list, because a Look's child list only exists while
+ * it is expanded and hooks can't be created per item.
+ *
+ * Cross-list drops are refused: pulling an effect out of a Look would break
+ * the contiguity `groupStack` needs to rebuild the container, so a Look
+ * moves as a whole from its own row instead.
+ */
+const useDragLists = (
+  onReorder: (list: string, from: number, to: number) => void,
+): DragList => {
+  const [state, setState] = useState<DragState | null>(null);
+
+  return {
+    itemProps: (list, index) => ({
+      onDragStart: (e) => {
+        // dragstart bubbles, and a Look's children sit inside the Look's own
+        // draggable row — without this the ancestor overwrites the child's
+        // drag state and every nested drag reads as moving the whole Look.
+        e.stopPropagation();
+        e.dataTransfer.effectAllowed = 'move';
+        // Firefox refuses to start a drag with an empty transfer.
+        e.dataTransfer.setData('text/plain', String(index));
+        setState({ list, from: index, over: index });
+      },
+      onDragOver: (e) => {
+        // A mismatched list falls through to the ancestor on purpose: that
+        // is how hovering a Look's child while dragging a top-level run
+        // targets the Look itself.
+        if (!state || state.list !== list) return;
+        e.stopPropagation();
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (state.over !== index) setState({ ...state, over: index });
+      },
+      onDrop: (e) => {
+        if (!state || state.list !== list) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (state.from !== index) onReorder(list, state.from, index);
+        setState(null);
+      },
+      onDragEnd: () => setState(null),
+    }),
+    isDragging: (list, index) => state?.list === list && state.from === index,
+    isOver: (list, index) =>
+      state?.list === list && state.over === index && state.from !== index,
+  };
+};
+
+const GripIcon = () => (
+  <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden>
+    <circle cx="3.5" cy="2" r="0.9" fill="currentColor" />
+    <circle cx="6.5" cy="2" r="0.9" fill="currentColor" />
+    <circle cx="3.5" cy="5" r="0.9" fill="currentColor" />
+    <circle cx="6.5" cy="5" r="0.9" fill="currentColor" />
+    <circle cx="3.5" cy="8" r="0.9" fill="currentColor" />
+    <circle cx="6.5" cy="8" r="0.9" fill="currentColor" />
+  </svg>
+);
+
+/**
+ * The grip. `draggable` lives on the row so the drag image is the whole
+ * row, but it is armed only while the pointer is down here — otherwise
+ * dragging a slider inside an expanded row would drag the row.
+ */
+const DragHandle = ({
+  label,
+  onArm,
+  onDisarm,
+}: {
+  label: string;
+  onArm: () => void;
+  onDisarm: () => void;
+}) => (
+  <span
+    className={styles.dragHandle}
+    onPointerDown={onArm}
+    onPointerUp={onDisarm}
+    role="button"
+    tabIndex={-1}
+    aria-label={`Drag to reorder ${label}`}
+    title="Drag to reorder"
+  >
+    <GripIcon />
+  </span>
+);
+
+/**
+ * One effect row: enable, expandable name, drag handle, remove, and its
  * parameters when open. Used at top level and nested inside a Look —
  * which is the only reason `nested` exists.
  */
@@ -106,9 +215,9 @@ const EffectRow = memo(function EffectRow({
   nested = false,
   open,
   onToggleOpen,
-  canMoveUp,
-  canMoveDown,
-  onMove,
+  drag,
+  dragList,
+  dragIndex,
   onEnabled,
   onRemove,
   onParam,
@@ -118,14 +227,15 @@ const EffectRow = memo(function EffectRow({
   nested?: boolean;
   open: boolean;
   onToggleOpen: () => void;
-  canMoveUp: boolean;
-  canMoveDown: boolean;
-  onMove: (delta: number) => void;
+  drag: DragList;
+  dragList: string;
+  dragIndex: number;
   onEnabled: (value: boolean) => void;
   onRemove: () => void;
   onParam: (key: string, value: ControlValue) => void;
   onReset: () => void;
 }) {
+  const [armed, setArmed] = useState(false);
   const descriptor = findEffect(entry.id);
   if (!descriptor) return null;
   const params = resolveParams(descriptor, entry.params);
@@ -133,8 +243,28 @@ const EffectRow = memo(function EffectRow({
   const count = descriptor.controls.length;
 
   return (
-    <li className={`${styles.row} ${nested ? styles.rowNested : ''}`}>
+    <li
+      className={[
+        styles.row,
+        nested ? styles.rowNested : '',
+        drag.isDragging(dragList, dragIndex) ? styles.rowDragging : '',
+        drag.isOver(dragList, dragIndex) ? styles.rowDropTarget : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      draggable={armed}
+      {...drag.itemProps(dragList, dragIndex)}
+      onDragEnd={() => {
+        setArmed(false);
+        drag.itemProps(dragList, dragIndex).onDragEnd();
+      }}
+    >
       <div className={styles.rowHead}>
+        <DragHandle
+          label={descriptor.label}
+          onArm={() => setArmed(true)}
+          onDisarm={() => setArmed(false)}
+        />
         <Toggle checked={entry.enabled} onChange={onEnabled} />
         <button
           type="button"
@@ -151,22 +281,6 @@ const EffectRow = memo(function EffectRow({
           )}
         </button>
         <div className={styles.rowActions}>
-          <Button
-            variant="ghost"
-            size="sm"
-            icon="chevronUp"
-            onClick={() => onMove(-1)}
-            disabled={!canMoveUp}
-            aria-label={`Move ${descriptor.label} earlier`}
-          />
-          <Button
-            variant="ghost"
-            size="sm"
-            icon="chevronDown"
-            onClick={() => onMove(1)}
-            disabled={!canMoveDown}
-            aria-label={`Move ${descriptor.label} later`}
-          />
           <Button
             variant="ghost"
             size="sm"
@@ -198,6 +312,79 @@ const EffectRow = memo(function EffectRow({
     </li>
   );
 });
+
+/** A Look's container row. Drags as one unit at the top level. */
+const LookRow = ({
+  label,
+  count,
+  enabled,
+  open,
+  onToggleOpen,
+  onEnabled,
+  onRemove,
+  drag,
+  dragIndex,
+  children,
+}: {
+  label: string;
+  count: number;
+  enabled: boolean;
+  open: boolean;
+  onToggleOpen: () => void;
+  onEnabled: (value: boolean) => void;
+  onRemove: () => void;
+  drag: DragList;
+  dragIndex: number;
+  children: ReactNode;
+}) => {
+  const [armed, setArmed] = useState(false);
+
+  return (
+    <li
+      className={[
+        styles.group,
+        drag.isDragging('root', dragIndex) ? styles.rowDragging : '',
+        drag.isOver('root', dragIndex) ? styles.rowDropTarget : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      draggable={armed}
+      {...drag.itemProps('root', dragIndex)}
+      onDragEnd={() => {
+        setArmed(false);
+        drag.itemProps('root', dragIndex).onDragEnd();
+      }}
+    >
+      <div className={styles.groupHead}>
+        <DragHandle label={label} onArm={() => setArmed(true)} onDisarm={() => setArmed(false)} />
+        <Toggle checked={enabled} onChange={onEnabled} />
+        <button
+          type="button"
+          className={`${styles.rowName} ${open ? styles.rowNameOpen : ''}`}
+          onClick={onToggleOpen}
+          aria-expanded={open}
+        >
+          <span className={styles.groupChevron} aria-hidden>
+            {open ? '▾' : '▸'}
+          </span>
+          <span className={styles.rowLabel}>{label}</span>
+          <span className={styles.rowMeta}>Look · {count} effects</span>
+        </button>
+        <div className={styles.rowActions}>
+          <Button
+            variant="ghost"
+            size="sm"
+            icon="x"
+            onClick={onRemove}
+            aria-label={`Remove ${label}`}
+          />
+        </div>
+      </div>
+
+      {open && <ul className={styles.groupChildren}>{children}</ul>}
+    </li>
+  );
+};
 
 export const EffectsSection = memo(function EffectsSection({
   bare = false,
@@ -235,39 +422,15 @@ export const EffectsSection = memo(function EffectsSection({
 
   const remove = (uid: string) => setEffects(stack.filter((e) => e.uid !== uid));
 
-  const move = (uid: string, delta: number) => {
-    const index = stack.findIndex((e) => e.uid === uid);
-    const target = index + delta;
-    if (index < 0 || target < 0 || target >= stack.length) return;
-    const next = [...stack];
-    [next[index], next[target]] = [next[target], next[index]];
-    setEffects(next);
-  };
-
-  /** Reorder a whole Look, keeping its members contiguous. */
-  const moveGroup = (groupUid: string, delta: number) => {
-    const members = stack.filter((e) => e.group?.uid === groupUid);
-    if (members.length === 0) return;
-    const firstIndex = stack.findIndex((e) => e.group?.uid === groupUid);
-    const rest = stack.filter((e) => e.group?.uid !== groupUid);
-    const runs = groupStack(rest);
-    // Position is expressed against the stack minus this group, so
-    // stepping past a neighbouring Look jumps the whole block rather than
-    // burrowing into it.
-    const at = runs.findIndex((run) =>
-      run.kind === 'group' ? run.start >= firstIndex : run.index >= firstIndex,
-    );
-    const position = at === -1 ? runs.length : at;
-    const target = Math.max(0, Math.min(runs.length, position + delta));
-    if (target === position) return;
-    const flat: EffectConfig[] = [];
-    runs.forEach((run, i) => {
-      if (i === target) flat.push(...members);
-      flat.push(...(run.kind === 'group' ? run.entries : [run.entry]));
-    });
-    if (target >= runs.length) flat.push(...members);
-    setEffects(flat);
-  };
+  // 'root' reorders top-level runs (a lone effect, or a whole Look); any
+  // other key is a Look's uid and reorders inside that Look.
+  const drag = useDragLists((list, from, to) =>
+    setEffects(
+      list === 'root'
+        ? reorderRuns(stack, from, to)
+        : reorderInGroup(stack, list, from, to),
+    ),
+  );
 
   const setGroupEnabled = (groupUid: string, enabled: boolean) =>
     setEffects(stack.map((e) => (e.group?.uid === groupUid ? { ...e, enabled } : e)));
@@ -303,7 +466,7 @@ export const EffectsSection = memo(function EffectsSection({
         </p>
       ) : (
         <ul className={styles.rows}>
-          {groupStack(stack).map((run) =>
+          {groupStack(stack).map((run, runIndex) =>
             run.kind === 'effect' ? (
               <EffectRow
                 key={run.entry.uid}
@@ -312,84 +475,46 @@ export const EffectsSection = memo(function EffectsSection({
                 onToggleOpen={() =>
                   setOpenUid(openUid === run.entry.uid ? null : run.entry.uid)
                 }
-                canMoveUp={run.index > 0}
-                canMoveDown={run.index < stack.length - 1}
-                onMove={(d) => move(run.entry.uid, d)}
+                drag={drag}
+                dragList="root"
+                dragIndex={runIndex}
                 onEnabled={(v) => update(run.entry.uid, { enabled: v })}
                 onRemove={() => remove(run.entry.uid)}
                 onParam={(k, v) => setParam(run.entry, k, v)}
                 onReset={() => resetParams(run.entry)}
               />
             ) : (
-              <li key={run.uid} className={styles.group}>
-                <div className={styles.groupHead}>
-                  <Toggle
-                    checked={run.entries.some((e) => e.enabled)}
-                    onChange={(v) => setGroupEnabled(run.uid, v)}
+              <LookRow
+                key={run.uid}
+                label={run.label}
+                count={run.entries.length}
+                enabled={run.entries.some((e) => e.enabled)}
+                open={openGroup === run.uid}
+                onToggleOpen={() => setOpenGroup(openGroup === run.uid ? null : run.uid)}
+                onEnabled={(v) => setGroupEnabled(run.uid, v)}
+                onRemove={() => removeGroup(run.uid)}
+                drag={drag}
+                dragIndex={runIndex}
+              >
+                {run.entries.map((entry, childIndex) => (
+                  <EffectRow
+                    key={entry.uid}
+                    entry={entry}
+                    nested
+                    open={openUid === entry.uid}
+                    onToggleOpen={() =>
+                      setOpenUid(openUid === entry.uid ? null : entry.uid)
+                    }
+                    drag={drag}
+                    dragList={run.uid}
+                    dragIndex={childIndex}
+                    onEnabled={(v) => update(entry.uid, { enabled: v })}
+                    onRemove={() => remove(entry.uid)}
+                    onParam={(k, v) => setParam(entry, k, v)}
+                    onReset={() => resetParams(entry)}
                   />
-                  <button
-                    type="button"
-                    className={`${styles.rowName} ${openGroup === run.uid ? styles.rowNameOpen : ''}`}
-                    onClick={() => setOpenGroup(openGroup === run.uid ? null : run.uid)}
-                    aria-expanded={openGroup === run.uid}
-                  >
-                    <span className={styles.groupChevron} aria-hidden>
-                      {openGroup === run.uid ? '▾' : '▸'}
-                    </span>
-                    <span className={styles.rowLabel}>{run.label}</span>
-                    <span className={styles.rowMeta}>Look · {run.entries.length} effects</span>
-                  </button>
-                  <div className={styles.rowActions}>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      icon="chevronUp"
-                      onClick={() => moveGroup(run.uid, -1)}
-                      aria-label={`Move ${run.label} earlier`}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      icon="chevronDown"
-                      onClick={() => moveGroup(run.uid, 1)}
-                      aria-label={`Move ${run.label} later`}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      icon="x"
-                      onClick={() => removeGroup(run.uid)}
-                      aria-label={`Remove ${run.label}`}
-                    />
-                  </div>
-                </div>
-
-                {openGroup === run.uid && (
-                  <ul className={styles.groupChildren}>
-                    {run.entries.map((entry) => {
-                      const index = stack.indexOf(entry);
-                      return (
-                        <EffectRow
-                          key={entry.uid}
-                          entry={entry}
-                          nested
-                          open={openUid === entry.uid}
-                          onToggleOpen={() =>
-                            setOpenUid(openUid === entry.uid ? null : entry.uid)
-                          }
-                          canMoveUp={index > run.start}
-                          canMoveDown={index < run.start + run.entries.length - 1}
-                          onMove={(d) => move(entry.uid, d)}
-                          onEnabled={(v) => update(entry.uid, { enabled: v })}
-                          onRemove={() => remove(entry.uid)}
-                          onParam={(k, v) => setParam(entry, k, v)}
-                          onReset={() => resetParams(entry)}
-                        />
-                      );
-                    })}
-                  </ul>
-                )}
-              </li>
+                ))}
+              </LookRow>
             ),
           )}
         </ul>

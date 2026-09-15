@@ -56,7 +56,7 @@ export function generateCompareSvg(
     // SVG for the preview, while raster export composes the pair onto a
     // canvas, where an SVG post-process is impossible. Effecting each
     // terminal is the only treatment both routes can apply identically —
-    // and svgfx never changes root dimensions, so the width-matching pass
+    // and vctrfx never changes root dimensions, so the width-matching pass
     // below still measures what it expects.
     return applyEffects(
       shellfie(processed, { ...options, width: overrideWidth || options.width }),

@@ -1,5 +1,5 @@
 /**
- * Registry for `@svgfx/postprocessing`.
+ * Registry for `vctrfx`.
  *
  * The library exposes each effect as a factory taking an options object
  * (`scanlines({ gap: 4 })`). To drive that from a UI we need machine-
@@ -41,8 +41,8 @@ import {
   tint,
   vignette,
   wave,
-} from '@svgfx/postprocessing';
-import type { Effect } from '@svgfx/postprocessing';
+} from 'vctrfx';
+import type { Effect } from 'vctrfx';
 
 /* ------------------------------------------------------------------ */
 /*                              Controls                              */
@@ -522,7 +522,7 @@ export const findEffect = (id: string): EffectDescriptor | undefined =>
  * Parameters below are the preset's own, which are frequently *not* the
  * effect defaults — `crt` runs scanlines at gap 3 / opacity 0.35, not the
  * 4 / 0.28 you get from `scanlines()` alone. Copied from
- * `svgfx/src/presets/index.ts`; re-check on a library bump.
+ * `vctrfx/src/presets/index.ts`; re-check on a library bump.
  */
 export interface LookDescriptor {
   id: string;
@@ -644,7 +644,7 @@ export interface EffectConfig {
    * Set when this entry was added as part of a Look. Consecutive entries
    * sharing a `group.uid` render as one expandable container.
    *
-   * The stack itself stays flat, which matters: svgfx applies effects as a
+   * The stack itself stays flat, which matters: vctrfx applies effects as a
    * flat ordered pipeline, so grouping is presentation only and can never
    * change what gets rendered.
    */
@@ -762,3 +762,55 @@ export const buildEffects = (stack: readonly EffectConfig[]): Effect[] => {
 let counter = 0;
 export const newEffectUid = (id: string): string =>
   `${id}-${Date.now().toString(36)}-${(counter++).toString(36)}`;
+
+/** Flatten runs back into the stack's storage shape. */
+const flattenRuns = (runs: readonly StackRun[]): EffectConfig[] =>
+  runs.flatMap((run) => (run.kind === 'group' ? run.entries : [run.entry]));
+
+/**
+ * Move one top-level run (a lone effect, or a whole Look) to another
+ * position. Reordering operates on runs rather than raw indices so a Look's
+ * members always travel together and stay contiguous — the invariant
+ * `groupStack` depends on to rebuild the containers.
+ */
+export const reorderRuns = (
+  stack: readonly EffectConfig[],
+  from: number,
+  to: number,
+): EffectConfig[] => {
+  const runs = groupStack(stack);
+  if (from === to || from < 0 || from >= runs.length) return [...stack];
+  const clamped = Math.max(0, Math.min(runs.length - 1, to));
+  const without = runs.filter((_, i) => i !== from);
+  return flattenRuns([
+    ...without.slice(0, clamped),
+    runs[from],
+    ...without.slice(clamped),
+  ]);
+};
+
+/** Move one effect within its Look, leaving the rest of the stack alone. */
+export const reorderInGroup = (
+  stack: readonly EffectConfig[],
+  groupUid: string,
+  from: number,
+  to: number,
+): EffectConfig[] => {
+  const runs = groupStack(stack);
+  return flattenRuns(
+    runs.map((run) => {
+      if (run.kind !== 'group' || run.uid !== groupUid) return run;
+      if (from === to || from < 0 || from >= run.entries.length) return run;
+      const clamped = Math.max(0, Math.min(run.entries.length - 1, to));
+      const without = run.entries.filter((_, i) => i !== from);
+      return {
+        ...run,
+        entries: [
+          ...without.slice(0, clamped),
+          run.entries[from],
+          ...without.slice(clamped),
+        ],
+      };
+    }),
+  );
+};

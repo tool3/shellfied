@@ -1,4 +1,4 @@
-import { svgfx } from '@svgfx/postprocessing';
+import { vctrfx } from 'vctrfx';
 import { buildEffects, type EffectConfig } from './effects';
 
 /**
@@ -22,9 +22,9 @@ export function applyEffects(
   const effects = buildEffects(stack);
   if (!effects.length) return svg;
   try {
-    return svgfx(svg, effects, { animate: settings.animate ?? true });
+    return vctrfx(svg, effects, { animate: settings.animate ?? true });
   } catch (error) {
-    console.error('svgfx: effect stack failed, using the plain SVG', error);
+    console.error('vctrfx: effect stack failed, using the plain SVG', error);
     return svg;
   }
 }

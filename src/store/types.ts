@@ -59,7 +59,7 @@ export interface SettingsState {
   borderWidth: number;
   /**
    * Post-processing stack applied to the finished SVG via
-   * `@svgfx/postprocessing`. Flat and ordered — svgfx composes effects as
+   * `vctrfx`. Flat and ordered — vctrfx composes effects as
    * a pipeline, so position is meaningful.
    */
   effects: EffectConfig[];
